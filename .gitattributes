@@ -1,2 +1,4 @@
 # All files to have Unix line endings
 * text eol=lf
+* linguist-vendored
+*.sh linguist-vendored=false
