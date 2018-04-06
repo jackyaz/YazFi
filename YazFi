@@ -6,7 +6,8 @@
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
-YAZFI_CONF="/jffs/scripts/YazFi.config"
+YAZFI_NAME="YazFi"
+YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
 IFACELIST=$(echo "$(nvram get wl0_vifs) $(nvram get wl1_vifs)" | awk '{ for (i=NF; i>1; i--) printf("%s ",$i); print $1; }')
 DNSCONF="/jffs/configs/dnsmasq.conf.add"
 TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
@@ -22,196 +23,226 @@ VPN_IP_LIST_NEW_3=""
 VPN_IP_LIST_NEW_4=""
 VPN_IP_LIST_NEW_5=""
 
-### Code for this function is from @Adamm's Skynet script's lock file check ###
+### Code for this function is from https://github.com/Adamm00/IPSet_ASUS ###
 Check_Lock () {
-	if [ -f "/tmp/yazfi.lock" ] ; then
-		logger -st "YazFi" "Lock found - stopping"
+	if [ -f "/tmp/$YAZFI_NAME.lock" ] ; then
+		logger -st "$YAZFI_NAME" "Lock found - stopping"
 		exit 1
 	else
-		echo "$$" > /tmp/yazfi.lock
+		echo "$$" > /tmp/$YAZFI_NAME.lock
+	fi
+}
+############################################################################
+
+Download_Conf () {
+	logger -st "$YAZFI_NAME" "Downloading a blank configuration file to $YAZFI_CONF"
+	/usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.config" -o "YAZFI_CONF"
+	chmod 0644 $YAZFI_CONF
+	dos2unix $YAZFI_CONF
+	logger -st "$YAZFI_NAME" "Please edit $YAZFI_CONF with your desired settings. For a sample configuration file, see TBC"
+	rm -f /tmp/YAZFI_NAME.lock
+	exit 1
+}
+
+Check_Conf () {
+	if [ -f $YAZFI_CONF ] ; then
+		dos2unix $YAZFI_CONF
+		chmod 0644 $YAZFI_CONF
+		source $YAZFI_CONF
+	else
+		logger -st "$YAZFI_NAME" "Config file is missing."
+		Download_Conf
+		exit 1
 	fi
 }
 
-Check_Lock
-
-if [ -f $YAZFI_CONF ] ; then
-	dos2unix $YAZFI_CONF
-	source $YAZFI_CONF
-else
-	logger -st "YazFi" "Config file missing, exiting. Please create a config file /jffs/scripts/YazFi.config"
-	rm -f /tmp/yazfi.lock
-	exit 1
+if [ -z "$1" ]; then
+	Config_Networks
 fi
 
-if [ -f /jffs/scripts/firewall-start ] ; then
-	if ! grep -q -x "$0"' & #YazFi Guest Networks' /jffs/scripts/firewall-start ; then
-		logger -st "YazFi" "Adding $0 to firewall-start"
+case "$1" in
+	install) 
+		Check_Lock
+		logger -st "$YAZFI_NAME" "Welcome to YazFi, a script by JackYaz."
+		logger -st "$YAZFI_NAME" "Downloading a blank configuration file to $YAZFI_CONF"
+		Download_Conf
+	;;
+	*)
+		echo "Command Not Recognized, Please Try Again"
+	;;
+esac
+
+Config_Networks () {
+	if [ -f /jffs/scripts/firewall-start ] ; then
+		if ! grep -q -x "$0"' & #$YAZFI_NAME Guest Networks' /jffs/scripts/firewall-start ; then
+			logger -st "$YAZFI_NAME" "Adding $0 to firewall-start"
+			echo "" >> /jffs/scripts/firewall-start
+			echo "$0"' & #$YAZFI_NAME Guest Networks' >> /jffs/scripts/firewall-start
+		fi
+	else
+		logger -st "$YAZFI_NAME" "firewall-start doesn't exist, creating"
+		echo "#!/bin/sh" > /jffs/scripts/firewall-start
 		echo "" >> /jffs/scripts/firewall-start
-		echo "$0"' & #YazFi Guest Networks' >> /jffs/scripts/firewall-start
+		echo "$0"' & #$YAZFI_NAME Guest Networks' >> /jffs/scripts/firewall-start
+		chmod 0755 /jffs/scripts/firewall-start
 	fi
-else
-	logger -st "YazFi" "firewall-start doesn't exist, creating"
-	echo "#!/bin/sh" > /jffs/scripts/firewall-start
-	echo "" >> /jffs/scripts/firewall-start
-	echo "$0"' & #YazFi Guest Networks' >> /jffs/scripts/firewall-start
-	chmod 0755 /jffs/scripts/firewall-start
-fi
 
-if [ -f $DNSCONF ] ; then
-	cp $DNSCONF $TMPCONF
-else
-	touch $TMPCONF
-fi
-
-COUNTER=1
-until [ $COUNTER -gt 5 ] ; do
-	eval "VPN_IP_LIST_ORIG_"$COUNTER=$(echo $(nvram get "vpn_client"$COUNTER"_clientlist")$(nvram get "vpn_client"$COUNTER_"clientlist1")$(nvram get "vpn_client"$COUNTER"_clientlist2")$(nvram get "vpn_client"$COUNTER"_clientlist3")$(nvram get "vpn_client"$COUNTER"_clientlist4")$(nvram get "vpn_client"$COUNTER"_clientlist5") | sed -e 's/</\\</g' | sed -e 's/>/\\>/g' | sed -e 's/ /\\ /g')
-	eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_ORIG_"$COUNTER) | sed -e 's/</\\</g' | sed -e 's/>/\\>/g' | sed -e 's/ /\\ /g')
-	let COUNTER+=1
-done
-
-for IFACE in $IFACELIST ; do
-	IFACETMP="${IFACE//.}"
-	IPADDR=$(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".")
-	DNS1TMP=$(eval echo '$'$IFACETMP"_DNS1")
-	DNS2TMP=$(eval echo '$'$IFACETMP"_DNS2")
-	BEGIN="### Start of script-generated configuration for interface $IFACE ###"
-	END="### End of script-generated configuration for interface $IFACE ###"
-	SSID="$(nvram get $IFACE"_ssid")"
-	
-	if [ -z $DNS1TMP ] ; then
-		DNS1TMP=$LAN
+	if [ -f $DNSCONF ] ; then
+		cp $DNSCONF $TMPCONF
+	else
+		touch $TMPCONF
 	fi
-	
-	if [ -z $DNS2TMP ] ; then
-		DNS2TMP=$LAN
-	fi
-	
-	if [ "$(eval echo '$'$IFACETMP"_ENABLED")" = "true" ] ; then
-		ifconfig $IFACE $IPADDR.1 netmask 255.255.255.0 # Assign the .1 address to the interface
+
+	COUNTER=1
+	until [ $COUNTER -gt 5 ] ; do
+		eval "VPN_IP_LIST_ORIG_"$COUNTER=$(echo $(nvram get "vpn_client"$COUNTER"_clientlist")$(nvram get "vpn_client"$COUNTER_"clientlist1")$(nvram get "vpn_client"$COUNTER"_clientlist2")$(nvram get "vpn_client"$COUNTER"_clientlist3")$(nvram get "vpn_client"$COUNTER"_clientlist4")$(nvram get "vpn_client"$COUNTER"_clientlist5") | sed -e 's/</\\</g' | sed -e 's/>/\\>/g' | sed -e 's/ /\\ /g')
+		eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_ORIG_"$COUNTER) | sed -e 's/</\\</g' | sed -e 's/>/\\>/g' | sed -e 's/ /\\ /g')
+		let COUNTER+=1
+	done
+
+	for IFACE in $IFACELIST ; do
+		IFACETMP="${IFACE//.}"
+		IPADDR=$(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".")
+		DNS1TMP=$(eval echo '$'$IFACETMP"_DNS1")
+		DNS2TMP=$(eval echo '$'$IFACETMP"_DNS2")
+		BEGIN="### Start of script-generated configuration for interface $IFACE ###"
+		END="### End of script-generated configuration for interface $IFACE ###"
+		SSID="$(nvram get $IFACE"_ssid")"
 		
-		# Un-bridge all frames entering the # bridge interface (br0) that are destined for the local network, for protocols IPv4 and ARP
-		for ACTION in -D -I ; do
-			ebtables -t broute $ACTION BROUTING -p ipv4 -i $IFACE -j DROP 2>/dev/null
-			ebtables -t broute $ACTION BROUTING -p ipv6 -i $IFACE -j DROP 2>/dev/null
-			ebtables -t broute $ACTION BROUTING -p arp -i $IFACE -j DROP 2>/dev/null
-			
-			ebtables $ACTION FORWARD -i $IFACE -j DROP 2>/dev/null
-			ebtables $ACTION FORWARD -o $IFACE -j DROP 2>/dev/null
-			
-			if [ $ACTION = "-D" ] ; then
-				while ebtables -t broute -D BROUTING -p IPv4 -i $IFACE --ip-dst $LAN/24 --ip-proto tcp -j DROP 2>/dev/null ; do
-				: #do nothing
-				done
-			fi
-			
-			### Start of IP firewall rules ###			
-			iptables $ACTION FORWARD -i $IFACE -j ACCEPT 2>/dev/null
-			
-			iptables $ACTION FORWARD -i $IFACE -d $LAN/24 -m state --state NEW -j REJECT 2>/dev/null
-			
-			iptables $ACTION INPUT -i $IFACE -m state --state NEW -j REJECT 2>/dev/null
-			
-			iptables $ACTION INPUT -i $IFACE -p udp -m multiport --dports 53,67,68,123 -j ACCEPT 2>/dev/null
-			### End of IP firewall rules ###		
-		done
+		if [ -z $DNS1TMP ] ; then
+			DNS1TMP=$LAN
+		fi
 		
-		if [ "$(eval echo '$'$IFACETMP"_REDIRECTALLTOVPN")" = "true" ] || [ "$(eval echo '$'$IFACETMP"_ADVANCEDVPN")" = "true" ] ; then
-			VPNCLIENTNO=$(eval echo '$'$IFACETMP"_VPNCLIENTNUMBER")
-			VPN_SSID_NVRAM="<$SSID>$IPADDR.0/24>0.0.0.0>VPN"
-			VPN_SSID_NVRAM_SAFE=$(echo "<$SSID>$IPADDR.0/24>0.0.0.0>VPN" | sed -e 's/\//\\\//g' | sed -e 's/\./\\./g' | sed -e 's/ /\\ /g')
+		if [ -z $DNS2TMP ] ; then
+			DNS2TMP=$LAN
+		fi
+		
+		if [ "$(eval echo '$'$IFACETMP"_ENABLED")" = "true" ] ; then
+			ifconfig $IFACE $IPADDR.1 netmask 255.255.255.0 # Assign the .1 address to the interface
 			
-			logger -st "YazFi" "$IFACE (SSID: $SSID) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
-			
-			# Check if guest network has already been added to policy routing for VPN client. If not, prepend to list.
-			if [ ! "$(echo $(eval echo '$'"VPN_IP_LIST_ORIG_"$VPNCLIENTNO) | grep "$VPN_SSID_NVRAM")" ] ; then
-				eval "VPN_IP_LIST_NEW_"$VPNCLIENTNO=$(echo $VPN_SSID_NVRAM$(eval echo '$'"VPN_IP_LIST_NEW_"$VPNCLIENTNO) | sed -e 's/</\\</g' | sed -e 's/>/\\>/g' | sed -e 's/ /\\ /g')
-			fi
-			
-			# Remove SSID from any other VPN clients (i.e. config has changed from client 2 to client 1)
-			COUNTER=1
-			until [ $COUNTER -gt 5 ] ; do
-				if [ $COUNTER -eq $VPNCLIENTNO ] ; then
-					let COUNTER+=1
-					continue
+			# Un-bridge all frames entering the # bridge interface (br0) that are destined for the local network, for protocols IPv4 and ARP
+			for ACTION in -D -I ; do
+				ebtables -t broute $ACTION BROUTING -p ipv4 -i $IFACE -j DROP 2>/dev/null
+				ebtables -t broute $ACTION BROUTING -p ipv6 -i $IFACE -j DROP 2>/dev/null
+				ebtables -t broute $ACTION BROUTING -p arp -i $IFACE -j DROP 2>/dev/null
+				
+				ebtables $ACTION FORWARD -i $IFACE -j DROP 2>/dev/null
+				ebtables $ACTION FORWARD -o $IFACE -j DROP 2>/dev/null
+				
+				if [ $ACTION = "-D" ] ; then
+					while ebtables -t broute -D BROUTING -p IPv4 -i $IFACE --ip-dst $LAN/24 --ip-proto tcp -j DROP 2>/dev/null ; do
+					: #do nothing
+					done
 				fi
-				eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER) | sed -e "s/$VPN_SSID_NVRAM_SAFE//g" | sed -e 's/</\\</g' | sed -e 's/>/\\>/g'  | sed -e 's/ /\\ /g')
-				let COUNTER+=1
+				
+				### Start of IP firewall rules ###			
+				iptables $ACTION FORWARD -i $IFACE -j ACCEPT 2>/dev/null
+				
+				iptables $ACTION FORWARD -i $IFACE -d $LAN/24 -m state --state NEW -j REJECT 2>/dev/null
+				
+				iptables $ACTION INPUT -i $IFACE -m state --state NEW -j REJECT 2>/dev/null
+				
+				iptables $ACTION INPUT -i $IFACE -p udp -m multiport --dports 53,67,68,123 -j ACCEPT 2>/dev/null
+				### End of IP firewall rules ###		
 			done
 			
-			ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$VPNCLIENTNO src $IPADDR.1 2>/dev/null
-			ip route add $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$VPNCLIENTNO src $IPADDR.1
-			iptables -t nat -D POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE 2>/dev/null
-			iptables -t nat -I POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE
-			
-		else
-			logger -st "YazFi" "$IFACE (SSID: $SSID) - sending all interface internet traffic over $(nvram get wan0_ifname)"
-			
-			if [ "$(eval echo '$'$IFACETMP"_ADVANCEDVPN")" = "true" ] ; then
+			if [ "$(eval echo '$'$IFACETMP"_REDIRECTALLTOVPN")" = "true" ] || [ "$(eval echo '$'$IFACETMP"_ADVANCEDVPN")" = "true" ] ; then
+				VPNCLIENTNO=$(eval echo '$'$IFACETMP"_VPNCLIENTNUMBER")
+				VPN_SSID_NVRAM="<$SSID>$IPADDR.0/24>0.0.0.0>VPN"
+				VPN_SSID_NVRAM_SAFE=$(echo "<$SSID>$IPADDR.0/24>0.0.0.0>VPN" | sed -e 's/\//\\\//g' | sed -e 's/\./\\./g' | sed -e 's/ /\\ /g')
+				
+				logger -st "$YAZFI_NAME" "$IFACE (SSID: $SSID) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
+				
+				# Check if guest network has already been added to policy routing for VPN client. If not, prepend to list.
+				if [ ! "$(echo $(eval echo '$'"VPN_IP_LIST_ORIG_"$VPNCLIENTNO) | grep "$VPN_SSID_NVRAM")" ] ; then
+					eval "VPN_IP_LIST_NEW_"$VPNCLIENTNO=$(echo $VPN_SSID_NVRAM$(eval echo '$'"VPN_IP_LIST_NEW_"$VPNCLIENTNO) | sed -e 's/</\\</g' | sed -e 's/>/\\>/g' | sed -e 's/ /\\ /g')
+				fi
+				
+				# Remove SSID from any other VPN clients (i.e. config has changed from client 2 to client 1)
 				COUNTER=1
 				until [ $COUNTER -gt 5 ] ; do
-					ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$COUNTER src $IPADDR.1 2>/dev/null
+					if [ $COUNTER -eq $VPNCLIENTNO ] ; then
+						let COUNTER+=1
+						continue
+					fi
+					eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER) | sed -e "s/$VPN_SSID_NVRAM_SAFE//g" | sed -e 's/</\\</g' | sed -e 's/>/\\>/g'  | sed -e 's/ /\\ /g')
 					let COUNTER+=1
 				done
 				
-				RULES=$(echo $(iptables -t nat -nvL POSTROUTING --line-number | grep "$IPADDR.0/24" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
-				for RULENO in $RULES ; do
-					iptables -t nat -D POSTROUTING $RULENO 2>/dev/null
-				done
+				ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$VPNCLIENTNO src $IPADDR.1 2>/dev/null
+				ip route add $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$VPNCLIENTNO src $IPADDR.1
+				iptables -t nat -D POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE 2>/dev/null
+				iptables -t nat -I POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE
+				
+			else
+				logger -st "$YAZFI_NAME" "$IFACE (SSID: $SSID) - sending all interface internet traffic over $(nvram get wan0_ifname)"
+				
+				if [ "$(eval echo '$'$IFACETMP"_ADVANCEDVPN")" = "true" ] ; then
+					COUNTER=1
+					until [ $COUNTER -gt 5 ] ; do
+						ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$COUNTER src $IPADDR.1 2>/dev/null
+						let COUNTER+=1
+					done
+					
+					RULES=$(echo $(iptables -t nat -nvL POSTROUTING --line-number | grep "$IPADDR.0/24" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+					for RULENO in $RULES ; do
+						iptables -t nat -D POSTROUTING $RULENO 2>/dev/null
+					done
+				fi
+			fi
+			
+			CONFSTRING="interface=$IFACE||||dhcp-range=$IFACE,$IPADDR.$(eval echo '$'$IFACETMP"_DHCPSTART"),$IPADDR.$(eval echo '$'$IFACETMP"_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$IFACE,3,$IPADDR.1||||dhcp-option=$IFACE,6,$DNS1TMP,$DNS2TMP||||dhcp-option=$IFACE,252,\"\\\n\""
+			
+			# Add dnsmasq entries for this interface:
+			if grep -q "### Start of script-generated configuration for interface $IFACE ###" $TMPCONF; then
+				sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"$BEGIN"'||||'"$CONFSTRING"'||||'"$END" $TMPCONF
+			else
+				echo -e "\n\n$BEGIN\n$CONFSTRING\n$END" >> $TMPCONF
+			fi
+			
+		else
+			# Remove dnsmasq entries for this interface:
+			if grep -q "### Start of script-generated configuration for interface $IFACE ###" $TMPCONF; then
+				sed -i -e '/'"$BEGIN"'/,+6d' $TMPCONF
 			fi
 		fi
 		
-		CONFSTRING="interface=$IFACE||||dhcp-range=$IFACE,$IPADDR.$(eval echo '$'$IFACETMP"_DHCPSTART"),$IPADDR.$(eval echo '$'$IFACETMP"_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$IFACE,3,$IPADDR.1||||dhcp-option=$IFACE,6,$DNS1TMP,$DNS2TMP||||dhcp-option=$IFACE,252,\"\\\n\""
+		sleep 2
 		
-		# Add dnsmasq entries for this interface:
-		if grep -q "### Start of script-generated configuration for interface $IFACE ###" $TMPCONF; then
-			sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"$BEGIN"'||||'"$CONFSTRING"'||||'"$END" $TMPCONF
-		else
-			echo -e "\n\n$BEGIN\n$CONFSTRING\n$END" >> $TMPCONF
+	done
+
+	COUNTER=1
+	until [ $COUNTER -gt 5 ] ; do
+		if [ "$(eval echo '$'"VPN_IP_LIST_ORIG_"$COUNTER)" != "$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)" ] ; then
+			logger -st "$YAZFI_NAME" "VPNCLIENT$COUNTER clientlist has changed, restarting"
+			if [ $(uname -m) = "aarch64" ] ; then 
+				fullstring="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
+				nvram set "vpn_client"$COUNTER"_clientlist"="${fullstring:0:255}"
+				nvram set "vpn_client"$COUNTER"_clientlist1"="${fullstring:255:510}"
+				nvram set "vpn_client"$COUNTER"_clientlist2"="${fullstring:510:765}"
+				nvram set "vpn_client"$COUNTER"_clientlist3"="${fullstring:765:1020}"
+				nvram set "vpn_client"$COUNTER"_clientlist4"="${fullstring:1020:1275}"
+				nvram set "vpn_client"$COUNTER"_clientlist5"="${fullstring:1275:1530}"
+			else
+				nvram set "vpn_client"$COUNTER"_clientlist"="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
+			fi
+			nvram commit
+			service restart_vpnclient$COUNTER &>/dev/null
 		fi
-		
-	else
-		# Remove dnsmasq entries for this interface:
-		if grep -q "### Start of script-generated configuration for interface $IFACE ###" $TMPCONF; then
-			sed -i -e '/'"$BEGIN"'/,+6d' $TMPCONF
-		fi
+		let COUNTER+=1
+	done
+
+	sed -i -e 's/||||/\n/g' $TMPCONF
+
+	if ! diff -q $DNSCONF $TMPCONF &>/dev/null; then
+		cp $TMPCONF $DNSCONF
+		service restart_dnsmasq &>/dev/null
+		logger -st "$YAZFI_NAME" "DHCP configuration updated"
 	fi
-	
-	sleep 2
-	
-done
 
-COUNTER=1
-until [ $COUNTER -gt 5 ] ; do
-	if [ "$(eval echo '$'"VPN_IP_LIST_ORIG_"$COUNTER)" != "$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)" ] ; then
-		logger -st "YazFi" "VPNCLIENT$COUNTER clientlist has changed, restarting"
-		if [ $(uname -m) = "aarch64" ] ; then 
-			fullstring="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
-			nvram set "vpn_client"$COUNTER"_clientlist"="${fullstring:0:255}"
-			nvram set "vpn_client"$COUNTER"_clientlist1"="${fullstring:255:510}"
-			nvram set "vpn_client"$COUNTER"_clientlist2"="${fullstring:510:765}"
-			nvram set "vpn_client"$COUNTER"_clientlist3"="${fullstring:765:1020}"
-			nvram set "vpn_client"$COUNTER"_clientlist4"="${fullstring:1020:1275}"
-			nvram set "vpn_client"$COUNTER"_clientlist5"="${fullstring:1275:1530}"
-		else
-			nvram set "vpn_client"$COUNTER"_clientlist"="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
-		fi
-		nvram commit
-		service restart_vpnclient$COUNTER &>/dev/null
-	fi
-	let COUNTER+=1
-done
+	rm -f $TMPCONF
 
-sed -i -e 's/||||/\n/g' $TMPCONF
+	rm -f /tmp/yazfi.lock
 
-if ! diff -q $DNSCONF $TMPCONF &>/dev/null; then
-	cp $TMPCONF $DNSCONF
-	service restart_dnsmasq &>/dev/null
-	logger -st "YazFi" "DHCP configuration updated"
-fi
-
-rm -f $TMPCONF
-
-rm -f /tmp/yazfi.lock
-
-exit 0
+	exit 0
+}
