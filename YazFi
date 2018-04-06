@@ -8,6 +8,7 @@
 
 YAZFI_NAME="YazFi"
 YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
+YAZFI_VERSION="v0.0.1"
 IFACELIST=$(echo "$(nvram get wl0_vifs) $(nvram get wl1_vifs)" | awk '{ for (i=NF; i>1; i--) printf("%s ",$i); print $1; }')
 DNSCONF="/jffs/configs/dnsmasq.conf.add"
 TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
@@ -36,10 +37,13 @@ Check_Lock () {
 
 Download_Conf () {
 	logger -st "$YAZFI_NAME" "Downloading a blank configuration file to $YAZFI_CONF"
+	echo ""
+	sleep 2
 	/usr/sbin/curl -s --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.config" -o "$YAZFI_CONF"
 	chmod 0644 $YAZFI_CONF
 	dos2unix $YAZFI_CONF
 	logger -st "$YAZFI_NAME" "Please edit $YAZFI_CONF with your desired settings. For a sample configuration file, see TBC"
+	echo ""
 	rm -f /tmp/$YAZFI_NAME.lock
 	exit 1
 }
@@ -51,6 +55,7 @@ Check_Conf () {
 		source $YAZFI_CONF
 	else
 		logger -st "$YAZFI_NAME" "Config file is missing."
+		echo ""
 		Download_Conf
 		exit 1
 	fi
@@ -58,28 +63,40 @@ Check_Conf () {
 
 if [ -z "$1" ]; then
 	Config_Networks
+	exit 0
 fi
 
 case "$1" in
 	install) 
 		Check_Lock
-		logger -st "$YAZFI_NAME" "Welcome to YazFi, a script by JackYaz."
+		logger -st "$YAZFI_NAME" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz."
+		echo ""
+		sleep 2
 		Download_Conf
 	;;
 	*)
 		echo "Command Not Recognized, Please Try Again"
+		exit 1
 	;;
 esac
 
 Config_Networks () {
+	
+	logger -st "$YAZFI_NAME" "YazFi $YAZFI_VERSION starting up"
+	echo ""
+	
+	Check_Conf
+	
 	if [ -f /jffs/scripts/firewall-start ] ; then
 		if ! grep -q -x "$0"' & #$YAZFI_NAME Guest Networks' /jffs/scripts/firewall-start ; then
 			logger -st "$YAZFI_NAME" "Adding $0 to firewall-start"
+			echo ""
 			echo "" >> /jffs/scripts/firewall-start
 			echo "$0"' & #$YAZFI_NAME Guest Networks' >> /jffs/scripts/firewall-start
 		fi
 	else
 		logger -st "$YAZFI_NAME" "firewall-start doesn't exist, creating"
+		echo ""
 		echo "#!/bin/sh" > /jffs/scripts/firewall-start
 		echo "" >> /jffs/scripts/firewall-start
 		echo "$0"' & #$YAZFI_NAME Guest Networks' >> /jffs/scripts/firewall-start
@@ -109,11 +126,11 @@ Config_Networks () {
 		SSID="$(nvram get $IFACE"_ssid")"
 		
 		if [ -z $DNS1TMP ] ; then
-			DNS1TMP=$LAN
+			DNS1TMP=$IPADDR.1
 		fi
 		
 		if [ -z $DNS2TMP ] ; then
-			DNS2TMP=$LAN
+			DNS2TMP=$IPADDR.1
 		fi
 		
 		if [ "$(eval echo '$'$IFACETMP"_ENABLED")" = "true" ] ; then
@@ -151,6 +168,7 @@ Config_Networks () {
 				VPN_SSID_NVRAM_SAFE=$(echo "<$SSID>$IPADDR.0/24>0.0.0.0>VPN" | sed -e 's/\//\\\//g' | sed -e 's/\./\\./g' | sed -e 's/ /\\ /g')
 				
 				logger -st "$YAZFI_NAME" "$IFACE (SSID: $SSID) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
+				echo ""
 				
 				# Check if guest network has already been added to policy routing for VPN client. If not, prepend to list.
 				if [ ! "$(echo $(eval echo '$'"VPN_IP_LIST_ORIG_"$VPNCLIENTNO) | grep "$VPN_SSID_NVRAM")" ] ; then
@@ -214,6 +232,7 @@ Config_Networks () {
 	until [ $COUNTER -gt 5 ] ; do
 		if [ "$(eval echo '$'"VPN_IP_LIST_ORIG_"$COUNTER)" != "$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)" ] ; then
 			logger -st "$YAZFI_NAME" "VPNCLIENT$COUNTER clientlist has changed, restarting"
+			echo ""
 			if [ $(uname -m) = "aarch64" ] ; then 
 				fullstring="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
 				nvram set "vpn_client"$COUNTER"_clientlist"="${fullstring:0:255}"
@@ -237,11 +256,13 @@ Config_Networks () {
 		cp $TMPCONF $DNSCONF
 		service restart_dnsmasq &>/dev/null
 		logger -st "$YAZFI_NAME" "DHCP configuration updated"
+		echo ""
 	fi
 
 	rm -f $TMPCONF
 
-	rm -f /tmp/yazfi.lock
-
-	exit 0
+	rm -f /tmp/$YAZFI_NAME.lock
+	
+	logger -st "$YAZFI_NAME" "YazFi $YAZFI_VERSION completed successfully"
+	echo""
 }
