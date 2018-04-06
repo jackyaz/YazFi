@@ -62,7 +62,6 @@ Check_Conf () {
 }
 
 Config_Networks () {
-	
 	logger -st "$YAZFI_NAME" "YazFi $YAZFI_VERSION starting up"
 	echo ""
 	
