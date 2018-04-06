@@ -42,7 +42,7 @@ Download_Conf () {
 	/usr/sbin/curl -s --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.config" -o "$YAZFI_CONF"
 	chmod 0644 $YAZFI_CONF
 	dos2unix $YAZFI_CONF
-	logger -st "$YAZFI_NAME" "Please edit $YAZFI_CONF with your desired settings. For a sample configuration file, see TBC"
+	logger -st "$YAZFI_NAME" "Please edit $YAZFI_CONF with your desired settings. For a sample configuration file, see https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.sample.config"
 	echo ""
 	rm -f /tmp/$YAZFI_NAME.lock
 	exit 1
@@ -68,18 +68,18 @@ Config_Networks () {
 	Check_Conf
 	
 	if [ -f /jffs/scripts/firewall-start ] ; then
-		if ! grep -q -x "$0"' & #$YAZFI_NAME Guest Networks' /jffs/scripts/firewall-start ; then
+		if ! grep -q -x "$0"' & # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start ; then
 			logger -st "$YAZFI_NAME" "Adding $0 to firewall-start"
 			echo ""
 			echo "" >> /jffs/scripts/firewall-start
-			echo "$0"' & #$YAZFI_NAME Guest Networks' >> /jffs/scripts/firewall-start
+			echo "$0"' & # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 		fi
 	else
 		logger -st "$YAZFI_NAME" "firewall-start doesn't exist, creating"
 		echo ""
 		echo "#!/bin/sh" > /jffs/scripts/firewall-start
 		echo "" >> /jffs/scripts/firewall-start
-		echo "$0"' & #$YAZFI_NAME Guest Networks' >> /jffs/scripts/firewall-start
+		echo "$0"' & # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 		chmod 0755 /jffs/scripts/firewall-start
 	fi
 
