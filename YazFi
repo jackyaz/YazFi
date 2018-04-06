@@ -6,6 +6,7 @@
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
+YAZFI_CONF="/jffs/scripts/YazFi.config"
 IFACELIST=$(echo "$(nvram get wl0_vifs) $(nvram get wl1_vifs)" | awk '{ for (i=NF; i>1; i--) printf("%s ",$i); print $1; }')
 DNSCONF="/jffs/configs/dnsmasq.conf.add"
 TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
@@ -33,9 +34,9 @@ Check_Lock () {
 
 Check_Lock
 
-if [ -f /jffs/scripts/YazFi.config ] ; then
-	dos2unix /jffs/scripts/YazFi.config
-	source /jffs/scripts/YazFi.config
+if [ -f $YAZFI_CONF ] ; then
+	dos2unix $YAZFI_CONF
+	source $YAZFI_CONF
 else
 	logger -st "YazFi" "Config file missing, exiting. Please create a config file /jffs/scripts/YazFi.config"
 	rm -f /tmp/yazfi.lock
