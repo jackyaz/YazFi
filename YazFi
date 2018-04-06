@@ -55,6 +55,7 @@ Check_Conf () {
 	if [ -f $YAZFI_CONF ] ; then
 		dos2unix $YAZFI_CONF
 		chmod 0644 $YAZFI_CONF
+		sed -i -e 's/"//g' $YAZFI_CONF
 		source $YAZFI_CONF
 	else
 		logger -st "$YAZFI_NAME" "Config file is missing, a blank file will be downloaded to $YAZFI_CONF"
