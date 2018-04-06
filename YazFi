@@ -36,11 +36,11 @@ Check_Lock () {
 
 Download_Conf () {
 	logger -st "$YAZFI_NAME" "Downloading a blank configuration file to $YAZFI_CONF"
-	/usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.config" -o "YAZFI_CONF"
+	/usr/sbin/curl -s --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.config" -o "$YAZFI_CONF"
 	chmod 0644 $YAZFI_CONF
 	dos2unix $YAZFI_CONF
 	logger -st "$YAZFI_NAME" "Please edit $YAZFI_CONF with your desired settings. For a sample configuration file, see TBC"
-	rm -f /tmp/YAZFI_NAME.lock
+	rm -f /tmp/$YAZFI_NAME.lock
 	exit 1
 }
 
@@ -64,7 +64,6 @@ case "$1" in
 	install) 
 		Check_Lock
 		logger -st "$YAZFI_NAME" "Welcome to YazFi, a script by JackYaz."
-		logger -st "$YAZFI_NAME" "Downloading a blank configuration file to $YAZFI_CONF"
 		Download_Conf
 	;;
 	*)
