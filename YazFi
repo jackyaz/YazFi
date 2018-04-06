@@ -61,25 +61,6 @@ Check_Conf () {
 	fi
 }
 
-if [ -z "$1" ]; then
-	Config_Networks
-	exit 0
-fi
-
-case "$1" in
-	install) 
-		Check_Lock
-		logger -st "$YAZFI_NAME" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz."
-		echo ""
-		sleep 2
-		Download_Conf
-	;;
-	*)
-		echo "Command Not Recognized, Please Try Again"
-		exit 1
-	;;
-esac
-
 Config_Networks () {
 	
 	logger -st "$YAZFI_NAME" "YazFi $YAZFI_VERSION starting up"
@@ -266,3 +247,22 @@ Config_Networks () {
 	logger -st "$YAZFI_NAME" "YazFi $YAZFI_VERSION completed successfully"
 	echo""
 }
+
+if [ -z "$1" ]; then
+	Config_Networks
+	exit 0
+fi
+
+case "$1" in
+	install) 
+		Check_Lock
+		logger -st "$YAZFI_NAME" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz."
+		echo ""
+		sleep 2
+		Download_Conf
+	;;
+	*)
+		echo "Command Not Recognized, Please Try Again"
+		exit 1
+	;;
+esac
