@@ -36,13 +36,16 @@ Check_Lock () {
 ############################################################################
 
 Download_Conf () {
-	logger -st "$YAZFI_NAME" "Downloading a blank configuration file to $YAZFI_CONF"
+	echo -e "$YAZFI_NAME" "Downloading a blank configuration file to $YAZFI_CONF"
 	echo ""
-	sleep 2
+	sleep 1
 	/usr/sbin/curl -s --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.config" -o "$YAZFI_CONF"
 	chmod 0644 $YAZFI_CONF
 	dos2unix $YAZFI_CONF
-	logger -st "$YAZFI_NAME" "Please edit $YAZFI_CONF with your desired settings. For a sample configuration file, see https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.sample.config"
+	echo "Please edit $YAZFI_CONF with your desired settings. For a sample configuration file, see https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.sample.config"
+	echo ""
+	sleep 1
+	echo -e "Please run \n\n$0\n\nin your SSH client when you have finished editing the configuration file"
 	echo ""
 	rm -f /tmp/$YAZFI_NAME.lock
 	exit 1
@@ -54,7 +57,7 @@ Check_Conf () {
 		chmod 0644 $YAZFI_CONF
 		source $YAZFI_CONF
 	else
-		logger -st "$YAZFI_NAME" "Config file is missing."
+		logger -st "$YAZFI_NAME" "Config file is missing, a blank file will be downloaded to $YAZFI_CONF"
 		echo ""
 		Download_Conf
 		exit 1
@@ -255,9 +258,9 @@ fi
 case "$1" in
 	install) 
 		Check_Lock
-		logger -st "$YAZFI_NAME" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz."
+		logger -st "$YAZFI_NAME" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
 		echo ""
-		sleep 2
+		sleep 1
 		Download_Conf
 	;;
 	*)
