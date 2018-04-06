@@ -23,36 +23,36 @@ VPN_IP_LIST_NEW_5=""
 
 ### Code for this function is from @Adamm's Skynet script's lock file check ###
 Check_Lock () {
-	if [ -f "/tmp/guestwifi.lock" ] ; then
-		logger -st "GuestWifi" "Lock found - stopping"
+	if [ -f "/tmp/yazfi.lock" ] ; then
+		logger -st "YazFi" "Lock found - stopping"
 		exit 1
 	else
-		echo "$$" > /tmp/guestwifi.lock
+		echo "$$" > /tmp/yazfi.lock
 	fi
 }
 
 Check_Lock
 
-if [ -f /jffs/scripts/GuestWifi.config ] ; then
-	dos2unix /jffs/scripts/GuestWifi.config
-	source /jffs/scripts/GuestWifi.config
+if [ -f /jffs/scripts/YazFi.config ] ; then
+	dos2unix /jffs/scripts/YazFi.config
+	source /jffs/scripts/YazFi.config
 else
-	logger -st "GuestWifi" "Config file missing, exiting. Please create a config file /jffs/scripts/GuestWifi.config"
-	rm -f /tmp/guestwifi.lock
+	logger -st "YazFi" "Config file missing, exiting. Please create a config file /jffs/scripts/YazFi.config"
+	rm -f /tmp/yazfi.lock
 	exit 1
 fi
 
 if [ -f /jffs/scripts/firewall-start ] ; then
-	if ! grep -q -x "$0"' & #Guest WiFi custom script' /jffs/scripts/firewall-start ; then
-		logger -st "GuestWifi" "Adding $0 to firewall-start"
+	if ! grep -q -x "$0"' & #YazFi Guest Networks' /jffs/scripts/firewall-start ; then
+		logger -st "YazFi" "Adding $0 to firewall-start"
 		echo "" >> /jffs/scripts/firewall-start
-		echo "$0"' & #Guest WiFi custom script' >> /jffs/scripts/firewall-start
+		echo "$0"' & #YazFi Guest Networks' >> /jffs/scripts/firewall-start
 	fi
 else
-	logger -st "GuestWifi" "firewall-start doesn't exist, creating"
+	logger -st "YazFi" "firewall-start doesn't exist, creating"
 	echo "#!/bin/sh" > /jffs/scripts/firewall-start
 	echo "" >> /jffs/scripts/firewall-start
-	echo "$0"' & #Guest WiFi custom script' >> /jffs/scripts/firewall-start
+	echo "$0"' & #YazFi Guest Networks' >> /jffs/scripts/firewall-start
 	chmod 0755 /jffs/scripts/firewall-start
 fi
 
@@ -120,7 +120,7 @@ for IFACE in $IFACELIST ; do
 			VPN_SSID_NVRAM="<$SSID>$IPADDR.0/24>0.0.0.0>VPN"
 			VPN_SSID_NVRAM_SAFE=$(echo "<$SSID>$IPADDR.0/24>0.0.0.0>VPN" | sed -e 's/\//\\\//g' | sed -e 's/\./\\./g' | sed -e 's/ /\\ /g')
 			
-			logger -st "GuestWifi" "$IFACE (SSID: $SSID) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
+			logger -st "YazFi" "$IFACE (SSID: $SSID) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
 			
 			# Check if guest network has already been added to policy routing for VPN client. If not, prepend to list.
 			if [ ! "$(echo $(eval echo '$'"VPN_IP_LIST_ORIG_"$VPNCLIENTNO) | grep "$VPN_SSID_NVRAM")" ] ; then
@@ -144,7 +144,7 @@ for IFACE in $IFACELIST ; do
 			iptables -t nat -I POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE
 			
 		else
-			logger -st "GuestWifi" "$IFACE (SSID: $SSID) - sending all interface internet traffic over $(nvram get wan0_ifname)"
+			logger -st "YazFi" "$IFACE (SSID: $SSID) - sending all interface internet traffic over $(nvram get wan0_ifname)"
 			
 			if [ "$(eval echo '$'$IFACETMP"_ADVANCEDVPN")" = "true" ] ; then
 				COUNTER=1
@@ -183,7 +183,7 @@ done
 COUNTER=1
 until [ $COUNTER -gt 5 ] ; do
 	if [ "$(eval echo '$'"VPN_IP_LIST_ORIG_"$COUNTER)" != "$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)" ] ; then
-		logger -st "GuestWifi" "VPNCLIENT$COUNTER clientlist has changed, restarting"
+		logger -st "YazFi" "VPNCLIENT$COUNTER clientlist has changed, restarting"
 		if [ $(uname -m) = "aarch64" ] ; then 
 			fullstring="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
 			nvram set "vpn_client"$COUNTER"_clientlist"="${fullstring:0:255}"
@@ -206,11 +206,11 @@ sed -i -e 's/||||/\n/g' $TMPCONF
 if ! diff -q $DNSCONF $TMPCONF &>/dev/null; then
 	cp $TMPCONF $DNSCONF
 	service restart_dnsmasq &>/dev/null
-	logger -st "GuestWifi" "DHCP configuration updated"
+	logger -st "YazFi" "DHCP configuration updated"
 fi
 
 rm -f $TMPCONF
 
-rm -f /tmp/guestwifi.lock
+rm -f /tmp/yazfi.lock
 
 exit 0
