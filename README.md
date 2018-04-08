@@ -1,5 +1,6 @@
-# YazFi - Asus WiFi Guest Networks levelled up!
-Feature expansion of guest WiFi networks on Merlin's version of AsusWRT, including, but not limited to:
+# YazFi - enhanced AsusWRT-Merlin Guest WiFi Networks
+
+Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
 
 * Dedicated VPN WiFi networks
 * Separate subnets for enhanced organisation of devices
