@@ -2,13 +2,13 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v0.0.1                        ######
+######                          v1.0.0                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 YAZFI_NAME="YazFi"
 YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-YAZFI_VERSION="v0.0.1"
+YAZFI_VERSION="v1.0.0"
 IFACELIST=$(echo "$(nvram get wl0_vifs) $(nvram get wl1_vifs)" | awk '{ for (i=NF; i>1; i--) printf("%s ",$i); print $1; }')
 DNSCONF="/jffs/configs/dnsmasq.conf.add"
 TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
