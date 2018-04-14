@@ -2,120 +2,367 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.0.0                        ######
+######                          v1.1.0                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
-YAZFI_NAME="YazFi"
-YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-YAZFI_VERSION="v1.0.0"
-IFACELIST=$(echo "$(nvram get wl0_vifs) $(nvram get wl1_vifs)" | awk '{ for (i=NF; i>1; i--) printf("%s ",$i); print $1; }')
-DNSCONF="/jffs/configs/dnsmasq.conf.add"
-TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
-LAN="$(nvram get lan_ipaddr)"
-VPN_IP_LIST_ORIG_1=""
-VPN_IP_LIST_ORIG_2=""
-VPN_IP_LIST_ORIG_3=""
-VPN_IP_LIST_ORIG_4=""
-VPN_IP_LIST_ORIG_5=""
-VPN_IP_LIST_NEW_1=""
-VPN_IP_LIST_NEW_2=""
-VPN_IP_LIST_NEW_3=""
-VPN_IP_LIST_NEW_4=""
-VPN_IP_LIST_NEW_5=""
+readonly YAZFI_NAME="YazFi"
+readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
+readonly LAN="$(nvram get lan_ipaddr)"
+readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3"
+
+CRIT="\e[41m"
+ERR="\e[31m"
+WARN="\e[33m"
+PASS="\e[32m"
+
+# $1 = print to syslog, $2 = message to print, $3 = log level
+Print_Output () {
+	if [ $1 = "true" ] ; then 
+		logger -st "$YAZFI_NAME" "$2"
+		echo ""
+	else
+		echo -e "\e[1m$3$YAZFI_NAME: $2\e[0m"
+		echo ""
+	fi
+}
+
+Escape_Sed () {
+	sed -e 's/</\\</g' | sed -e 's/>/\\>/g' | sed -e 's/ /\\ /g'
+}
 
 ### Code for this function is from https://github.com/Adamm00/IPSet_ASUS ###
 Check_Lock () {
 	if [ -f "/tmp/$YAZFI_NAME.lock" ] ; then
-		logger -st "$YAZFI_NAME" "Lock found - stopping"
+		Print_Output "true" "Lock found - stopping"
 		exit 1
 	else
 		echo "$$" > /tmp/$YAZFI_NAME.lock
+		return 0
 	fi
 }
 ############################################################################
 
-Download_Conf () {
-	echo -e "$YAZFI_NAME" "Downloading a blank configuration file to $YAZFI_CONF"
-	echo ""
+Validate_IFACE () {
+	if ! ifconfig $1 >/dev/null 2>&1 ; then
+		Print_Output "false" "$1 - Interface not enabled/configured in Web GUI (Guest Network menu)" "$ERR"
+		return 1
+	else
+		return 0
+	fi
+}
+
+Validate_IP () {
+	if expr $2 : '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$' >/dev/null ; then
+		for i in 1 2 3 4; do
+			if [ $(echo $2 | cut -d. -f$i) -gt 255 ]; then
+				Print_Output "false" "$1 - Octet $i ($(echo "$2" | cut -d. -f$i)) - is invalid, must be less than 255" "$ERR"
+				return 1
+			fi
+		done
+		
+		echo "$3"
+		
+		if [ "$3" != "DNS" ] ; then
+			if [ "$(echo $2 | grep -E '(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)')" ] ; then 
+				return 0
+			else
+				Print_Output "false" "$1 - $2 - Non-routable IP address block used" "$ERR"
+				return 1
+			fi
+		else
+			return 0
+		fi
+		
+	else
+		Print_Output "false" "$1 - $2 - is not a valid IPv4 address, valid format is 1.2.3.4" "$ERR"
+		return 1
+	fi
+}
+
+Validate_Number () {
+	if [ "$2" -eq "$2" ] 2>/dev/null; then
+		return 0
+	else
+		formatted="$(echo $1 | sed -e 's/|/ /g')"
+		Print_Output "false" "$formatted - $2 is not a number" "$ERR"
+		return 1
+	fi
+}
+
+Validate_DHCP () {
+	if ! Validate_Number $1 $2 ; then
+		return 1
+	elif ! Validate_Number $1 $3 ; then
+		return 1
+	fi
+	
+	if ([ $2 -lt 2 ] || [ $2 -gt 254 ]) || ([ $3 -lt 2 ] || [ $3 -gt 254 ]) || [ $2 -gt $3 ] ; then
+		Print_Output "false" "$1 - $2 to $3 - both numbers must be between 2 and 254, $2 must be less than $3" "$ERR"
+		return 1
+	else
+		return 0
+	fi
+}
+
+Validate_VPNClientNo () {
+	if ! Validate_Number $1 $2 ; then
+		return 1
+	fi
+	
+	if [ $2 -lt 1 ] || [ $2 -gt 5 ] ; then
+		Print_Output "false" "$1 - $2 - must be between 1 and 5" "$ERR"
+		return 1
+	else
+		return 0
+	fi
+}
+
+Validate_TrueFalse () {
+	case "$2" in
+		true|TRUE|false|FALSE)
+			return 0
+		;;
+		*)
+			Print_Output "false" "$1 - $2 - must be either true or false" "$ERR"
+			return 1
+		;;
+	esac
+}
+
+Conf_Validate () {
+	
+	CONF_VALIDATED=true
+	
+	for IFACE in $IFACELIST ; do
+		IFACETMP="${IFACE//.}"
+		IPADDRTMP=""
+		ENABLEDTMP=""
+		REDIRECTTMP=""
+		IFACE_PASS=true
+		
+		# Validate _ENABLED
+		if [ -z "$(eval echo '$'$IFACETMP"_ENABLED")" ] ; then
+			ENABLEDTMP=false
+			sed -i -e "s/"$IFACETMP"_ENABLED=/"$IFACETMP"_ENABLED=false/" $YAZFI_CONF
+			Print_Output "false" $IFACETMP"_ENABLED is blank, setting to false" "$WARN"
+		elif ! Validate_TrueFalse $IFACETMP"_ENABLED" "$(eval echo '$'$IFACETMP"_ENABLED")" ; then
+			ENABLEDTMP=false
+			IFACE_PASS=false
+		else
+			ENABLEDTMP="$(eval echo '$'$IFACETMP"_ENABLED")"
+		fi
+		
+		if [ "$ENABLEDTMP" = "true" ] ; then
+			
+			# Validate interface is enabled in GUI
+			if ! Validate_IFACE "$IFACE"; then 
+				IFACE_PASS=false
+			fi
+			
+			# Only validate interfaces enabled in config file
+			if [ "$(eval echo '$'$IFACETMP"_ENABLED")" = "true" ] ; then
+				
+				# Validate _IPADDR
+				if [ -z "$(eval echo '$'$IFACETMP"_IPADDR")" ] ; then
+					IPADDRTMP="$(echo $LAN | cut -f1-2 -d".").$(($(echo $LAN | cut -f3 -d".")+1))"
+					
+					COUNTER=1
+					until [ "$($(echo grep -o "$IPADDRTMP".0 $YAZFI_CONF) | wc -l )" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMP".1 | wc -l )" -eq 0 ] ; do
+						IPADDRTMP="$(echo $LAN | cut -f1-2 -d".").$(($(echo $LAN | cut -f3 -d".")+$COUNTER))"
+						let COUNTER+=1
+					done
+					
+					sed -i -e "s/"$IFACETMP"_IPADDR=/"$IFACETMP"_IPADDR=$IPADDRTMP.0/" $YAZFI_CONF
+					Print_Output "false" $IFACETMP"_IPADDR is blank, setting to next available subnet above primary LAN subnet" "$WARN"
+				elif ! Validate_IP $IFACETMP"_IPADDR" "$(eval echo '$'$IFACETMP"_IPADDR")" ; then
+					IFACE_PASS=false
+				else
+					# Set last octet to 0
+					if [ "$(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f4 -d".")" -ne 0 ] ; then
+						sed -i -e "s/"$IFACETMP"_IPADDR=$(echo $(eval echo '$'$IFACETMP"_IPADDR"))/"$IFACETMP"_IPADDR=$IPADDRTMP.0/" $YAZFI_CONF
+						Print_Output "false" $IFACETMP"_IPADDR setting last octet to 0" "$WARN"
+					fi
+					
+					IPADDRTMP="$(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".")"
+					
+					if [ "$($(echo grep -o "$IPADDRTMP".0 $YAZFI_CONF) | wc -l )" -gt 1 ] || [ "$(ifconfig -a | grep -o "$IPADDRTMP".1 | wc -l )" -gt 1 ]; then
+						Print_Output "false" $IFACETMP"_IPADDR ($(eval echo '$'$IFACETMP"_IPADDR")) has been used for another interface already" "$ERR"
+						IFACE_PASS=false
+					fi
+				fi
+				
+				#Validate _DHCPSTART and _DHCPEND
+				if [ -z "$(eval echo '$'$IFACETMP"_DHCPSTART")" ] ; then
+					sed -i -e "s/"$IFACETMP"_DHCPSTART=/"$IFACETMP"_DHCPSTART=2/" $YAZFI_CONF
+					Print_Output "false" $IFACETMP"_DHCPSTART is blank, setting to 2" "$WARN"
+				fi
+				
+				if [ -z "$(eval echo '$'$IFACETMP"_DHCPEND")" ] ; then
+					sed -i -e "s/"$IFACETMP"_DHCPEND=/"$IFACETMP"_DHCPEND=254/" $YAZFI_CONF
+					Print_Output "false" $IFACETMP"_DHCPEND is blank, setting to 254" "$WARN"
+				fi
+				
+				if [ ! -z "$(eval echo '$'$IFACETMP"_DHCPSTART")" ] && [ ! -z "$(eval echo '$'$IFACETMP"_DHCPEND")" ] ; then
+					if ! Validate_DHCP $IFACETMP"_DHCPSTART|and|"$IFACETMP"_DHCPEND" "$(eval echo '$'$IFACETMP"_DHCPSTART")" "$(eval echo '$'$IFACETMP"_DHCPEND")" ; then
+					IFACE_PASS=false
+					fi
+				fi
+				
+				# Validate _DNS1
+				if [ -z "$(eval echo '$'$IFACETMP"_DNS1")" ] ; then
+					if [ ! -z "$(eval echo '$'$IFACETMP"_IPADDR")" ] ; then
+						sed -i -e "s/"$IFACETMP"_DNS1=/"$IFACETMP"_DNS1=$(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".").1/" $YAZFI_CONF
+						Print_Output "false" $IFACETMP"_DNS1 is blank, setting to $(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".").1" "$WARN"
+					else
+						sed -i -e "s/"$IFACETMP"_DNS1=/"$IFACETMP"_DNS1=$IPADDRTMP.1/" $YAZFI_CONF
+						Print_Output "false" $IFACETMP"_DNS1 is blank, setting to $IPADDRTMP.1" "$WARN"
+					fi
+				elif ! Validate_IP $IFACETMP"_DNS1" "$(eval echo '$'$IFACETMP"_DNS1")" "DNS"; then
+					IFACE_PASS=false
+				fi
+				
+				# Validate _DNS2
+				if [ -z "$(eval echo '$'$IFACETMP"_DNS2")" ] ; then
+					if [ ! -z "$(eval echo '$'$IFACETMP"_IPADDR")" ] ; then
+						sed -i -e "s/"$IFACETMP"_DNS2=/"$IFACETMP"_DNS2=$(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".").1/" $YAZFI_CONF
+						Print_Output "false" $IFACETMP"_DNS2 is blank, setting to $(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".").1" "$WARN"
+					else
+						sed -i -e "s/"$IFACETMP"_DNS2=/"$IFACETMP"_DNS2=$IPADDRTMP.1/" $YAZFI_CONF
+						Print_Output "false" $IFACETMP"_DNS2 is blank, setting to $IPADDRTMP.1" "$WARN"
+					fi
+				elif ! Validate_IP $IFACETMP"_DNS2" "$(eval echo '$'$IFACETMP"_DNS2")" "DNS"; then
+					IFACE_PASS=false
+				fi
+				
+				# Validate _REDIRECTALLTOVPN
+				if [ -z "$(eval echo '$'$IFACETMP"_REDIRECTALLTOVPN")" ] ; then
+					REDIRECTTMP=false
+					sed -i -e "s/"$IFACETMP"_REDIRECTALLTOVPN=/"$IFACETMP"_REDIRECTALLTOVPN=false/" $YAZFI_CONF
+					Print_Output "false" $IFACETMP"_REDIRECTALLTOVPN is blank, setting to false" "$WARN"
+				elif ! Validate_TrueFalse $IFACETMP"_REDIRECTALLTOVPN" "$(eval echo '$'$IFACETMP"_REDIRECTALLTOVPN")" ; then
+					REDIRECTTMP=false
+					IFACE_PASS=false
+				else
+					REDIRECTTMP="$(eval echo '$'$IFACETMP"_REDIRECTALLTOVPN")"
+				fi
+				
+				# Validate _VPNCLIENTNUMBER if _REDIRECTALLTOVPN is enabled
+				if [ "$REDIRECTTMP" = "true" ] ; then
+					if [ -z "$(eval echo '$'$IFACETMP"_VPNCLIENTNUMBER")" ] ; then
+						Print_Output "false" $IFACETMP"_VPNCLIENTNUMBER is blank" "$ERR"
+						IFACE_PASS=false
+					elif ! Validate_VPNClientNo $IFACETMP"_VPNCLIENTNUMBER" "$(eval echo '$'$IFACETMP"_VPNCLIENTNUMBER")" ; then
+						IFACE_PASS=false
+					fi
+				fi
+				
+				# Print success message
+				if [ $IFACE_PASS = true ] ; then
+					Print_Output "false" "$IFACE passed validation" "$PASS"
+				fi
+			fi
+		fi
+		
+		# Print failure message
+		if [ $IFACE_PASS = false ] ; then
+			Print_Output "false" "$IFACE failed validation" "$CRIT"
+			CONF_VALIDATED=false
+		fi
+	done
+	
+	if [ $CONF_VALIDATED = true ] ; then
+		return 0
+	else
+		return 1
+	fi
+	
+}
+
+Conf_Download () {
+	Print_Output "false" "Downloading a blank configuration file to $YAZFI_CONF"
 	sleep 1
 	/usr/sbin/curl -s --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.config" -o "$YAZFI_CONF"
 	chmod 0644 $YAZFI_CONF
 	dos2unix $YAZFI_CONF
-	echo "Please edit $YAZFI_CONF with your desired settings. For a sample configuration file, see https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.sample.config"
-	echo ""
+	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings. For a sample configuration file, see https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.sample.config"
 	sleep 1
-	echo -e "Please run \n\n$0\n\nin your SSH client when you have finished editing the configuration file"
-	echo ""
+	Print_Output "false" "Please run \n\n$0\n\nin your SSH client when you have finished editing the configuration file"
 	rm -f /tmp/$YAZFI_NAME.lock
-	exit 1
 }
 
-Check_Conf () {
+Conf_Exists () {
 	if [ -f $YAZFI_CONF ] ; then
 		dos2unix $YAZFI_CONF
 		chmod 0644 $YAZFI_CONF
 		sed -i -e 's/"//g' $YAZFI_CONF
 		source $YAZFI_CONF
+		return 0
 	else
-		logger -st "$YAZFI_NAME" "Config file is missing, a blank file will be downloaded to $YAZFI_CONF"
-		echo ""
-		Download_Conf
-		exit 1
+		Print_Output "true" "Config file is missing, a blank file will be downloaded to $YAZFI_CONF"
+		Conf_Download
+		return 1
 	fi
 }
 
 Config_Networks () {
-	logger -st "$YAZFI_NAME" "YazFi $YAZFI_VERSION starting up"
-	echo ""
+	readonly DNSCONF="/jffs/configs/dnsmasq.conf.add"
+	readonly TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
 	
-	Check_Conf
+	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
+	
+	if ! Conf_Exists ; then 
+		exit 1
+	fi
+	
+	if ! Conf_Validate ; then 
+		exit 1
+	fi
 	
 	if [ -f /jffs/scripts/firewall-start ] ; then
 		if ! grep -q -x "$0"' & # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start ; then
-			logger -st "$YAZFI_NAME" "Adding $0 to firewall-start"
-			echo ""
+			Print_Output "true" "Adding $0 to firewall-start"
 			echo "" >> /jffs/scripts/firewall-start
 			echo "$0"' & # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 		fi
 	else
-		logger -st "$YAZFI_NAME" "firewall-start doesn't exist, creating"
-		echo ""
+		Print_Output "true" "firewall-start doesn't exist, creating"
 		echo "#!/bin/sh" > /jffs/scripts/firewall-start
 		echo "" >> /jffs/scripts/firewall-start
 		echo "$0"' & # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 		chmod 0755 /jffs/scripts/firewall-start
 	fi
-
+	
 	if [ -f $DNSCONF ] ; then
 		cp $DNSCONF $TMPCONF
 	else
 		touch $TMPCONF
 	fi
-
+	
+	VPN_IP_LIST_ORIG_1=""
+	VPN_IP_LIST_ORIG_2=""
+	VPN_IP_LIST_ORIG_3=""
+	VPN_IP_LIST_ORIG_4=""
+	VPN_IP_LIST_ORIG_5=""
+	VPN_IP_LIST_NEW_1=""
+	VPN_IP_LIST_NEW_2=""
+	VPN_IP_LIST_NEW_3=""
+	VPN_IP_LIST_NEW_4=""
+	VPN_IP_LIST_NEW_5=""
+	
 	COUNTER=1
 	until [ $COUNTER -gt 5 ] ; do
-		eval "VPN_IP_LIST_ORIG_"$COUNTER=$(echo $(nvram get "vpn_client"$COUNTER"_clientlist")$(nvram get "vpn_client"$COUNTER_"clientlist1")$(nvram get "vpn_client"$COUNTER"_clientlist2")$(nvram get "vpn_client"$COUNTER"_clientlist3")$(nvram get "vpn_client"$COUNTER"_clientlist4")$(nvram get "vpn_client"$COUNTER"_clientlist5") | sed -e 's/</\\</g' | sed -e 's/>/\\>/g' | sed -e 's/ /\\ /g')
-		eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_ORIG_"$COUNTER) | sed -e 's/</\\</g' | sed -e 's/>/\\>/g' | sed -e 's/ /\\ /g')
+		eval "VPN_IP_LIST_ORIG_"$COUNTER=$(echo $(nvram get "vpn_client"$COUNTER"_clientlist")$(nvram get "vpn_client"$COUNTER_"clientlist1")$(nvram get "vpn_client"$COUNTER"_clientlist2")$(nvram get "vpn_client"$COUNTER"_clientlist3")$(nvram get "vpn_client"$COUNTER"_clientlist4")$(nvram get "vpn_client"$COUNTER"_clientlist5") | Escape_Sed)
+		eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_ORIG_"$COUNTER) | Escape_Sed)
 		let COUNTER+=1
 	done
-
+	
 	for IFACE in $IFACELIST ; do
 		IFACETMP="${IFACE//.}"
 		IPADDR=$(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".")
-		DNS1TMP=$(eval echo '$'$IFACETMP"_DNS1")
-		DNS2TMP=$(eval echo '$'$IFACETMP"_DNS2")
 		BEGIN="### Start of script-generated configuration for interface $IFACE ###"
 		END="### End of script-generated configuration for interface $IFACE ###"
 		SSID="$(nvram get $IFACE"_ssid")"
-		
-		if [ -z $DNS1TMP ] ; then
-			DNS1TMP=$IPADDR.1
-		fi
-		
-		if [ -z $DNS2TMP ] ; then
-			DNS2TMP=$IPADDR.1
-		fi
 		
 		if [ "$(eval echo '$'$IFACETMP"_ENABLED")" = "true" ] ; then
 			ifconfig $IFACE $IPADDR.1 netmask 255.255.255.0 # Assign the .1 address to the interface
@@ -151,12 +398,11 @@ Config_Networks () {
 				VPN_SSID_NVRAM="<$SSID>$IPADDR.0/24>0.0.0.0>VPN"
 				VPN_SSID_NVRAM_SAFE=$(echo "<$SSID>$IPADDR.0/24>0.0.0.0>VPN" | sed -e 's/\//\\\//g' | sed -e 's/\./\\./g' | sed -e 's/ /\\ /g')
 				
-				logger -st "$YAZFI_NAME" "$IFACE (SSID: $SSID) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
-				echo ""
+				Print_Output "true" "$IFACE (SSID: $SSID) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
 				
 				# Check if guest network has already been added to policy routing for VPN client. If not, prepend to list.
 				if [ ! "$(echo $(eval echo '$'"VPN_IP_LIST_ORIG_"$VPNCLIENTNO) | grep "$VPN_SSID_NVRAM")" ] ; then
-					eval "VPN_IP_LIST_NEW_"$VPNCLIENTNO=$(echo $VPN_SSID_NVRAM$(eval echo '$'"VPN_IP_LIST_NEW_"$VPNCLIENTNO) | sed -e 's/</\\</g' | sed -e 's/>/\\>/g' | sed -e 's/ /\\ /g')
+					eval "VPN_IP_LIST_NEW_"$VPNCLIENTNO=$(echo $VPN_SSID_NVRAM$(eval echo '$'"VPN_IP_LIST_NEW_"$VPNCLIENTNO) | Escape_Sed)
 				fi
 				
 				# Remove SSID from any other VPN clients (i.e. config has changed from client 2 to client 1)
@@ -166,7 +412,7 @@ Config_Networks () {
 						let COUNTER+=1
 						continue
 					fi
-					eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER) | sed -e "s/$VPN_SSID_NVRAM_SAFE//g" | sed -e 's/</\\</g' | sed -e 's/>/\\>/g'  | sed -e 's/ /\\ /g')
+					eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER) | sed -e "s/$VPN_SSID_NVRAM_SAFE//g" | Escape_Sed)
 					let COUNTER+=1
 				done
 				
@@ -176,7 +422,7 @@ Config_Networks () {
 				iptables -t nat -I POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE
 				
 			else
-				logger -st "$YAZFI_NAME" "$IFACE (SSID: $SSID) - sending all interface internet traffic over $(nvram get wan0_ifname)"
+				Print_Output "true" "$IFACE (SSID: $SSID) - sending all interface internet traffic over $(nvram get wan0_ifname)"
 				
 				if [ "$(eval echo '$'$IFACETMP"_ADVANCEDVPN")" = "true" ] ; then
 					COUNTER=1
@@ -192,7 +438,7 @@ Config_Networks () {
 				fi
 			fi
 			
-			CONFSTRING="interface=$IFACE||||dhcp-range=$IFACE,$IPADDR.$(eval echo '$'$IFACETMP"_DHCPSTART"),$IPADDR.$(eval echo '$'$IFACETMP"_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$IFACE,3,$IPADDR.1||||dhcp-option=$IFACE,6,$DNS1TMP,$DNS2TMP||||dhcp-option=$IFACE,252,\"\\\n\""
+			CONFSTRING="interface=$IFACE||||dhcp-range=$IFACE,$IPADDR.$(eval echo '$'$IFACETMP"_DHCPSTART"),$IPADDR.$(eval echo '$'$IFACETMP"_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$IFACE,3,$IPADDR.1||||dhcp-option=$IFACE,6,$(eval echo '$'$IFACETMP"_DNS1"),$(eval echo '$'$IFACETMP"_DNS2")"
 			
 			# Add dnsmasq entries for this interface:
 			if grep -q "### Start of script-generated configuration for interface $IFACE ###" $TMPCONF; then
@@ -208,15 +454,15 @@ Config_Networks () {
 			fi
 		fi
 		
-		sleep 2
+		sleep 1
 		
 	done
-
+	
 	COUNTER=1
 	until [ $COUNTER -gt 5 ] ; do
 		if [ "$(eval echo '$'"VPN_IP_LIST_ORIG_"$COUNTER)" != "$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)" ] ; then
-			logger -st "$YAZFI_NAME" "VPNCLIENT$COUNTER clientlist has changed, restarting"
-			echo ""
+			Print_Output "true" "VPNCLIENT$COUNTER clientlist has changed, restarting"
+			
 			if [ $(uname -m) = "aarch64" ] ; then 
 				fullstring="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
 				nvram set "vpn_client"$COUNTER"_clientlist"="${fullstring:0:255}"
@@ -229,26 +475,24 @@ Config_Networks () {
 				nvram set "vpn_client"$COUNTER"_clientlist"="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
 			fi
 			nvram commit
-			service restart_vpnclient$COUNTER &>/dev/null
+			service restart_vpnclient$COUNTER >/dev/null 2>&1
 		fi
 		let COUNTER+=1
 	done
-
+	
 	sed -i -e 's/||||/\n/g' $TMPCONF
-
-	if ! diff -q $DNSCONF $TMPCONF &>/dev/null; then
+	
+	if ! diff -q $DNSCONF $TMPCONF >/dev/null 2>&1; then
 		cp $TMPCONF $DNSCONF
-		service restart_dnsmasq &>/dev/null
-		logger -st "$YAZFI_NAME" "DHCP configuration updated"
-		echo ""
+		service restart_dnsmasq >/dev/null 2>&1
+		Print_Output "true" "DHCP configuration updated"
 	fi
-
+	
 	rm -f $TMPCONF
-
+	
 	rm -f /tmp/$YAZFI_NAME.lock
 	
-	logger -st "$YAZFI_NAME" "YazFi $YAZFI_VERSION completed successfully"
-	echo""
+	Print_Output "true" "YazFi $YAZFI_VERSION completed successfully"
 }
 
 if [ -z "$1" ]; then
@@ -259,10 +503,9 @@ fi
 case "$1" in
 	install) 
 		Check_Lock
-		logger -st "$YAZFI_NAME" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
-		echo ""
+		Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
 		sleep 1
-		Download_Conf
+		Conf_Download
 	;;
 	*)
 		echo "Command Not Recognized, Please Try Again"
