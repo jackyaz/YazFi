@@ -2,13 +2,13 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.2.1                        ######
+######                          v1.2.2                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.2.1"
+readonly YAZFI_VERSION="v1.2.2"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3"
 
@@ -482,16 +482,18 @@ Config_Networks () {
 				let COUNTER+=1
 			done
 			
-			COUNTER=1
-			until [ $COUNTER -gt 5 ] ; do
-				ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$COUNTER src $IPADDR.1 2>/dev/null
-				let COUNTER+=1
-			done
-			
-			RULES=$(echo $(iptables -t nat -nvL POSTROUTING --line-number | grep "$IPADDR.0/24" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
-			for RULENO in $RULES ; do
-				iptables -t nat -D POSTROUTING $RULENO 2>/dev/null
-			done
+			if [ ! -z "$IPADDR" ] ; then
+				COUNTER=1
+				until [ $COUNTER -gt 5 ] ; do
+					ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$COUNTER src $IPADDR.1 2>/dev/null
+					let COUNTER+=1
+				done
+				
+				RULES=$(echo $(iptables -t nat -nvL POSTROUTING --line-number | grep "$IPADDR.0/24" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+				for RULENO in $RULES ; do
+					iptables -t nat -D POSTROUTING $RULENO 2>/dev/null
+				done
+			fi
 		fi
 		
 		sleep 1
