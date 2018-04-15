@@ -28,7 +28,7 @@ For ease of reference, a sample configuration file is available here: https://ra
 
 ### I haven't used scripts before on AsusWRT-Merlin, what do I do?
 
-If this is the first time you are using scripts, don't panic! In your router's WebUI, go to the Administration area of the left menu, and then the System tab. Set Enable JFFS custom scripts and configs to Yes. Further reading about scripts is available here:https://github.com/RMerl/asuswrt-merlin/wiki/User-scripts
+If this is the first time you are using scripts, don't panic! In your router's WebUI, go to the Administration area of the left menu, and then the System tab. Set Enable JFFS custom scripts and configs to Yes. Further reading about scripts is available here: https://github.com/RMerl/asuswrt-merlin/wiki/User-scripts
 
 ![WebUI enable scripts](https://puu.sh/A3wnG/00a43283ed.png)
 
@@ -49,3 +49,8 @@ Please post about any issues and problems here: https://www.snbforums.com/thread
 The script overrides the "Access Intranet" WebUI setting (for now, see "Upcoming Features" above). If you want guests to be able to access Intranet resources, do not include the network in YazFi.
 
 ![Access Intranet settings](https://puu.sh/zYWp9/a5541ed706.png)
+
+### Donations
+
+Love the script and want to support future development? Any and all donations gratefully received!
+[PayPal donation](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=JFQLSCWJJUGZ6)
