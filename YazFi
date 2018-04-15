@@ -2,13 +2,13 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.2.0                        ######
+######                          v1.2.1                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.2.0"
+readonly YAZFI_VERSION="v1.2.1"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3"
 
@@ -178,13 +178,14 @@ Conf_Validate () {
 				elif ! Validate_IP $IFACETMP"_IPADDR" "$(eval echo '$'$IFACETMP"_IPADDR")" ; then
 					IFACE_PASS=false
 				else
+					
+					IPADDRTMP="$(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".")"
+					
 					# Set last octet to 0
 					if [ "$(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f4 -d".")" -ne 0 ] ; then
 						sed -i -e "s/"$IFACETMP"_IPADDR=$(echo $(eval echo '$'$IFACETMP"_IPADDR"))/"$IFACETMP"_IPADDR=$IPADDRTMP.0/" $YAZFI_CONF
 						Print_Output "false" $IFACETMP"_IPADDR setting last octet to 0" "$WARN"
 					fi
-					
-					IPADDRTMP="$(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".")"
 					
 					if [ "$($(echo grep -o "$IPADDRTMP".0 $YAZFI_CONF) | wc -l )" -gt 1 ] || [ "$(ifconfig -a | grep -o "$IPADDRTMP".1 | wc -l )" -gt 1 ]; then
 						Print_Output "false" $IFACETMP"_IPADDR ($(eval echo '$'$IFACETMP"_IPADDR")) has been used for another interface already" "$ERR"
