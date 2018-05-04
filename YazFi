@@ -2,15 +2,15 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.2.2                        ######
+######                          v1.2.3                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.2.2"
+readonly YAZFI_VERSION="v1.2.3"
 readonly LAN="$(nvram get lan_ipaddr)"
-readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3"
+readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
 
 CRIT="\e[41m"
 ERR="\e[31m"
@@ -400,18 +400,38 @@ Config_Networks () {
 					done
 				fi
 				
-				### Start of IP firewall rules ###			
+				### Start of IP firewall rules ###
 				iptables $ACTION FORWARD -i $IFACE -j ACCEPT 2>/dev/null
 				
 				iptables $ACTION FORWARD -i $IFACE -d $LAN/24 -m state --state NEW -j REJECT 2>/dev/null
 				
+				for IFACE_GUEST in $IFACELIST ; do
+					IFACETMP_GUEST="${IFACE_GUEST//.}"
+					if [ "$(eval echo '$'$IFACETMP_GUEST"_ENABLED")" = "true" ] ; then
+						iptables $ACTION FORWARD -i $IFACE -d "$(echo $(eval echo '$'$IFACETMP_GUEST"_IPADDR") | cut -f1-3 -d".").0"/24 -m state --state NEW -j REJECT 2>/dev/null
+					fi
+				done
+				
 				iptables $ACTION INPUT -i $IFACE -m state --state NEW -j REJECT 2>/dev/null
 				
 				iptables $ACTION INPUT -i $IFACE -p udp -m multiport --dports 53,67,68,123 -j ACCEPT 2>/dev/null
-				### End of IP firewall rules ###		
+				### End of IP firewall rules ###
+				
+				# COUNTER=1
+				# until [ $COUNTER -gt 5 ] ; do
+					# if ifconfig "tun1$COUNTER" >/dev/null 2>&1 ; then
+						# ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$COUNTER src $IPADDR.1 2>/dev/null
+						# ip route add $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$COUNTER src $IPADDR.1 2>/dev/null
+						# iptables -t nat -D POSTROUTING -s $IPADDR.0/24 -o tun1$COUNTER -j MASQUERADE 2>/dev/null
+						# iptables -t nat -I POSTROUTING -s $IPADDR.0/24 -o tun1$COUNTER -j MASQUERADE 2>/dev/null
+					# fi
+					
+					# let COUNTER+=1
+				# done
+				
 			done
 			
-			if [ "$(eval echo '$'$IFACETMP"_REDIRECTALLTOVPN")" = "true" ] || [ "$(eval echo '$'$IFACETMP"_ADVANCEDVPN")" = "true" ] ; then
+			if [ "$(eval echo '$'$IFACETMP"_REDIRECTALLTOVPN")" = "true" ] ; then
 				
 				Print_Output "true" "$IFACE (SSID: $SSID) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
 				
@@ -437,9 +457,8 @@ Config_Networks () {
 				iptables -t nat -I POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE
 				
 			else
-				Print_Output "true" "$IFACE (SSID: $SSID) - sending all interface internet traffic over $(nvram get wan0_ifname)"
-				
-				if [ "$(eval echo '$'$IFACETMP"_ADVANCEDVPN")" != "true" ] ; then
+				Print_Output "true" "$IFACE (SSID: $SSID) - sending all interface internet traffic over WAN interface"
+					
 					COUNTER=1
 					until [ $COUNTER -gt 5 ] ; do
 						ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$COUNTER src $IPADDR.1 2>/dev/null
@@ -457,7 +476,6 @@ Config_Networks () {
 						eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER) | sed -e "s/$VPN_IFACE_NVRAM_SAFE//g" | Escape_Sed)
 						let COUNTER+=1
 					done
-				fi
 			fi
 			
 			CONFSTRING="interface=$IFACE||||dhcp-range=$IFACE,$IPADDR.$(eval echo '$'$IFACETMP"_DHCPSTART"),$IPADDR.$(eval echo '$'$IFACETMP"_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$IFACE,3,$IPADDR.1||||dhcp-option=$IFACE,6,$(eval echo '$'$IFACETMP"_DNS1"),$(eval echo '$'$IFACETMP"_DNS2")"
@@ -468,7 +486,6 @@ Config_Networks () {
 			else
 				echo -e "\n\n$BEGIN\n$CONFSTRING\n$END" >> $TMPCONF
 			fi
-			
 		else
 			# Remove dnsmasq entries for this interface:
 			if grep -q "### Start of script-generated configuration for interface $IFACE ###" $TMPCONF; then
@@ -529,6 +546,8 @@ Config_Networks () {
 		service restart_dnsmasq >/dev/null 2>&1
 		Print_Output "true" "DHCP configuration updated"
 	fi
+	
+	ip route flush cache
 	
 	rm -f $TMPCONF
 	
