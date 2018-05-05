@@ -1,5 +1,5 @@
 # YazFi - enhanced AsusWRT-Merlin Guest WiFi Networks
-## v1.2.2
+## v1.2.3
 ## About
 
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
@@ -11,6 +11,7 @@ Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not l
 
 All Asus models that are supported by Merlin, and have the Guest Network feature should be supported by this script. That being said, I will maintain a list of confirmed supported models as per user reports.
 * RT-AC56U
+* RT-AC68U
 * RT-AC86U
 * RT-AC87U (2.4GHz guests only)
 
@@ -34,7 +35,7 @@ If this is the first time you are using scripts, don't panic! In your router's W
 
 ## Updating
 
-Using your preferred SSH Client, copy and paste the following command, then press Enter:
+Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:
 
 ```
 /usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi" -o "/jffs/scripts/YazFi" && chmod 0755 /jffs/scripts/YazFi && /jffs/scripts/YazFi
