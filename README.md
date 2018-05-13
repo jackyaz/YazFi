@@ -1,5 +1,5 @@
 # YazFi - enhanced AsusWRT-Merlin Guest WiFi Networks
-## v1.2.3
+## v1.2.4
 ## About
 
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
