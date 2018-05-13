@@ -2,13 +2,13 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.2.11                        ######
+######                          v1.2.12                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.2.11"
+readonly YAZFI_VERSION="v1.2.12"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/testing/YazFi"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
@@ -417,7 +417,7 @@ Config_Networks () {
 				
 				if [ $ACTION = "-D" ] ; then
 					while ebtables -t broute -D BROUTING -p IPv4 -i $IFACE --ip-dst $LAN/24 --ip-proto tcp -j DROP 2>/dev/null ; do
-					: #do nothing
+						: #do nothing
 					done
 				fi
 				
@@ -432,12 +432,6 @@ Config_Networks () {
 						iptables $ACTION FORWARD -i $IFACE -d "$(echo $(eval echo '$'$IFACETMP_GUEST"_IPADDR") | cut -f1-3 -d".").0"/24 -m state --state NEW -j REJECT 2>/dev/null
 					fi
 				done
-				
-				if [ "$(eval echo '$'$IFACETMP"_REDIRECTALLTOVPN")" != "true" ] ;  then
-					if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
-						iptables $ACTION FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null
-					fi
-				fi
 				
 				iptables $ACTION INPUT -i $IFACE -m state --state NEW -j REJECT 2>/dev/null
 				
@@ -483,26 +477,34 @@ Config_Networks () {
 				iptables -t nat -D POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE 2>/dev/null
 				iptables -t nat -I POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE
 				
+				while iptables -D FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null ; do
+					: #do nothing
+				done
 			else
 				Print_Output "true" "$IFACE (SSID: $SSID) - sending all interface internet traffic over WAN interface"
 					
-					COUNTER=1
-					until [ $COUNTER -gt 5 ] ; do
-						ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$COUNTER src $IPADDR.1 2>/dev/null
-						let COUNTER+=1
-					done
-					
-					RULES=$(echo $(iptables -t nat -nvL POSTROUTING --line-number | grep "$IPADDR.0/24" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
-					for RULENO in $RULES ; do
-						iptables -t nat -D POSTROUTING $RULENO 2>/dev/null
-					done
-					
-					# Remove guest interface from all policy routing
-					COUNTER=1
-					until [ $COUNTER -gt 5 ] ; do
-						eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER) | sed -e "s/$VPN_IFACE_NVRAM_SAFE//g" | Escape_Sed)
-						let COUNTER+=1
-					done
+				if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
+					iptables -D FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null
+					iptables -I FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null
+				fi
+				
+				COUNTER=1
+				until [ $COUNTER -gt 5 ] ; do
+					ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$COUNTER src $IPADDR.1 2>/dev/null
+					let COUNTER+=1
+				done
+				
+				RULES=$(echo $(iptables -t nat -nvL POSTROUTING --line-number | grep "$IPADDR.0/24" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+				for RULENO in $RULES ; do
+					iptables -t nat -D POSTROUTING $RULENO 2>/dev/null
+				done
+				
+				# Remove guest interface from all policy routing
+				COUNTER=1
+				until [ $COUNTER -gt 5 ] ; do
+					eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER) | sed -e "s/$VPN_IFACE_NVRAM_SAFE//g" | Escape_Sed)
+					let COUNTER+=1
+				done
 			fi
 			
 			CONFSTRING="interface=$IFACE||||dhcp-range=$IFACE,$IPADDR.$(eval echo '$'$IFACETMP"_DHCPSTART"),$IPADDR.$(eval echo '$'$IFACETMP"_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$IFACE,3,$IPADDR.1||||dhcp-option=$IFACE,6,$(eval echo '$'$IFACETMP"_DNS1"),$(eval echo '$'$IFACETMP"_DNS2")"
