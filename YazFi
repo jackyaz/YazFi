@@ -2,13 +2,13 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.2.8                        ######
+######                          v1.2.9                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.2.8"
+readonly YAZFI_VERSION="v1.2.9"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/testing/YazFi"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
@@ -394,8 +394,10 @@ Config_Networks () {
 		
 		if [ "$(echo "$IFACE" | grep "wl0")" ] ; then
 			VPN_NVRAM="2.4GHz Guest $(echo $IFACE | cut -f2 -d".")"
+		elif [ "$(echo "$IFACE" | grep "wl1")" ] ; then
+			VPN_NVRAM="5GHz1 Guest $(echo $IFACE | cut -f2 -d".")"
 		else
-			VPN_NVRAM="2.4GHz Guest $(echo $IFACE | cut -f2 -d".")"
+			VPN_NVRAM="5GHz2 Guest $(echo $IFACE | cut -f2 -d".")"
 		fi
 		
 		VPN_IFACE_NVRAM="<$VPN_NVRAM>$IPADDR.0/24>0.0.0.0>VPN"
@@ -431,8 +433,10 @@ Config_Networks () {
 					fi
 				done
 				
-				if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
-					iptables $ACTION FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null
+				if [ "$(eval echo '$'$IFACETMP"_REDIRECTALLTOVPN")" != "true" ] ;  then
+					if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
+						iptables $ACTION FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null
+					fi
 				fi
 				
 				iptables $ACTION INPUT -i $IFACE -m state --state NEW -j REJECT 2>/dev/null
