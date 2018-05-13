@@ -2,13 +2,14 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.2.3                        ######
+######                          v1.2.4                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.2.3"
+readonly YAZFI_VERSION="v1.2.4"
+readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
 
@@ -33,16 +34,28 @@ Escape_Sed () {
 	sed -e 's/</\\</g' | sed -e 's/>/\\>/g' | sed -e 's/ /\\ /g'
 }
 
-### Code for this function is from https://github.com/Adamm00/IPSet_ASUS ###
+### Code for these functions from https://github.com/Adamm00/IPSet_ASUS credit to @Adamm ###
 Check_Lock () {
 	if [ -f "/tmp/$YAZFI_NAME.lock" ] ; then
-		Print_Output "true" "Lock found - stopping"
+		Print_Output "true" "Lock found - stopping" "$ERR"
 		exit 1
 	else
 		echo "$$" > /tmp/$YAZFI_NAME.lock
 		return 0
 	fi
 }
+
+Update_Version () {
+	localver=grep "YAZFI_VERSION=" /jffs/scripts/YazFi | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})'
+	/usr/sbin/curl -fsL --retry 3 "" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; exit 1; }
+	serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+	if [ "$localver" != "$serverver" ] ; then
+		Print_Output "true" "New version of $YAZFI_NAME available - updating to $remotever" "$PASS"
+		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" -o "$0" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
+		service restart_firewall
+	fi
+}
+
 ############################################################################
 
 Validate_IFACE () {
@@ -289,10 +302,10 @@ Conf_Validate () {
 Conf_Download () {
 	Print_Output "false" "Downloading a blank configuration file to $YAZFI_CONF"
 	sleep 1
-	/usr/sbin/curl -s --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.config" -o "$YAZFI_CONF"
+	/usr/sbin/curl -s --retry 3 "$YAZFI_REPO.config" -o "$YAZFI_CONF"
 	chmod 0644 $YAZFI_CONF
 	dos2unix $YAZFI_CONF
-	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings. For a sample configuration file, see https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.sample.config"
+	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings. For a sample configuration file, see $YAZFI_REPO.sample.config"
 	sleep 1
 	Print_Output "false" "Please run \n\n$0\n\nin your SSH client when you have finished editing the configuration file"
 	rm -f /tmp/$YAZFI_NAME.lock
@@ -325,6 +338,8 @@ Config_Networks () {
 	if ! Conf_Validate ; then 
 		exit 1
 	fi
+	
+	source $YAZFI_CONF
 	
 	if [ -f /jffs/scripts/firewall-start ] ; then
 		if ! grep -q -x "$0"' & # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start ; then
@@ -411,6 +426,10 @@ Config_Networks () {
 						iptables $ACTION FORWARD -i $IFACE -d "$(echo $(eval echo '$'$IFACETMP_GUEST"_IPADDR") | cut -f1-3 -d".").0"/24 -m state --state NEW -j REJECT 2>/dev/null
 					fi
 				done
+				
+				if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
+					iptables $ACTION FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null
+				fi
 				
 				iptables $ACTION INPUT -i $IFACE -m state --state NEW -j REJECT 2>/dev/null
 				
@@ -557,19 +576,25 @@ Config_Networks () {
 }
 
 if [ -z "$1" ]; then
+	Check_Lock
 	Config_Networks
 	exit 0
 fi
 
 case "$1" in
-	install) 
+	install)
 		Check_Lock
 		Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
 		sleep 1
 		Conf_Download
 	;;
+	update)
+		Check_Lock
+		Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
+		Update_Version
+	;;
 	*)
-		echo "Command Not Recognized, Please Try Again"
+		echo "Command not recognised, please try again"
 		exit 1
 	;;
 esac
