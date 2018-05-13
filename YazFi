@@ -2,13 +2,13 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.2.7                        ######
+######                          v1.3.0                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.2.7"
+readonly YAZFI_VERSION="v1.3.0"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
@@ -52,8 +52,8 @@ Update_Version () {
 	if [ "$localver" != "$serverver" ] ; then
 		Print_Output "true" "New version of $YAZFI_NAME available - updating to $serverver" "$PASS"
 		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" -o "$0" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
-		service restart_firewall >/dev/null 2>&1
 		rm -f /tmp/$YAZFI_NAME.lock
+		service restart_firewall >/dev/null 2>&1
 	else
 		Print_Output "true" "No new version - latest is $localver" "$WARN"
 		rm -f /tmp/$YAZFI_NAME.lock
@@ -394,8 +394,10 @@ Config_Networks () {
 		
 		if [ "$(echo "$IFACE" | grep "wl0")" ] ; then
 			VPN_NVRAM="2.4GHz Guest $(echo $IFACE | cut -f2 -d".")"
+		elif [ "$(echo "$IFACE" | grep "wl1")" ] ; then
+			VPN_NVRAM="5GHz1 Guest $(echo $IFACE | cut -f2 -d".")"
 		else
-			VPN_NVRAM="2.4GHz Guest $(echo $IFACE | cut -f2 -d".")"
+			VPN_NVRAM="5GHz2 Guest $(echo $IFACE | cut -f2 -d".")"
 		fi
 		
 		VPN_IFACE_NVRAM="<$VPN_NVRAM>$IPADDR.0/24>0.0.0.0>VPN"
@@ -415,7 +417,7 @@ Config_Networks () {
 				
 				if [ $ACTION = "-D" ] ; then
 					while ebtables -t broute -D BROUTING -p IPv4 -i $IFACE --ip-dst $LAN/24 --ip-proto tcp -j DROP 2>/dev/null ; do
-					: #do nothing
+						: #do nothing
 					done
 				fi
 				
@@ -430,10 +432,6 @@ Config_Networks () {
 						iptables $ACTION FORWARD -i $IFACE -d "$(echo $(eval echo '$'$IFACETMP_GUEST"_IPADDR") | cut -f1-3 -d".").0"/24 -m state --state NEW -j REJECT 2>/dev/null
 					fi
 				done
-				
-				if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
-					iptables $ACTION FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null
-				fi
 				
 				iptables $ACTION INPUT -i $IFACE -m state --state NEW -j REJECT 2>/dev/null
 				
@@ -479,26 +477,34 @@ Config_Networks () {
 				iptables -t nat -D POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE 2>/dev/null
 				iptables -t nat -I POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE
 				
+				while iptables -D FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null ; do
+					: #do nothing
+				done
 			else
 				Print_Output "true" "$IFACE (SSID: $SSID) - sending all interface internet traffic over WAN interface"
 					
-					COUNTER=1
-					until [ $COUNTER -gt 5 ] ; do
-						ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$COUNTER src $IPADDR.1 2>/dev/null
-						let COUNTER+=1
-					done
-					
-					RULES=$(echo $(iptables -t nat -nvL POSTROUTING --line-number | grep "$IPADDR.0/24" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
-					for RULENO in $RULES ; do
-						iptables -t nat -D POSTROUTING $RULENO 2>/dev/null
-					done
-					
-					# Remove guest interface from all policy routing
-					COUNTER=1
-					until [ $COUNTER -gt 5 ] ; do
-						eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER) | sed -e "s/$VPN_IFACE_NVRAM_SAFE//g" | Escape_Sed)
-						let COUNTER+=1
-					done
+				if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
+					iptables -D FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null
+					iptables -I FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null
+				fi
+				
+				COUNTER=1
+				until [ $COUNTER -gt 5 ] ; do
+					ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$COUNTER src $IPADDR.1 2>/dev/null
+					let COUNTER+=1
+				done
+				
+				RULES=$(echo $(iptables -t nat -nvL POSTROUTING --line-number | grep "$IPADDR.0/24" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+				for RULENO in $RULES ; do
+					iptables -t nat -D POSTROUTING $RULENO 2>/dev/null
+				done
+				
+				# Remove guest interface from all policy routing
+				COUNTER=1
+				until [ $COUNTER -gt 5 ] ; do
+					eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER) | sed -e "s/$VPN_IFACE_NVRAM_SAFE//g" | Escape_Sed)
+					let COUNTER+=1
+				done
 			fi
 			
 			CONFSTRING="interface=$IFACE||||dhcp-range=$IFACE,$IPADDR.$(eval echo '$'$IFACETMP"_DHCPSTART"),$IPADDR.$(eval echo '$'$IFACETMP"_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$IFACE,3,$IPADDR.1||||dhcp-option=$IFACE,6,$(eval echo '$'$IFACETMP"_DNS1"),$(eval echo '$'$IFACETMP"_DNS2")"
@@ -591,11 +597,14 @@ case "$1" in
 		Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
 		sleep 1
 		Conf_Download
+		exit 0
 	;;
 	update)
 		Check_Lock
 		Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
+		sleep 1
 		Update_Version
+		exit 0
 	;;
 	*)
 		echo "Command not recognised, please try again"
