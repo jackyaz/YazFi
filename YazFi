@@ -2,14 +2,14 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.2.12                        ######
+######                          v1.3.0                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.2.12"
-readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/testing/YazFi"
+readonly YAZFI_VERSION="v1.3.0"
+readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
 
@@ -597,6 +597,7 @@ case "$1" in
 		Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
 		sleep 1
 		Conf_Download
+		exit 0
 	;;
 	update)
 		Check_Lock
