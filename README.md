@@ -14,6 +14,7 @@ All Asus models that are supported by Merlin, and have the Guest Network feature
 * RT-AC68U
 * RT-AC86U
 * RT-AC87U (2.4GHz guests only)
+* RT-AC3200
 * RT-AC5300
 
 ## Installation
