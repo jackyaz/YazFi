@@ -2,13 +2,13 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.2.5                        ######
+######                          v1.2.6                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.2.5"
+readonly YAZFI_VERSION="v1.2.6"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
@@ -46,13 +46,14 @@ Check_Lock () {
 }
 
 Update_Version () {
-	localver=grep "YAZFI_VERSION=" /jffs/scripts/YazFi | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})'
+	localver=$(grep "YAZFI_VERSION=" /jffs/scripts/YazFi | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 	/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; rm -f /tmp/$YAZFI_NAME.lock ; exit 1; }
 	serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 	if [ "$localver" != "$serverver" ] ; then
 		Print_Output "true" "New version of $YAZFI_NAME available - updating to $serverver" "$PASS"
 		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" -o "$0" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
-		service restart_firewall
+		service restart_firewall >/dev/null 2>&1
+		rm -f /tmp/$YAZFI_NAME.lock
 	fi
 }
 
