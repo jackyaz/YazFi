@@ -2,13 +2,13 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.2.10                        ######
+######                          v1.2.11                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.2.10"
+readonly YAZFI_VERSION="v1.2.11"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/testing/YazFi"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
@@ -52,8 +52,8 @@ Update_Version () {
 	if [ "$localver" != "$serverver" ] ; then
 		Print_Output "true" "New version of $YAZFI_NAME available - updating to $serverver" "$PASS"
 		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" -o "$0" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
-		service restart_firewall >/dev/null 2>&1
 		rm -f /tmp/$YAZFI_NAME.lock
+		service restart_firewall >/dev/null 2>&1
 	else
 		Print_Output "true" "No new version - latest is $localver" "$WARN"
 		rm -f /tmp/$YAZFI_NAME.lock
@@ -601,7 +601,7 @@ case "$1" in
 		Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
 		sleep 1
 		Update_Version
-		echo "here?"
+		exit 0
 	;;
 	*)
 		echo "Command not recognised, please try again"
