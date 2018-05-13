@@ -47,7 +47,7 @@ Check_Lock () {
 
 Update_Version () {
 	localver=grep "YAZFI_VERSION=" /jffs/scripts/YazFi | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})'
-	/usr/sbin/curl -fsL --retry 3 "" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; exit 1; }
+	/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; exit 1; }
 	serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 	if [ "$localver" != "$serverver" ] ; then
 		Print_Output "true" "New version of $YAZFI_NAME available - updating to $remotever" "$PASS"
