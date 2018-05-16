@@ -2,13 +2,13 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.3.0                        ######
+######                          v1.3.1                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.3.0"
+readonly YAZFI_VERSION="v1.3.1"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
@@ -436,6 +436,7 @@ Config_Networks () {
 				iptables $ACTION INPUT -i $IFACE -m state --state NEW -j REJECT 2>/dev/null
 				
 				iptables $ACTION INPUT -i $IFACE -p udp -m multiport --dports 53,67,68,123 -j ACCEPT 2>/dev/null
+				iptables $ACTION INPUT -i $IFACE -p tcp --dport 53 -j ACCEPT 2>/dev/null
 				### End of IP firewall rules ###
 				
 				# COUNTER=1
