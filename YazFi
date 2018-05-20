@@ -2,13 +2,13 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.3.2                        ######
+######                          v1.3.3                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.3.2"
+readonly YAZFI_VERSION="v1.3.3"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
@@ -298,6 +298,7 @@ Conf_Validate () {
 	if [ $CONF_VALIDATED = true ] ; then
 		return 0
 	else
+		rm -f /tmp/$YAZFI_NAME.lock
 		return 1
 	fi
 	
@@ -309,7 +310,7 @@ Conf_Download () {
 	/usr/sbin/curl -s --retry 3 "$YAZFI_REPO.config" -o "$1"
 	chmod 0644 $1
 	dos2unix $1
-	Print_Output "false" "Please edit $1 with your desired settings. For a sample configuration file, see $YAZFI_REPO.sample.config"
+	Print_Output "false" "Please edit $1 with your desired settings. For a sample configuration file, see $YAZFI_REPO.config.sample"
 	sleep 1
 	Print_Output "false" "Please run \n\n$0\n\nin your SSH client when you have finished editing the configuration file"
 	rm -f /tmp/$YAZFI_NAME.lock
@@ -330,8 +331,6 @@ Conf_Exists () {
 Config_Networks () {
 	readonly DNSCONF="/jffs/configs/dnsmasq.conf.add"
 	readonly TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
-	
-	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
 	
 	if ! Conf_Exists ; then
 		Conf_Download $YAZFI_CONF
@@ -587,6 +586,7 @@ Config_Networks () {
 
 if [ -z "$1" ]; then
 	Check_Lock
+	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
 	Config_Networks
 	exit 0
 fi
