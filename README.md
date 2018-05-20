@@ -27,7 +27,7 @@ Using your preferred SSH client/terminal, copy and paste the following command, 
 
 Please then follow instructions shown in the SSH client/terminal session.
 
-For ease of reference, a sample configuration file is available here: https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.sample.config
+For ease of reference, a sample configuration file is available here: https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.config.sample
 
 ### I haven't used scripts before on AsusWRT-Merlin, what do I do?
 
