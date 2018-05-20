@@ -61,6 +61,7 @@ Update_Version () {
 	if [ "$localver" != "$serverver" ] ; then
 		Print_Output "true" "New version of $YAZFI_NAME available - updating to $serverver" "$PASS"
 		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" -o "$0" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
+		chmod 0755 "$0"
 		rm -f /tmp/$YAZFI_NAME.lock
 		service restart_firewall >/dev/null 2>&1
 	else
