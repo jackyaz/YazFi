@@ -1,5 +1,5 @@
 # YazFi - enhanced AsusWRT-Merlin Guest WiFi Networks
-## v1.3.3
+## v1.3.5
 ## About
 
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
@@ -40,7 +40,7 @@ If this is the first time you are using scripts, don't panic! In your router's W
 Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:
 
 ```
-/usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi" -o "/jffs/scripts/YazFi" && chmod 0755 /jffs/scripts/YazFi && /jffs/scripts/YazFi
+/jffs/scripts/YazFi update
 ```
 
 ## Help
