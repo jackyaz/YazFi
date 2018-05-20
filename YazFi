@@ -2,13 +2,13 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.3.1                        ######
+######                          v1.3.2                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.3.1"
+readonly YAZFI_VERSION="v1.3.2"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
@@ -173,7 +173,7 @@ Conf_Validate () {
 		if [ "$ENABLEDTMP" = "true" ] ; then
 			
 			# Validate interface is enabled in GUI
-			if ! Validate_IFACE "$IFACE"; then 
+			if ! Validate_IFACE "$IFACE"; then
 				IFACE_PASS=false
 			fi
 			
@@ -304,12 +304,12 @@ Conf_Validate () {
 }
 
 Conf_Download () {
-	Print_Output "false" "Downloading a blank configuration file to $YAZFI_CONF"
+	Print_Output "false" "Downloading a blank configuration file to $1"
 	sleep 1
-	/usr/sbin/curl -s --retry 3 "$YAZFI_REPO.config" -o "$YAZFI_CONF"
-	chmod 0644 $YAZFI_CONF
-	dos2unix $YAZFI_CONF
-	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings. For a sample configuration file, see $YAZFI_REPO.sample.config"
+	/usr/sbin/curl -s --retry 3 "$YAZFI_REPO.config" -o "$1"
+	chmod 0644 $1
+	dos2unix $1
+	Print_Output "false" "Please edit $1 with your desired settings. For a sample configuration file, see $YAZFI_REPO.sample.config"
 	sleep 1
 	Print_Output "false" "Please run \n\n$0\n\nin your SSH client when you have finished editing the configuration file"
 	rm -f /tmp/$YAZFI_NAME.lock
@@ -323,8 +323,6 @@ Conf_Exists () {
 		source $YAZFI_CONF
 		return 0
 	else
-		Print_Output "true" "Config file is missing, a blank file will be downloaded to $YAZFI_CONF"
-		Conf_Download
 		return 1
 	fi
 }
@@ -335,11 +333,12 @@ Config_Networks () {
 	
 	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
 	
-	if ! Conf_Exists ; then 
+	if ! Conf_Exists ; then
+		Conf_Download $YAZFI_CONF
 		exit 1
 	fi
 	
-	if ! Conf_Validate ; then 
+	if ! Conf_Validate ; then
 		exit 1
 	fi
 	
@@ -597,7 +596,15 @@ case "$1" in
 		Check_Lock
 		Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
 		sleep 1
-		Conf_Download
+		
+		if ! Conf_Exists ; then
+			Conf_Download "$YAZFI_CONF"
+		else
+			Print_Output "false" "Existing $YAZFI_CONF found. This will be kept by $YAZFI_NAME. Downloading a blank file for comparison (e.g. new settings)"
+			Conf_Download $YAZFI_CONF".blank"
+			Config_Networks
+		fi
+		
 		exit 0
 	;;
 	update)
