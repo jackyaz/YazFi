@@ -2,13 +2,13 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.3.3                        ######
+######                          v1.3.5                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.3.3"
+readonly YAZFI_VERSION="v1.3.5"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
@@ -34,11 +34,20 @@ Escape_Sed () {
 	sed -e 's/</\\</g' | sed -e 's/>/\\>/g' | sed -e 's/ /\\ /g'
 }
 
-### Code for these functions from https://github.com/Adamm00/IPSet_ASUS credit to @Adamm ###
+### Code for these functions inspired by https://github.com/Adamm00/IPSet_ASUS - credit to @Adamm ###
 Check_Lock () {
 	if [ -f "/tmp/$YAZFI_NAME.lock" ] ; then
-		Print_Output "true" "Lock found - stopping" "$ERR"
-		exit 1
+		ageoflock=$(($(date +%s) - $(date +%s -r /tmp/$YAZFI_NAME.lock)))
+		if [ $ageoflock -gt 120 ]; then
+			Print_Output "true" "Stale lock file found (>120 seconds old) - purging lock" "$ERR"
+			kill "$(sed -n '1p' /tmp/$YAZFI_NAME.lock)" >/dev/null 2>&1
+			rm -f /tmp/$YAZFI_NAME.lock
+			echo "$$" > /tmp/$YAZFI_NAME.lock
+			return 0
+		else
+			Print_Output "true" "Lock file found (age: $ageoflock seconds) - stopping to prevent duplicate runs" "$ERR"
+			exit 1
+		fi
 	else
 		echo "$$" > /tmp/$YAZFI_NAME.lock
 		return 0
@@ -312,7 +321,7 @@ Conf_Download () {
 	dos2unix $1
 	Print_Output "false" "Please edit $1 with your desired settings. For a sample configuration file, see $YAZFI_REPO.config.sample"
 	sleep 1
-	Print_Output "false" "Please run \n\n$0\n\nin your SSH client when you have finished editing the configuration file"
+	Print_Output "false" "Please run \n\n$0\n\nin your SSH client/terminal when you have finished editing the configuration file"
 	rm -f /tmp/$YAZFI_NAME.lock
 }
 
@@ -414,9 +423,7 @@ Config_Networks () {
 				ebtables $ACTION FORWARD -o $IFACE -j DROP 2>/dev/null
 				
 				if [ $ACTION = "-D" ] ; then
-					while ebtables -t broute -D BROUTING -p IPv4 -i $IFACE --ip-dst $LAN/24 --ip-proto tcp -j DROP 2>/dev/null ; do
-						: #do nothing
-					done
+					ebtables -t broute -D BROUTING -p IPv4 -i $IFACE --ip-dst $LAN/24 --ip-proto tcp -j DROP 2>/dev/null
 				fi
 				
 				### Start of IP firewall rules ###
@@ -476,9 +483,7 @@ Config_Networks () {
 				iptables -t nat -D POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE 2>/dev/null
 				iptables -t nat -I POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE
 				
-				while iptables -D FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null ; do
-					: #do nothing
-				done
+				iptables -D FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null
 			else
 				Print_Output "true" "$IFACE (SSID: $SSID) - sending all interface internet traffic over WAN interface"
 					
