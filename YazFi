@@ -441,7 +441,7 @@ Config_Networks () {
 				
 				iptables $ACTION INPUT -i $IFACE -m state --state NEW -j REJECT 2>/dev/null
 				
-				iptables $ACTION INPUT -i $IFACE -p udp -m multiport --dports 53,67,68,123 -j ACCEPT 2>/dev/null
+				iptables $ACTION INPUT -i $IFACE -p udp -m multiport --dports 53,67,123 -j ACCEPT 2>/dev/null
 				iptables $ACTION INPUT -i $IFACE -p tcp --dport 53 -j ACCEPT 2>/dev/null
 				### End of IP firewall rules ###
 				
