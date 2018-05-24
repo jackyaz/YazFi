@@ -2,13 +2,13 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.3.5                        ######
+######                          v1.3.6                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.3.5"
+readonly YAZFI_VERSION="v1.3.6"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
@@ -391,6 +391,32 @@ Config_Networks () {
 		let COUNTER+=1
 	done
 	
+	INPT="YazFiINPUT"
+	FWRD="YazFiFORWARD"
+	LGRJT="YazFiReject"
+	CHAINS="$INPT $FWRD $LGRJT"
+	
+	FWRDSTART="$(($(iptables -nvL FORWARD --line | grep -E "ACCEPT     all.*state RELATED,ESTABLISHED" | awk '{print $1}') + 1))"
+	
+	for CHAIN in $CHAINS ; do
+		if ! iptables -n -L $CHAIN >/dev/null 2>&1 ; then
+			iptables -N $CHAIN
+			case $CHAIN in
+				$INPT)
+					iptables -I INPUT -j $CHAIN
+				;;
+				$FWRD)
+					iptables -I FORWARD $FWRDSTART -j $CHAIN
+				;;
+				$LGRJT)
+					iptables -I $LGRJT -j REJECT
+					
+					# Optional rule to log all rejected packets to syslog
+					#iptables -I $LGRJT -m state --state NEW -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
+			esac
+		fi
+	done
+	
 	for IFACE in $IFACELIST ; do
 		IFACETMP="${IFACE//.}"
 		IPADDR=$(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".")
@@ -414,8 +440,10 @@ Config_Networks () {
 		if [ "$(eval echo '$'$IFACETMP"_ENABLED")" = "true" ] ; then
 			ifconfig $IFACE $IPADDR.1 netmask 255.255.255.0 # Assign the .1 address to the interface
 			
-			# Un-bridge all frames entering the # bridge interface (br0) that are destined for the local network, for protocols IPv4 and ARP
 			for ACTION in -D -I ; do
+				
+				### Start of bridge rules ###
+				# Un-bridge all frames entering br0 for IPv4, IPv6 and ARP to be processed by iptables
 				ebtables -t broute $ACTION BROUTING -p ipv4 -i $IFACE -j DROP 2>/dev/null
 				ebtables -t broute $ACTION BROUTING -p ipv6 -i $IFACE -j DROP 2>/dev/null
 				ebtables -t broute $ACTION BROUTING -p arp -i $IFACE -j DROP 2>/dev/null
@@ -426,23 +454,25 @@ Config_Networks () {
 				if [ $ACTION = "-D" ] ; then
 					ebtables -t broute -D BROUTING -p IPv4 -i $IFACE --ip-dst $LAN/24 --ip-proto tcp -j DROP 2>/dev/null
 				fi
+				### End of bridge rules ###
 				
 				### Start of IP firewall rules ###
-				iptables $ACTION FORWARD -i $IFACE -j ACCEPT 2>/dev/null
+				iptables $ACTION $FWRD -i $IFACE -m state --state NEW -j ACCEPT 2>/dev/null
 				
-				iptables $ACTION FORWARD -i $IFACE -d $LAN/24 -m state --state NEW -j REJECT 2>/dev/null
+				iptables $ACTION $FWRD -i $IFACE -o br0 -m state --state NEW -j $LGRJT 2>/dev/null
+				iptables $ACTION $FWRD -i br0 -o $IFACE -m state --state NEW -j $LGRJT 2>/dev/null
 				
 				for IFACE_GUEST in $IFACELIST ; do
 					IFACETMP_GUEST="${IFACE_GUEST//.}"
 					if [ "$(eval echo '$'$IFACETMP_GUEST"_ENABLED")" = "true" ] ; then
-						iptables $ACTION FORWARD -i $IFACE -d "$(echo $(eval echo '$'$IFACETMP_GUEST"_IPADDR") | cut -f1-3 -d".").0"/24 -m state --state NEW -j REJECT 2>/dev/null
+						iptables $ACTION $FWRD -i $IFACE -o $IFACE_GUEST -m state --state NEW -j $LGRJT 2>/dev/null
 					fi
 				done
 				
-				iptables $ACTION INPUT -i $IFACE -m state --state NEW -j REJECT 2>/dev/null
+				iptables $ACTION $INPT -i $IFACE -m state --state NEW -j $LGRJT 2>/dev/null
 				
-				iptables $ACTION INPUT -i $IFACE -p udp -m multiport --dports 53,67,123 -j ACCEPT 2>/dev/null
-				iptables $ACTION INPUT -i $IFACE -p tcp --dport 53 -j ACCEPT 2>/dev/null
+				iptables $ACTION $INPT -i $IFACE -p udp -m multiport --dports 53,67,123 -j ACCEPT 2>/dev/null
+				iptables $ACTION $INPT -i $IFACE -p tcp --dport 53 -j ACCEPT 2>/dev/null
 				### End of IP firewall rules ###
 				
 				# COUNTER=1
@@ -481,27 +511,32 @@ Config_Networks () {
 				
 				ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$VPNCLIENTNO src $IPADDR.1 2>/dev/null
 				ip route add $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$VPNCLIENTNO src $IPADDR.1
-				iptables -t nat -D POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE 2>/dev/null
-				iptables -t nat -I POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE
 				
-				iptables -D FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null
+				for ACTION in -D -I ; do
+					iptables -t nat $ACTION POSTROUTING -s $IPADDR.0/24 -o tun1$VPNCLIENTNO -j MASQUERADE 2>/dev/null
+					iptables $ACTION $FWRD -i $IFACE -o tun1$VPNCLIENTNO -m state --state NEW -j ACCEPT 2>/dev/null
+					iptables $ACTION $FWRD -i tun1$VPNCLIENTNO -o $IFACE -m state --state NEW -j ACCEPT 2>/dev/null
+				done
 			else
 				Print_Output "true" "$IFACE (SSID: $SSID) - sending all interface internet traffic over WAN interface"
-					
-				if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
-					iptables -D FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null
-					iptables -I FORWARD -i $IFACE -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null
-				fi
 				
+				# Remove guest interface from VPN client routing table
 				COUNTER=1
 				until [ $COUNTER -gt 5 ] ; do
 					ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$COUNTER src $IPADDR.1 2>/dev/null
 					let COUNTER+=1
 				done
 				
+				# Remove guest interface VPN NAT rules
 				RULES=$(echo $(iptables -t nat -nvL POSTROUTING --line-number | grep "$IPADDR.0/24" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 				for RULENO in $RULES ; do
 					iptables -t nat -D POSTROUTING $RULENO 2>/dev/null
+				done
+				
+				# Remove guest interface rules allowing access to VPN tunnel interface
+				RULES=$(echo $(iptables -nvL $FWRD --line-number | grep "$IFACE" | grep "tun1" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+				for RULENO in $RULES ; do
+					iptables -D $FWRD $RULENO 2>/dev/null
 				done
 				
 				# Remove guest interface from all policy routing
@@ -534,15 +569,23 @@ Config_Networks () {
 			done
 			
 			if [ ! -z "$IPADDR" ] ; then
+				# Remove guest interface from VPN client routing table
 				COUNTER=1
 				until [ $COUNTER -gt 5 ] ; do
 					ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$COUNTER src $IPADDR.1 2>/dev/null
 					let COUNTER+=1
 				done
 				
+				# Remove guest interface VPN NAT rules
 				RULES=$(echo $(iptables -t nat -nvL POSTROUTING --line-number | grep "$IPADDR.0/24" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 				for RULENO in $RULES ; do
 					iptables -t nat -D POSTROUTING $RULENO 2>/dev/null
+				done
+				
+				# Remove guest interface rules allowing access to VPN tunnel interface
+				RULES=$(echo $(iptables -nvL $FWRD --line-number | grep "$IFACE" | grep "tun1" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+				for RULENO in $RULES ; do
+					iptables -D $FWRD $RULENO 2>/dev/null
 				done
 			fi
 		fi
@@ -554,7 +597,7 @@ Config_Networks () {
 	COUNTER=1
 	until [ $COUNTER -gt 5 ] ; do
 		if [ "$(eval echo '$'"VPN_IP_LIST_ORIG_"$COUNTER)" != "$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)" ] ; then
-			Print_Output "true" "VPNCLIENT$COUNTER clientlist has changed, restarting"
+			Print_Output "true" "VPN Client $COUNTER client list has changed, restarting VPN Client$COUNTER "
 			
 			if [ $(uname -m) = "aarch64" ] ; then 
 				fullstring="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
