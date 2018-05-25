@@ -2,13 +2,13 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.3.6                        ######
+######                          v1.3.7                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.3.6"
+readonly YAZFI_VERSION="v1.3.7"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
@@ -471,8 +471,30 @@ Config_Networks () {
 				
 				iptables $ACTION $INPT -i $IFACE -m state --state NEW -j $LGRJT 2>/dev/null
 				
-				iptables $ACTION $INPT -i $IFACE -p udp -m multiport --dports 53,67,123 -j ACCEPT 2>/dev/null
-				iptables $ACTION $INPT -i $IFACE -p tcp --dport 53 -j ACCEPT 2>/dev/null
+				iptables $ACTION $INPT -i $IFACE -p udp -m multiport --dports 67,123 -j ACCEPT 2>/dev/null
+				
+				if [ "$(eval echo '$'$IFACETMP"_DNS1")" = "$IPADDR.1" ] || [ "$(eval echo '$'$IFACETMP"_DNS2")" = "$IPADDR.1" ] ; then
+					if ifconfig "br0:pixelserv" | grep -q "inet addr:" >/dev/null 2>&1 ; then
+						modprobe xt_comment
+						IP_PXLSRV=$(ifconfig br0:pixelserv | grep "inet addr:" | cut -d: -f2 | awk '{print $1}')
+						iptables $ACTION $INPT -i $IFACE -d $IP_PXLSRV -p tcp -m multiport --dports 80,443 -m state --state NEW -m comment --comment "PixelServ" -j ACCEPT 2>/dev/null
+					else
+						RULES=$(echo $(iptables -nvL $INPT --line-number | grep "PixelServ" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+						for RULENO in $RULES ; do
+							iptables -D $INPT $RULENO 2>/dev/null
+						done
+					fi
+					
+					for PROTO in tcp udp ; do
+						iptables $ACTION $INPT -i $IFACE -p $PROTO --dport 53 -j ACCEPT 2>/dev/null
+					done
+				else
+					RULES=$(echo $(iptables -nvL $INPT --line-number | grep "dpt:53" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+					for RULENO in $RULES ; do
+						iptables -D $INPT $RULENO 2>/dev/null
+					done
+				fi
+				
 				### End of IP firewall rules ###
 				
 				# COUNTER=1
