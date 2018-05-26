@@ -1,11 +1,12 @@
 # YazFi - enhanced AsusWRT-Merlin Guest WiFi Networks
-## v1.3.7
+## v1.3.8
 ## About
 
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
 
 * Dedicated VPN WiFi networks
 * Separate subnets for enhanced organisation of devices
+* Allow guest networks to make use of pixelserv-tls (if installed)
 
 ## Supported Models
 

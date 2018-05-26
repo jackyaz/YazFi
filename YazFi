@@ -2,13 +2,13 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v1.3.7                        ######
+######                          v1.3.8                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v1.3.7"
+readonly YAZFI_VERSION="v1.3.8"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi"
 readonly LAN="$(nvram get lan_ipaddr)"
 readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
@@ -354,10 +354,19 @@ Config_Networks () {
 	source $YAZFI_CONF
 	
 	if [ -f /jffs/scripts/firewall-start ] ; then
-		if ! grep -q -x "$0"' & # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start ; then
-			Print_Output "true" "Adding $0 to firewall-start"
+		STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
+		
+		if [ $STARTUPLINECOUNT -gt 1 ] ; then
+			Print_Output "true" "Purging duplicate entries for $YAZFI_NAME in firewall-start"
+			sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
+		fi
+		
+		STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
+		
+		if [ $STARTUPLINECOUNT -eq 0 ] ; then
+			Print_Output "true" "Adding $YAZFI_NAME to firewall-start"
 			echo "" >> /jffs/scripts/firewall-start
-			echo "$0"' & # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
+			echo "/jffs/scripts/$YAZFI_NAME"' & # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 		fi
 	else
 		Print_Output "true" "firewall-start doesn't exist, creating"
