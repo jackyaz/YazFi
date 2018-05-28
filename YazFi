@@ -766,15 +766,14 @@ Config_Networks () {
 	Firewall_Chains create 2>/dev/null
 	
 	for IFACE in $IFACELIST ; do
-		IFACETMP="${IFACE//.}"
-		VPNCLIENTNO=$(eval echo '$'$IFACETMP"_VPNCLIENTNUMBER")
+		VPNCLIENTNO=$(eval echo '$'${IFACE//.}"_VPNCLIENTNUMBER")
 		
-		if [ "$(eval echo '$'$IFACETMP"_ENABLED")" = "true" ] ; then
+		if [ "$(eval echo '$'${IFACE//.}"_ENABLED")" = "true" ] ; then
 			Iface_Manage create $IFACE 2>/dev/null
 			
 			Firewall_Rules create $IFACE 2>/dev/null
 			
-			if [ "$(eval echo '$'$IFACETMP"_REDIRECTALLTOVPN")" = "true" ] ; then
+			if [ "$(eval echo '$'${IFACE//.}"_REDIRECTALLTOVPN")" = "true" ] ; then
 				Print_Output "true" "$IFACE (SSID: $(nvram get $IFACE"_ssid")) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
 				
 				Routing_NVRAM create $IFACE $VPNCLIENTNO 2>/dev/null
