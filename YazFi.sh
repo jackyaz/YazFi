@@ -6,8 +6,6 @@
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
-# shellcheck disable=SC2034
-
 ### Start of script variables ###
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
