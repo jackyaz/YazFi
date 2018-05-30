@@ -532,25 +532,25 @@ Firewall_Rules () {
 		iptables "$ACTION" "$INPT" -i "$IFACE"-m state --state NEW -j "$LGRJT"
 		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT
 		
-		if [ "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_DNS1")" = "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_IPADDR" | cut -f1-3 -d".").1" ] || [ "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_DNS2")" = "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_IPADDR" | cut -f1-3 -d".").1" ] ; then
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ] ; then
 			if ifconfig "br0:pixelserv" | grep -q "inet addr:" >/dev/null 2>&1 ; then
 				modprobe xt_comment
 				IP_PXLSRV=$(ifconfig br0:pixelserv | grep "inet addr:" | cut -d: -f2 | awk '{print $1}')
-				iptables $ACTION $INPT -i $IFACE -d $IP_PXLSRV -p tcp -m multiport --dports 80,443 -m state --state NEW -m comment --comment "PixelServ" -j ACCEPT
+				iptables "$ACTION" "$INPT" -i "$IFACE" -d "$IP_PXLSRV" -p tcp -m multiport --dports 80,443 -m state --state NEW -m comment --comment "PixelServ" -j ACCEPT
 			else
-				RULES=$(echo $(iptables -nvL $INPT --line-number | grep "PixelServ" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+				RULES=$(iptables -nvL $INPT --line-number | grep "PixelServ" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 				for RULENO in $RULES ; do
-					iptables -D $INPT $RULENO
+					iptables -D "$INPT" "$RULENO"
 				done
 			fi
 			
 			for PROTO in tcp udp ; do
-				iptables $ACTION $INPT -i $IFACE -p $PROTO --dport 53 -j ACCEPT
+				iptables "$ACTION" "$INPT" -i "$IFACE" -p "$PROTO" --dport 53 -j ACCEPT
 			done
 		else
-			RULES=$(echo $(iptables -nvL $INPT --line-number | grep "dpt:53" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -nvL $INPT --line-number | grep "dpt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES ; do
-				iptables -D $INPT $RULENO
+				iptables -D "$INPT" "$RULENO"
 			done
 		fi
 		
@@ -575,19 +575,19 @@ Routing_RPDB () {
 	
 	case $1 in
 		create)
-			ip route del $(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").0/24 dev $2 proto kernel table ovpnc$3 src $(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").1
-			ip route add $(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").0/24 dev $2 proto kernel table ovpnc$3 src $(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").1
+			ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$3" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".1
+			ip route add "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$3" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".1
 		;;
 		delete)
 			COUNTER=1
 			until [ $COUNTER -gt 5 ] ; do
-				ip route del $(ip route show table ovpnc$COUNTER | grep $2 | grep -Po '(\d{1,3}.){4}(\d{1,2})') dev $2 proto kernel table ovpnc$COUNTER src $(ip route show table ovpnc$COUNTER | grep $2 | grep -Po '(?<=src )(\d{1,3}.){4}') 2>/dev/null
-				let COUNTER+=1
+				ip route del "$(ip route show table ovpnc"$COUNTER" | grep "$2" | grep -Po '(\d{1,3}.){4}(\d{1,2})')" dev "$2" proto kernel table ovpnc"$COUNTER" src "$(ip route show table ovpnc"$COUNTER" | grep "$2" | grep -Po '(?<=src )(\d{1,3}.){4}')" 2>/dev/null
+				COUNTER=$((COUNTER + 1))
 			done
 		;;
 		deleteall)
 			for IFACE in $IFACELIST ; do
-				Routing_RPDB delete $IFACE 2>/dev/null
+				Routing_RPDB delete "$IFACE" 2>/dev/null
 			done
 		;;
 	esac
