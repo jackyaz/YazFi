@@ -7,6 +7,8 @@
 ####################################################################
 
 #shellcheck disable=SC2034
+#shellcheck disable=SC1091
+#shellcheck source=/dev/null
 
 ### Start of script variables ###
 readonly YAZFI_NAME="YazFi"
@@ -33,9 +35,9 @@ readonly TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
 ### End of path variables ###
 
 ### Start of firewall variables ###
-readonly INPT=$YAZFI_NAME"INPUT"
-readonly FWRD=$YAZFI_NAME"FORWARD"
-readonly LGRJT=$YAZFI_NAME"Reject"
+readonly INPT="$YAZFI_NAME""INPUT"
+readonly FWRD="$YAZFI_NAME""FORWARD"
+readonly LGRJT="$YAZFI_NAME""Reject"
 readonly CHAINS="$INPT $FWRD $LGRJT"
 ### End of firewall variables ###
 
@@ -141,35 +143,35 @@ Startup_Auto () {
 Check_Lock () {
 	if [ -f "/tmp/$YAZFI_NAME.lock" ] ; then
 		ageoflock=$(($(date +%s) - $(date +%s -r /tmp/$YAZFI_NAME.lock)))
-		if [ $ageoflock -gt 120 ]; then
+		if [ "$ageoflock" -gt 120 ]; then
 			Print_Output "true" "Stale lock file found (>120 seconds old) - purging lock" "$ERR"
 			kill "$(sed -n '1p' /tmp/$YAZFI_NAME.lock)" >/dev/null 2>&1
-			rm -f /tmp/$YAZFI_NAME.lock
-			echo "$$" > /tmp/$YAZFI_NAME.lock
+			rm -f "/tmp/$YAZFI_NAME.lock"
+			echo "$$" > "/tmp/$YAZFI_NAME.lock"
 			return 0
 		else
 			Print_Output "true" "Lock file found (age: $ageoflock seconds) - stopping to prevent duplicate runs" "$ERR"
 			exit 1
 		fi
 	else
-		echo "$$" > /tmp/$YAZFI_NAME.lock
+		echo "$$" > "/tmp/$YAZFI_NAME.lock"
 		return 0
 	fi
 }
 
 Update_Version () {
 	localver=$(grep "YAZFI_VERSION=" /jffs/scripts/$YAZFI_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-	/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; rm -f /tmp/$YAZFI_NAME.lock ; exit 1; }
+	/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; rm -f "/tmp/$YAZFI_NAME.lock" ; exit 1; }
 	serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 	if [ "$localver" != "$serverver" ] ; then
 		Print_Output "true" "New version of $YAZFI_NAME available - updating to $serverver" "$PASS"
 		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
 		chmod 0755 "/jffs/scripts/$YAZFI_NAME"
-		rm -f /tmp/$YAZFI_NAME.lock
+		rm -f "/tmp/$YAZFI_NAME.lock"
 		service restart_firewall >/dev/null 2>&1
 	else
 		Print_Output "true" "No new version - latest is $localver" "$WARN"
-		rm -f /tmp/$YAZFI_NAME.lock
+		rm -f "/tmp/$YAZFI_NAME.lock"
 	fi
 }
 ############################################################################
@@ -273,7 +275,7 @@ Conf_Validate () {
 		# Validate _ENABLED
 		if [ -z "$(eval echo '$'"$IFACETMP""_ENABLED")" ] ; then
 			ENABLEDTMP=false
-			sed -i -e "s/""$IFACETMP""_ENABLED=/""$IFACETMP""_ENABLED=false/" $YAZFI_CONF
+			sed -i -e "s/""$IFACETMP""_ENABLED=/""$IFACETMP""_ENABLED=false/" "$YAZFI_CONF"
 			Print_Output "false" "$IFACETMP""_ENABLED is blank, setting to false" "$WARN"
 		elif ! Validate_TrueFalse "$IFACETMP""_ENABLED" "$(eval echo '$'"$IFACETMP""_ENABLED")" ; then
 			ENABLEDTMP=false
@@ -401,16 +403,16 @@ Conf_Validate () {
 		fi
 		
 		# Print failure message
-		if [ $IFACE_PASS = false ] ; then
+		if [ "$IFACE_PASS" = false ] ; then
 			Print_Output "false" "$IFACE failed validation" "$CRIT"
 			CONF_VALIDATED=false
 		fi
 	done
 	
-	if [ $CONF_VALIDATED = true ] ; then
+	if [ "$CONF_VALIDATED" = true ] ; then
 		return 0
 	else
-		rm -f /tmp/$YAZFI_NAME.lock
+		rm -f "/tmp/$YAZFI_NAME.lock"
 		return 1
 	fi
 	
@@ -420,20 +422,20 @@ Conf_Download () {
 	Print_Output "false" "Downloading a blank configuration file to $1"
 	sleep 1
 	/usr/sbin/curl -s --retry 3 "$YAZFI_REPO.config" -o "$1"
-	chmod 0644 $1
-	dos2unix $1
+	chmod 0644 "$1"
+	dos2unix "$1"
 	Print_Output "false" "Please edit $1 with your desired settings. For a sample configuration file, see $YAZFI_REPO.config.sample"
 	sleep 1
-	Print_Output "false" "Please run \n\n/jffs/scripts/$YAZFI_NAME\n\nin your SSH client/terminal when you have finished editing the configuration file"
-	rm -f /tmp/$YAZFI_NAME.lock
+	Print_Output "false" "Please run \\n\\n/jffs/scripts/$YAZFI_NAME\\n\\nin your SSH client/terminal when you have finished editing the configuration file"
+	rm -f "/tmp/$YAZFI_NAME.lock"
 }
 
 Conf_Exists () {
-	if [ -f $YAZFI_CONF ] ; then
-		dos2unix $YAZFI_CONF
-		chmod 0644 $YAZFI_CONF
-		sed -i -e 's/"//g' $YAZFI_CONF
-		. $YAZFI_CONF
+	if [ -f "$YAZFI_CONF" ] ; then
+		dos2unix "$YAZFI_CONF"
+		chmod 0644 "$YAZFI_CONF"
+		sed -i -e 's/"//g' "$YAZFI_CONF"
+		. "$YAZFI_CONF"
 		return 0
 	else
 		return 1
@@ -446,17 +448,17 @@ Firewall_Chains() {
 	case $1 in
 		create)
 			for CHAIN in $CHAINS ; do
-				if ! iptables -n -L $CHAIN >/dev/null 2>&1 ; then
-					iptables -N $CHAIN
+				if ! iptables -n -L "$CHAIN" >/dev/null 2>&1 ; then
+					iptables -N "$CHAIN"
 					case $CHAIN in
 						$INPT)
-							iptables -I INPUT -j $CHAIN
+							iptables -I INPUT -j "$CHAIN"
 						;;
 						$FWRD)
-							iptables -I FORWARD $FWRDSTART -j $CHAIN
+							iptables -I FORWARD "$FWRDSTART" -j "$CHAIN"
 						;;
 						$LGRJT)
-							iptables -I $LGRJT -j REJECT
+							iptables -I "$LGRJT" -j REJECT
 							
 							# Optional rule to log all rejected packets to syslog
 							#iptables -I $LGRJT -m state --state NEW -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
@@ -466,20 +468,20 @@ Firewall_Chains() {
 		;;
 		deleteall)
 			for CHAIN in $CHAINS ; do
-				if iptables -n -L $CHAIN >/dev/null 2>&1 ; then
+				if iptables -n -L "$CHAIN" >/dev/null 2>&1 ; then
 					case $CHAIN in
 						$INPT)
-							iptables -D INPUT -j $CHAIN
+							iptables -D INPUT -j "$CHAIN"
 						;;
 						$FWRD)
-							iptables -D FORWARD $FWRDSTART
+							iptables -D FORWARD "$FWRDSTART"
 						;;
 						$LGRJT)
-							iptables -D $LGRJT -j REJECT
+							iptables -D "$LGRJT" -j REJECT
 					esac
 					
-					iptables -F $CHAIN
-					iptables -X $CHAIN
+					iptables -F "$CHAIN"
+					iptables -X "$CHAIN"
 				fi
 			done
 		;;
@@ -488,7 +490,7 @@ Firewall_Chains() {
 
 Firewall_Rules () {
 	ACTIONS=""
-	IFACE=$2
+	IFACE="$2"
 	
 	case $1 in
 		create)
@@ -504,33 +506,33 @@ Firewall_Rules () {
 		### Start of bridge rules ###
 		
 		# Un-bridge all frames entering br0 for IPv4, IPv6 and ARP to be processed by iptables
-		ebtables -t broute $ACTION BROUTING -p ipv4 -i $IFACE -j DROP
-		ebtables -t broute $ACTION BROUTING -p ipv6 -i $IFACE -j DROP
-		ebtables -t broute $ACTION BROUTING -p arp -i $IFACE -j DROP
+		ebtables -t broute "$ACTION" BROUTING -p ipv4 -i "$IFACE" -j DROP
+		ebtables -t broute "$ACTION" BROUTING -p ipv6 -i "$IFACE" -j DROP
+		ebtables -t broute "$ACTION" BROUTING -p arp -i "$IFACE" -j DROP
 		
-		ebtables $ACTION FORWARD -i $IFACE -j DROP
-		ebtables $ACTION FORWARD -o $IFACE -j DROP
+		ebtables "$ACTION" FORWARD -i "$IFACE" -j DROP
+		ebtables "$ACTION" FORWARD -o "$IFACE" -j DROP
 		
-		ebtables -t broute -D BROUTING -p IPv4 -i $IFACE --ip-dst $LAN/24 --ip-proto tcp -j DROP
+		ebtables -t broute -D BROUTING -p IPv4 -i "$IFACE" --ip-dst "$LAN"/24 --ip-proto tcp -j DROP
 		### End of bridge rules ###
 		
 		### Start of IP firewall rules ###
-		iptables $ACTION $FWRD -i $IFACE -m state --state NEW -j ACCEPT
+		iptables "$ACTION" "$FWRD" -i "$IFACE" -m state --state NEW -j ACCEPT
 		
-		iptables $ACTION $FWRD -i $IFACE -o br0 -m state --state NEW -j $LGRJT
-		iptables $ACTION $FWRD -i br0 -o $IFACE -m state --state NEW -j $LGRJT
+		iptables "$ACTION" "$FWRD" -i "$IFACE" -o br0 -m state --state NEW -j "$LGRJT"
+		iptables "$ACTION" "$FWRD" -i br0 -o "$IFACE" -m state --state NEW -j "$LGRJT"
 		
 		for IFACE_GUEST in $IFACELIST ; do
 			IFACETMP_GUEST="$(Get_Iface_Var "$IFACE_GUEST")"
-			if [ "$(eval echo '$'$IFACETMP_GUEST"_ENABLED")" = "true" ] ; then
-				iptables $ACTION $FWRD -i $IFACE -o $IFACE_GUEST -m state --state NEW -j $LGRJT
+			if [ "$(eval echo '$'"$IFACETMP"_GUEST_ENABLED)" = "true" ] ; then
+				iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_GUEST" -m state --state NEW -j "$LGRJT"
 			fi
 		done
 		
-		iptables $ACTION $INPT -i $IFACE -m state --state NEW -j $LGRJT
-		iptables $ACTION $INPT -i $IFACE -p udp -m multiport --dports 67,123 -j ACCEPT
+		iptables "$ACTION" "$INPT" -i "$IFACE"-m state --state NEW -j "$LGRJT"
+		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT
 		
-		if [ "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_DNS1")" = "$(echo $(eval echo '$'$(Get_Iface_Var "$IFACE")"_IPADDR") | cut -f1-3 -d".").1" ] || [ "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_DNS2")" = "$(echo $(eval echo '$'$(Get_Iface_Var "$IFACE")"_IPADDR") | cut -f1-3 -d".").1" ] ; then
+		if [ "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_DNS1")" = "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_IPADDR" | cut -f1-3 -d".").1" ] || [ "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_DNS2")" = "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_IPADDR" | cut -f1-3 -d".").1" ] ; then
 			if ifconfig "br0:pixelserv" | grep -q "inet addr:" >/dev/null 2>&1 ; then
 				modprobe xt_comment
 				IP_PXLSRV=$(ifconfig br0:pixelserv | grep "inet addr:" | cut -d: -f2 | awk '{print $1}')
