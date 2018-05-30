@@ -14,10 +14,10 @@ readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/master/YazF
 ### End of script variables ###
 
 ### Start of output format variables ###
-readonly CRIT="\e[41m"
-readonly ERR="\e[31m"
-readonly WARN="\e[33m"
-readonly PASS="\e[32m"
+readonly CRIT="\\e[41m"
+readonly ERR="\\e[31m"
+readonly WARN="\\e[33m"
+readonly PASS="\\e[32m"
 ### End of output format variables ###
 
 ### Start of router environment variables ###
@@ -52,29 +52,31 @@ VPN_IP_LIST_NEW_5=""
 
 # $1 = print to syslog, $2 = message to print, $3 = log level
 Print_Output () {
-	if [ $1 = "true" ] ; then 
+	if [ "$1" = "true" ] ; then 
 		logger -t "$YAZFI_NAME" "$2"
-		echo -e "\e[1m$3$YAZFI_NAME: $2\e[0m"
-		echo ""
+		printf "\\e[1m$3%s: $2\\e[0m\\n\\n" "$YAZFI_NAME"
 	else
-		echo -e "\e[1m$3$YAZFI_NAME: $2\e[0m"
-		echo ""
+		printf "\\e[1m$3%s: $2\\e[0m\\n\\n" "$YAZFI_NAME"
 	fi
 }
 
 Escape_Sed () {
-	sed -e 's/</\\</g' | sed -e 's/>/\\>/g' | sed -e 's/ /\\ /g'
+	sed -e 's/</\\</g;s/>/\\>/g;s/ /\\ /g'
+}
+
+Get_Iface_Var () {
+	echo "$1" | sed -e 's/\.//g'
 }
 
 Get_Guest_Name () {
 	VPN_NVRAM=""
 	
-	if [ "$(echo "$1" | grep "wl0")" ] ; then
-		VPN_NVRAM="2.4GHz Guest $(echo $1 | cut -f2 -d".")"
-	elif [ "$(echo "$1" | grep "wl1")" ] ; then
-		VPN_NVRAM="5GHz1 Guest $(echo $1 | cut -f2 -d".")"
+	if echo "$1" | grep -q "wl0" ; then
+		VPN_NVRAM="2.4GHz Guest $(echo "$1" | cut -f2 -d".")"
+	elif echo "$1" | grep "wl1" ; then
+		VPN_NVRAM="5GHz1 Guest $(echo "$1" | cut -f2 -d".")"
 	else
-		VPN_NVRAM="5GHz2 Guest $(echo $1 | cut -f2 -d".")"
+		VPN_NVRAM="5GHz2 Guest $(echo "$1" | cut -f2 -d".")"
 	fi
 	
 	echo "$VPN_NVRAM"
@@ -83,14 +85,14 @@ Get_Guest_Name () {
 Iface_Manage () {
 	case $1 in
 		create)
-			ifconfig $2 $(echo $(eval echo '$'${IFACE//.}"_IPADDR") | cut -f1-3 -d".").1 netmask 255.255.255.0 # Assign the .1 address to the interface
+			ifconfig "$2" "$(eval echo '$'"$(Get_Iface_Var "$IFACE")"_IPADDR | cut -f1-3 -d".").1" netmask 255.255.255.0 # Assign the .1 address to the interface
 		;;
 		delete)
-			ifconfig $2 0.0.0.0
+			ifconfig "$2" 0.0.0.0
 		;;
 		deleteall)
 			for IFACE in $IFACELIST ; do
-				Iface_Manage delete $IFACE
+				Iface_Manage delete "$IFACE"
 			done
 		;;
 	esac
@@ -103,12 +105,12 @@ Startup_Auto () {
 				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
 				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME"' & # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
 				
-				if [ $STARTUPLINECOUNT -gt 1 ] || ( [ $STARTUPLINECOUNTEX -eq 0 ] && [ $STARTUPLINECOUNT -gt 0 ] ); then
+				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					Print_Output "true" "Purging duplicate/invalid entries for $YAZFI_NAME in firewall-start"
 					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
 				fi
 				
-				if [ $STARTUPLINECOUNTEX -eq 0 ] ; then
+				if [ "$STARTUPLINECOUNTEX" -eq 0 ] ; then
 					Print_Output "true" "Adding $YAZFI_NAME to firewall-start"
 					echo "" >> /jffs/scripts/firewall-start
 					echo "/jffs/scripts/$YAZFI_NAME"' & # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
@@ -117,7 +119,7 @@ Startup_Auto () {
 				Print_Output "true" "firewall-start doesn't exist, creating"
 				echo "#!/bin/sh" > /jffs/scripts/firewall-start
 				echo "" >> /jffs/scripts/firewall-start
-				echo "$0"' & # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
+				echo "/jffs/scripts/$YAZFI_NAME"' & # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 				chmod 0755 /jffs/scripts/firewall-start
 			fi
 		;;
@@ -125,7 +127,7 @@ Startup_Auto () {
 			if [ -f /jffs/scripts/firewall-start ] ; then
 				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
 				
-				if [ $STARTUPLINECOUNT -gt 0 ] ; then
+				if [ "$STARTUPLINECOUNT" -gt 0 ] ; then
 					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
 				fi
 			fi
@@ -154,13 +156,13 @@ Check_Lock () {
 }
 
 Update_Version () {
-	localver=$(grep "YAZFI_VERSION=" /jffs/scripts/YazFi | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-	/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; rm -f /tmp/$YAZFI_NAME.lock ; exit 1; }
-	serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+	localver=$(grep "YAZFI_VERSION=" /jffs/scripts/$YAZFI_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+	/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; rm -f /tmp/$YAZFI_NAME.lock ; exit 1; }
+	serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 	if [ "$localver" != "$serverver" ] ; then
 		Print_Output "true" "New version of $YAZFI_NAME available - updating to $serverver" "$PASS"
-		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" -o "$0" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
-		chmod 0755 "$0"
+		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
+		chmod 0755 "/jffs/scripts/$YAZFI_NAME"
 		rm -f /tmp/$YAZFI_NAME.lock
 		service restart_firewall >/dev/null 2>&1
 	else
@@ -171,7 +173,7 @@ Update_Version () {
 ############################################################################
 
 Validate_IFACE () {
-	if ! ifconfig $1 >/dev/null 2>&1 ; then
+	if ! ifconfig "$1" >/dev/null 2>&1 ; then
 		Print_Output "false" "$1 - Interface not enabled/configured in Web GUI (Guest Network menu)" "$ERR"
 		return 1
 	else
@@ -180,16 +182,16 @@ Validate_IFACE () {
 }
 
 Validate_IP () {
-	if expr $2 : '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$' >/dev/null ; then
+	if expr "$2" : '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$' >/dev/null ; then
 		for i in 1 2 3 4; do
-			if [ $(echo $2 | cut -d. -f$i) -gt 255 ]; then
+			if [ "$(echo "$2" | cut -d. -f$i)" -gt 255 ]; then
 				Print_Output "false" "$1 - Octet $i ($(echo "$2" | cut -d. -f$i)) - is invalid, must be less than 255" "$ERR"
 				return 1
 			fi
 		done
 		
 		if [ "$3" != "DNS" ] ; then
-			if [ "$(echo $2 | grep -E '(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)')" ] ; then 
+			if echo "$2" | grep -qE '(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)' ; then 
 				return 0
 			else
 				Print_Output "false" "$1 - $2 - Non-routable IP address block used" "$ERR"
@@ -209,20 +211,20 @@ Validate_Number () {
 	if [ "$2" -eq "$2" ] 2>/dev/null; then
 		return 0
 	else
-		formatted="$(echo $1 | sed -e 's/|/ /g')"
+		formatted="$(echo "$1" | sed -e 's/|/ /g')"
 		Print_Output "false" "$formatted - $2 is not a number" "$ERR"
 		return 1
 	fi
 }
 
 Validate_DHCP () {
-	if ! Validate_Number $1 $2 ; then
+	if ! Validate_Number "$1" "$2" ; then
 		return 1
-	elif ! Validate_Number $1 $3 ; then
+	elif ! Validate_Number "$1" "$3" ; then
 		return 1
 	fi
 	
-	if ([ $2 -lt 2 ] || [ $2 -gt 254 ]) || ([ $3 -lt 2 ] || [ $3 -gt 254 ]) || [ $2 -gt $3 ] ; then
+	if [ "$2" -gt "$3" ] || { [ "$2" -lt 2 ] || [ "$2" -gt 254 ]; } || { [ "$3" -lt 2 ] || [ "$3" -gt 254 ]; } ; then
 		Print_Output "false" "$1 - $2 to $3 - both numbers must be between 2 and 254, $2 must be less than $3" "$ERR"
 		return 1
 	else
@@ -231,11 +233,11 @@ Validate_DHCP () {
 }
 
 Validate_VPNClientNo () {
-	if ! Validate_Number $1 $2 ; then
+	if ! Validate_Number "$1" "$2" ; then
 		return 1
 	fi
 	
-	if [ $2 -lt 1 ] || [ $2 -gt 5 ] ; then
+	if [ "$2" -lt 1 ] || [ "$2" -gt 5 ] ; then
 		Print_Output "false" "$1 - $2 - must be between 1 and 5" "$ERR"
 		return 1
 	else
@@ -260,22 +262,22 @@ Conf_Validate () {
 	CONF_VALIDATED=true
 	
 	for IFACE in $IFACELIST ; do
-		IFACETMP="${IFACE//.}"
+		IFACETMP="$(Get_Iface_Var "$IFACE")"
 		IPADDRTMP=""
 		ENABLEDTMP=""
 		REDIRECTTMP=""
 		IFACE_PASS=true
 		
 		# Validate _ENABLED
-		if [ -z "$(eval echo '$'$IFACETMP"_ENABLED")" ] ; then
+		if [ -z "$(eval echo '$'"$IFACETMP""_ENABLED")" ] ; then
 			ENABLEDTMP=false
-			sed -i -e "s/"$IFACETMP"_ENABLED=/"$IFACETMP"_ENABLED=false/" $YAZFI_CONF
-			Print_Output "false" $IFACETMP"_ENABLED is blank, setting to false" "$WARN"
-		elif ! Validate_TrueFalse $IFACETMP"_ENABLED" "$(eval echo '$'$IFACETMP"_ENABLED")" ; then
+			sed -i -e "s/""$IFACETMP""_ENABLED=/""$IFACETMP""_ENABLED=false/" $YAZFI_CONF
+			Print_Output "false" "$IFACETMP""_ENABLED is blank, setting to false" "$WARN"
+		elif ! Validate_TrueFalse "$IFACETMP""_ENABLED" "$(eval echo '$'"$IFACETMP""_ENABLED")" ; then
 			ENABLEDTMP=false
 			IFACE_PASS=false
 		else
-			ENABLEDTMP="$(eval echo '$'$IFACETMP"_ENABLED")"
+			ENABLEDTMP="$(eval echo '$'"$IFACETMP""_ENABLED")"
 		fi
 		
 		if [ "$ENABLEDTMP" = "true" ] ; then
@@ -420,16 +422,17 @@ Conf_Download () {
 	dos2unix $1
 	Print_Output "false" "Please edit $1 with your desired settings. For a sample configuration file, see $YAZFI_REPO.config.sample"
 	sleep 1
-	Print_Output "false" "Please run \n\n$0\n\nin your SSH client/terminal when you have finished editing the configuration file"
+	Print_Output "false" "Please run \n\n/jffs/scripts/$YAZFI_NAME\n\nin your SSH client/terminal when you have finished editing the configuration file"
 	rm -f /tmp/$YAZFI_NAME.lock
 }
 
 Conf_Exists () {
+	Print_Output "false" "Please run \n\n/jffs/scripts/$YAZFI_NAME\n\nin your SSH client/terminal when you have finished editing the configuration file"
 	if [ -f $YAZFI_CONF ] ; then
 		dos2unix $YAZFI_CONF
 		chmod 0644 $YAZFI_CONF
 		sed -i -e 's/"//g' $YAZFI_CONF
-		source $YAZFI_CONF
+		. $YAZFI_CONF
 		return 0
 	else
 		return 1
@@ -517,7 +520,7 @@ Firewall_Rules () {
 		iptables $ACTION $FWRD -i br0 -o $IFACE -m state --state NEW -j $LGRJT
 		
 		for IFACE_GUEST in $IFACELIST ; do
-			IFACETMP_GUEST="${IFACE_GUEST//.}"
+			IFACETMP_GUEST="$(Get_Iface_Var "$IFACE_GUEST")"
 			if [ "$(eval echo '$'$IFACETMP_GUEST"_ENABLED")" = "true" ] ; then
 				iptables $ACTION $FWRD -i $IFACE -o $IFACE_GUEST -m state --state NEW -j $LGRJT
 			fi
@@ -526,7 +529,7 @@ Firewall_Rules () {
 		iptables $ACTION $INPT -i $IFACE -m state --state NEW -j $LGRJT
 		iptables $ACTION $INPT -i $IFACE -p udp -m multiport --dports 67,123 -j ACCEPT
 		
-		if [ "$(eval echo '$'${IFACE//.}"_DNS1")" = "$(echo $(eval echo '$'${IFACE//.}"_IPADDR") | cut -f1-3 -d".").1" ] || [ "$(eval echo '$'${IFACE//.}"_DNS2")" = "$(echo $(eval echo '$'${IFACE//.}"_IPADDR") | cut -f1-3 -d".").1" ] ; then
+		if [ "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_DNS1")" = "$(echo $(eval echo '$'$(Get_Iface_Var "$IFACE")"_IPADDR") | cut -f1-3 -d".").1" ] || [ "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_DNS2")" = "$(echo $(eval echo '$'$(Get_Iface_Var "$IFACE")"_IPADDR") | cut -f1-3 -d".").1" ] ; then
 			if ifconfig "br0:pixelserv" | grep -q "inet addr:" >/dev/null 2>&1 ; then
 				modprobe xt_comment
 				IP_PXLSRV=$(ifconfig br0:pixelserv | grep "inet addr:" | cut -d: -f2 | awk '{print $1}')
@@ -569,8 +572,8 @@ Routing_RPDB () {
 	
 	case $1 in
 		create)
-			ip route del $(echo $(eval echo '$'${2//.}"_IPADDR") | cut -f1-3 -d".").0/24 dev $2 proto kernel table ovpnc$3 src $(echo $(eval echo '$'${IFACE//.}"_IPADDR") | cut -f1-3 -d".").1
-			ip route add $(echo $(eval echo '$'${2//.}"_IPADDR") | cut -f1-3 -d".").0/24 dev $2 proto kernel table ovpnc$3 src $(echo $(eval echo '$'${IFACE//.}"_IPADDR") | cut -f1-3 -d".").1
+			ip route del $(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").0/24 dev $2 proto kernel table ovpnc$3 src $(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").1
+			ip route add $(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").0/24 dev $2 proto kernel table ovpnc$3 src $(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").1
 		;;
 		delete)
 			COUNTER=1
@@ -595,7 +598,7 @@ Routing_FWNAT () {
 		create)
 			for ACTION in -D -I ; do
 				modprobe xt_comment
-				iptables -t nat $ACTION POSTROUTING -s $(echo $(eval echo '$'${2//.}"_IPADDR") | cut -f1-3 -d".").0/24 -o tun1$3 -m comment --comment "$(Get_Guest_Name $2)" -j MASQUERADE
+				iptables -t nat $ACTION POSTROUTING -s $(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").0/24 -o tun1$3 -m comment --comment "$(Get_Guest_Name $2)" -j MASQUERADE
 				iptables $ACTION $FWRD -i $2 -o tun1$3 -m state --state NEW -j ACCEPT
 				iptables $ACTION $FWRD -i tun1$3 -o $2 -m state --state NEW -j ACCEPT
 			done
@@ -632,7 +635,7 @@ Routing_NVRAM() {
 		;;
 		create)
 			VPN_NVRAM=$(Get_Guest_Name $2)
-			VPN_IFACE_NVRAM="<$VPN_NVRAM>$(echo $(eval echo '$'${2//.}"_IPADDR") | cut -f1-3 -d".").0/24>0.0.0.0>VPN"
+			VPN_IFACE_NVRAM="<$VPN_NVRAM>$(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").0/24>0.0.0.0>VPN"
 			VPN_IFACE_NVRAM_SAFE=$(echo $VPN_IFACE_NVRAM | sed -e 's/\//\\\//g' | sed -e 's/\./\\./g' | sed -e 's/ /\\ /g')
 			
 			# Check if guest network has already been added to policy routing for VPN client. If not, append to list.
@@ -706,7 +709,7 @@ DHCP_Conf() {
 			fi
 		;;
 		create)
-			CONFSTRING="interface=$2||||dhcp-range=$2,$(echo $(eval echo '$'${2//.}"_IPADDR") | cut -f1-3 -d".").$(eval echo '$'${2//.}"_DHCPSTART"),$(echo $(eval echo '$'${2//.}"_IPADDR") | cut -f1-3 -d".").$(eval echo '$'${2//.}"_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(echo $(eval echo '$'${2//.}"_IPADDR") | cut -f1-3 -d".").1||||dhcp-option=$2,6,$(eval echo '$'${2//.}"_DNS1"),$(eval echo '$'${2//.}"_DNS2")"
+			CONFSTRING="interface=$2||||dhcp-range=$2,$(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").$(eval echo '$'$(Get_Iface_Var "$2")"_DHCPSTART"),$(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").$(eval echo '$'$(Get_Iface_Var "$2")"_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").1||||dhcp-option=$2,6,$(eval echo '$'$(Get_Iface_Var "$2")"_DNS1"),$(eval echo '$'$(Get_Iface_Var "$2")"_DNS2")"
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
@@ -756,7 +759,7 @@ Config_Networks () {
 		exit 1
 	fi
 	
-	source $YAZFI_CONF
+	. $YAZFI_CONF
 	
 	Startup_Auto create 2>/dev/null
 	
@@ -766,14 +769,14 @@ Config_Networks () {
 	Firewall_Chains create 2>/dev/null
 	
 	for IFACE in $IFACELIST ; do
-		VPNCLIENTNO=$(eval echo '$'${IFACE//.}"_VPNCLIENTNUMBER")
+		VPNCLIENTNO=$(eval echo '$'$(Get_Iface_Var "$IFACE")"_VPNCLIENTNUMBER")
 		
-		if [ "$(eval echo '$'${IFACE//.}"_ENABLED")" = "true" ] ; then
+		if [ "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_ENABLED")" = "true" ] ; then
 			Iface_Manage create $IFACE 2>/dev/null
 			
 			Firewall_Rules create $IFACE 2>/dev/null
 			
-			if [ "$(eval echo '$'${IFACE//.}"_REDIRECTALLTOVPN")" = "true" ] ; then
+			if [ "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_REDIRECTALLTOVPN")" = "true" ] ; then
 				Print_Output "true" "$IFACE (SSID: $(nvram get $IFACE"_ssid")) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
 				
 				Routing_NVRAM create $IFACE $VPNCLIENTNO 2>/dev/null
