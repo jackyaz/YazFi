@@ -6,6 +6,8 @@
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
+#shellcheck disable=SC2034
+
 ### Start of script variables ###
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
@@ -288,111 +290,111 @@ Conf_Validate () {
 			fi
 			
 			# Only validate interfaces enabled in config file
-			if [ "$(eval echo '$'$IFACETMP"_ENABLED")" = "true" ] ; then
+			if [ "$(eval echo '$'"$IFACETMP""_ENABLED")" = "true" ] ; then
 				
 				# Validate _IPADDR
-				if [ -z "$(eval echo '$'$IFACETMP"_IPADDR")" ] ; then
-					IPADDRTMP="$(echo $LAN | cut -f1-2 -d".").$(($(echo $LAN | cut -f3 -d".")+1))"
+				if [ -z "$(eval echo '$'"$IFACETMP""_IPADDR")" ] ; then
+					IPADDRTMP="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+1))"
 					
 					COUNTER=1
-					until [ "$($(echo grep -o "$IPADDRTMP".0 $YAZFI_CONF) | wc -l )" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMP".1 | wc -l )" -eq 0 ] ; do
-						IPADDRTMP="$(echo $LAN | cut -f1-2 -d".").$(($(echo $LAN | cut -f3 -d".")+$COUNTER))"
-						let COUNTER+=1
+					until [ "$(grep -o "$IPADDRTMP".0 $YAZFI_CONF | wc -l)" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMP".1 | wc -l )" -eq 0 ] ; do
+						IPADDRTMP="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+COUNTER))"
+						COUNTER=$((COUNTER + 1))
 					done
 					
-					sed -i -e "s/"$IFACETMP"_IPADDR=/"$IFACETMP"_IPADDR=$IPADDRTMP.0/" $YAZFI_CONF
-					Print_Output "false" $IFACETMP"_IPADDR is blank, setting to next available subnet above primary LAN subnet" "$WARN"
-				elif ! Validate_IP $IFACETMP"_IPADDR" "$(eval echo '$'$IFACETMP"_IPADDR")" ; then
+					sed -i -e "s/""$IFACETMP""_IPADDR=/""$IFACETMP""_IPADDR=""$IPADDRTMP"".0/" "$YAZFI_CONF"
+					Print_Output "false" "$IFACETMP""_IPADDR is blank, setting to next available subnet above primary LAN subnet" "$WARN"
+				elif ! Validate_IP "$IFACETMP""_IPADDR" "$(eval echo '$'"$IFACETMP""_IPADDR")" ; then
 					IFACE_PASS=false
 				else
 					
-					IPADDRTMP="$(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".")"
+					IPADDRTMP="$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".")"
 					
 					# Set last octet to 0
-					if [ "$(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f4 -d".")" -ne 0 ] ; then
-						sed -i -e "s/"$IFACETMP"_IPADDR=$(echo $(eval echo '$'$IFACETMP"_IPADDR"))/"$IFACETMP"_IPADDR=$IPADDRTMP.0/" $YAZFI_CONF
-						Print_Output "false" $IFACETMP"_IPADDR setting last octet to 0" "$WARN"
+					if [ "$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f4 -d".")" -ne 0 ] ; then
+						sed -i -e "s/""$IFACETMP""_IPADDR=$(eval echo '$'"$IFACETMP""_IPADDR")/""$IFACETMP""_IPADDR=""$IPADDRTMP"".0/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_IPADDR setting last octet to 0" "$WARN"
 					fi
 					
-					if [ "$($(echo grep -o "$IPADDRTMP".0 $YAZFI_CONF) | wc -l )" -gt 1 ] || [ "$(ifconfig -a | grep -o "$IPADDRTMP".1 | wc -l )" -gt 1 ]; then
-						Print_Output "false" $IFACETMP"_IPADDR ($(eval echo '$'$IFACETMP"_IPADDR")) has been used for another interface already" "$ERR"
+					if [ "$(grep -o "$IPADDRTMP".0 $YAZFI_CONF | wc -l )" -gt 1 ] || [ "$(ifconfig -a | grep -o "$IPADDRTMP".1 | wc -l )" -gt 1 ]; then
+						Print_Output "false" "$IFACETMP""_IPADDR ($(eval echo '$'"$IFACETMP""_IPADDR")) has been used for another interface already" "$ERR"
 						IFACE_PASS=false
 					fi
 				fi
 				
 				#Validate _DHCPSTART and _DHCPEND
-				if [ -z "$(eval echo '$'$IFACETMP"_DHCPSTART")" ] ; then
-					sed -i -e "s/"$IFACETMP"_DHCPSTART=/"$IFACETMP"_DHCPSTART=2/" $YAZFI_CONF
-					Print_Output "false" $IFACETMP"_DHCPSTART is blank, setting to 2" "$WARN"
+				if [ -z "$(eval echo '$'"$IFACETMP""_DHCPSTART")" ] ; then
+					sed -i -e "s/""$IFACETMP""_DHCPSTART=/""$IFACETMP""_DHCPSTART=2/" "$YAZFI_CONF"
+					Print_Output "false" "$IFACETMP""_DHCPSTART is blank, setting to 2" "$WARN"
 				fi
 				
-				if [ -z "$(eval echo '$'$IFACETMP"_DHCPEND")" ] ; then
-					sed -i -e "s/"$IFACETMP"_DHCPEND=/"$IFACETMP"_DHCPEND=254/" $YAZFI_CONF
-					Print_Output "false" $IFACETMP"_DHCPEND is blank, setting to 254" "$WARN"
+				if [ -z "$(eval echo '$'"$IFACETMP""_DHCPEND")" ] ; then
+					sed -i -e "s/""$IFACETMP""_DHCPEND=/""$IFACETMP""_DHCPEND=254/" "$YAZFI_CONF"
+					Print_Output "false" "$IFACETMP""_DHCPEND is blank, setting to 254" "$WARN"
 				fi
 				
-				if [ ! -z "$(eval echo '$'$IFACETMP"_DHCPSTART")" ] && [ ! -z "$(eval echo '$'$IFACETMP"_DHCPEND")" ] ; then
-					if ! Validate_DHCP $IFACETMP"_DHCPSTART|and|"$IFACETMP"_DHCPEND" "$(eval echo '$'$IFACETMP"_DHCPSTART")" "$(eval echo '$'$IFACETMP"_DHCPEND")" ; then
+				if [ ! -z "$(eval echo '$'"$IFACETMP""_DHCPSTART")" ] && [ ! -z "$(eval echo '$'"$IFACETMP""_DHCPEND")" ] ; then
+					if ! Validate_DHCP "$IFACETMP""_DHCPSTART|and|""$IFACETMP""_DHCPEND" "$(eval echo '$'"$IFACETMP""_DHCPSTART")" "$(eval echo '$'"$IFACETMP""_DHCPEND")" ; then
 					IFACE_PASS=false
 					fi
 				fi
 				
 				# Validate _DNS1
-				if [ -z "$(eval echo '$'$IFACETMP"_DNS1")" ] ; then
-					if [ ! -z "$(eval echo '$'$IFACETMP"_IPADDR")" ] ; then
-						sed -i -e "s/"$IFACETMP"_DNS1=/"$IFACETMP"_DNS1=$(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".").1/" $YAZFI_CONF
-						Print_Output "false" $IFACETMP"_DNS1 is blank, setting to $(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".").1" "$WARN"
+				if [ -z "$(eval echo '$'"$IFACETMP""_DNS1")" ] ; then
+					if [ ! -z "$(eval echo '$'"$IFACETMP""_IPADDR")" ] ; then
+						sed -i -e "s/""$IFACETMP""_DNS1=/""$IFACETMP""_DNS1=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").1/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_DNS1 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").1" "$WARN"
 					else
-						sed -i -e "s/"$IFACETMP"_DNS1=/"$IFACETMP"_DNS1=$IPADDRTMP.1/" $YAZFI_CONF
-						Print_Output "false" $IFACETMP"_DNS1 is blank, setting to $IPADDRTMP.1" "$WARN"
+						sed -i -e "s/""$IFACETMP""_DNS1=/""$IFACETMP""_DNS1=$IPADDRTMP.1/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_DNS1 is blank, setting to $IPADDRTMP.1" "$WARN"
 					fi
-				elif ! Validate_IP $IFACETMP"_DNS1" "$(eval echo '$'$IFACETMP"_DNS1")" "DNS"; then
+				elif ! Validate_IP "$IFACETMP""_DNS1" "$(eval echo '$'"$IFACETMP""_DNS1")" "DNS"; then
 					IFACE_PASS=false
 				fi
 				
 				# Validate _DNS2
-				if [ -z "$(eval echo '$'$IFACETMP"_DNS2")" ] ; then
-					if [ ! -z "$(eval echo '$'$IFACETMP"_IPADDR")" ] ; then
-						sed -i -e "s/"$IFACETMP"_DNS2=/"$IFACETMP"_DNS2=$(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".").1/" $YAZFI_CONF
-						Print_Output "false" $IFACETMP"_DNS2 is blank, setting to $(echo $(eval echo '$'$IFACETMP"_IPADDR") | cut -f1-3 -d".").1" "$WARN"
+				if [ -z "$(eval echo '$'"$IFACETMP""_DNS2")" ] ; then
+					if [ ! -z "$(eval echo '$'"$IFACETMP""_IPADDR")" ] ; then
+						sed -i -e "s/""$IFACETMP""_DNS2=/""$IFACETMP""_DNS2=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").1/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_DNS2 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").1" "$WARN"
 					else
-						sed -i -e "s/"$IFACETMP"_DNS2=/"$IFACETMP"_DNS2=$IPADDRTMP.1/" $YAZFI_CONF
-						Print_Output "false" $IFACETMP"_DNS2 is blank, setting to $IPADDRTMP.1" "$WARN"
+						sed -i -e "s/""$IFACETMP""_DNS2=/""$IFACETMP""_DNS2=$IPADDRTMP.1/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_DNS2 is blank, setting to $IPADDRTMP.1" "$WARN"
 					fi
-				elif ! Validate_IP $IFACETMP"_DNS2" "$(eval echo '$'$IFACETMP"_DNS2")" "DNS"; then
+				elif ! Validate_IP "$IFACETMP""_DNS2" "$(eval echo '$'"$IFACETMP""_DNS2")" "DNS"; then
 					IFACE_PASS=false
 				fi
 				
 				# Validate _REDIRECTALLTOVPN
-				if [ -z "$(eval echo '$'$IFACETMP"_REDIRECTALLTOVPN")" ] ; then
+				if [ -z "$(eval echo '$'"$IFACETMP""_REDIRECTALLTOVPN")" ] ; then
 					REDIRECTTMP=false
-					sed -i -e "s/"$IFACETMP"_REDIRECTALLTOVPN=/"$IFACETMP"_REDIRECTALLTOVPN=false/" $YAZFI_CONF
-					Print_Output "false" $IFACETMP"_REDIRECTALLTOVPN is blank, setting to false" "$WARN"
-				elif ! Validate_TrueFalse $IFACETMP"_REDIRECTALLTOVPN" "$(eval echo '$'$IFACETMP"_REDIRECTALLTOVPN")" ; then
+					sed -i -e "s/""$IFACETMP""_REDIRECTALLTOVPN=/""$IFACETMP""_REDIRECTALLTOVPN=false/" "$YAZFI_CONF"
+					Print_Output "false" "$IFACETMP""_REDIRECTALLTOVPN is blank, setting to false" "$WARN"
+				elif ! Validate_TrueFalse "$IFACETMP""_REDIRECTALLTOVPN" "$(eval echo '$'"$IFACETMP""_REDIRECTALLTOVPN")" ; then
 					REDIRECTTMP=false
 					IFACE_PASS=false
 				else
-					REDIRECTTMP="$(eval echo '$'$IFACETMP"_REDIRECTALLTOVPN")"
+					REDIRECTTMP="$(eval echo '$'"$IFACETMP""_REDIRECTALLTOVPN")"
 				fi
 				
 				# Validate _VPNCLIENTNUMBER if _REDIRECTALLTOVPN is enabled
 				if [ "$REDIRECTTMP" = "true" ] ; then
-					if [ -z "$(eval echo '$'$IFACETMP"_VPNCLIENTNUMBER")" ] ; then
-						Print_Output "false" $IFACETMP"_VPNCLIENTNUMBER is blank" "$ERR"
+					if [ -z "$(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER")" ] ; then
+						Print_Output "false" "$IFACETMP""_VPNCLIENTNUMBER is blank" "$ERR"
 						IFACE_PASS=false
-					elif ! Validate_VPNClientNo $IFACETMP"_VPNCLIENTNUMBER" "$(eval echo '$'$IFACETMP"_VPNCLIENTNUMBER")" ; then
+					elif ! Validate_VPNClientNo "$IFACETMP""_VPNCLIENTNUMBER" "$(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER")" ; then
 						IFACE_PASS=false
 					else
 						#Validate VPN client is configured for policy routing
-						if [ "$(nvram get vpn_client"$(eval echo '$'$IFACETMP"_VPNCLIENTNUMBER")"_rgw)" -lt 2 ] ; then
-							Print_Output "false" "VPN Client $(eval echo '$'$IFACETMP"_VPNCLIENTNUMBER") is not configured for Policy Routing" "$ERR"
+						if [ "$(nvram get vpn_client"$(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER")"_rgw)" -lt 2 ] ; then
+							Print_Output "false" "VPN Client $(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER") is not configured for Policy Routing" "$ERR"
 							IFACE_PASS=false
 						fi
 					fi
 				fi
 				
 				# Print success message
-				if [ $IFACE_PASS = true ] ; then
+				if [ "$IFACE_PASS" = true ] ; then
 					Print_Output "false" "$IFACE passed validation" "$PASS"
 				fi
 			fi
@@ -427,7 +429,6 @@ Conf_Download () {
 }
 
 Conf_Exists () {
-	Print_Output "false" "Please run \n\n/jffs/scripts/$YAZFI_NAME\n\nin your SSH client/terminal when you have finished editing the configuration file"
 	if [ -f $YAZFI_CONF ] ; then
 		dos2unix $YAZFI_CONF
 		chmod 0644 $YAZFI_CONF
