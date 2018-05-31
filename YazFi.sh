@@ -529,7 +529,7 @@ Firewall_Rules () {
 			fi
 		done
 		
-		iptables "$ACTION" "$INPT" -i "$IFACE"-m state --state NEW -j "$LGRJT"
+		iptables "$ACTION" "$INPT" -i "$IFACE" -m state --state NEW -j "$LGRJT"
 		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT
 		
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ] ; then
@@ -601,25 +601,25 @@ Routing_FWNAT () {
 		create)
 			for ACTION in -D -I ; do
 				modprobe xt_comment
-				iptables -t nat $ACTION POSTROUTING -s $(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").0/24 -o tun1$3 -m comment --comment "$(Get_Guest_Name $2)" -j MASQUERADE
-				iptables $ACTION $FWRD -i $2 -o tun1$3 -m state --state NEW -j ACCEPT
-				iptables $ACTION $FWRD -i tun1$3 -o $2 -m state --state NEW -j ACCEPT
+				iptables -t nat "$ACTION" POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 -o tun1"$3" -m comment --comment "$(Get_Guest_Name "$2")" -j MASQUERADE
+				iptables "$ACTION" "$FWRD" -i "$2" -o tun1"$3" -m state --state NEW -j ACCEPT
+				iptables "$ACTION" "$FWRD" -i tun1"$3" -o "$2" -m state --state NEW -j ACCEPT
 			done
 		;;
 		delete)
-			RULES=$(echo $(iptables -t nat -nvL POSTROUTING --line-number | grep "$(Get_Guest_Name $2)" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -t nat -nvL POSTROUTING --line-number | grep "$(Get_Guest_Name "$2")" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES ; do
-				iptables -t nat -D POSTROUTING $RULENO
+				iptables -t nat -D POSTROUTING "$RULENO"
 			done
 			
-			RULES=$(echo $(iptables -nvL $FWRD --line-number | grep "$2" | grep "tun1" | awk '{print $1}') | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -nvL $FWRD --line-number | grep "$2" | grep "tun1" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES ; do
-				iptables -D $FWRD $RULENO
+				iptables -D "$FWRD" "$RULENO"
 			done
 		;;
 		deleteall)
 			for IFACE in $IFACELIST ; do
-				Routing_FWNAT delete $IFACE 2>/dev/null
+				Routing_FWNAT delete "$IFACE" 2>/dev/null
 			done
 		;;
 	esac
@@ -631,30 +631,30 @@ Routing_NVRAM() {
 		initialise)
 			COUNTER=1
 			until [ $COUNTER -gt 5 ] ; do
-				eval "VPN_IP_LIST_ORIG_"$COUNTER=$(echo $(nvram get "vpn_client"$COUNTER"_clientlist")$(nvram get "vpn_client"$COUNTER_"clientlist1")$(nvram get "vpn_client"$COUNTER"_clientlist2")$(nvram get "vpn_client"$COUNTER"_clientlist3")$(nvram get "vpn_client"$COUNTER"_clientlist4")$(nvram get "vpn_client"$COUNTER"_clientlist5") | Escape_Sed)
-				eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_ORIG_"$COUNTER) | Escape_Sed)
-				let COUNTER+=1
+				eval "VPN_IP_LIST_ORIG_"$COUNTER="$(echo "$(nvram get "vpn_client""$COUNTER""_clientlist")""$(nvram get "vpn_client""$COUNTER""_clientlist1")""$(nvram get "vpn_client""$COUNTER""_clientlist2")""$(nvram get "vpn_client""$COUNTER""_clientlist3")""$(nvram get "vpn_client""$COUNTER""_clientlist4")""$(nvram get "vpn_client""$COUNTER""_clientlist5")" | Escape_Sed)"
+				eval "VPN_IP_LIST_NEW_"$COUNTER="$(eval echo '$'"VPN_IP_LIST_ORIG_"$COUNTER | Escape_Sed)"
+				COUNTER=$((COUNTER + 1))
 			done
 		;;
 		create)
-			VPN_NVRAM=$(Get_Guest_Name $2)
-			VPN_IFACE_NVRAM="<$VPN_NVRAM>$(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").0/24>0.0.0.0>VPN"
-			VPN_IFACE_NVRAM_SAFE=$(echo $VPN_IFACE_NVRAM | sed -e 's/\//\\\//g' | sed -e 's/\./\\./g' | sed -e 's/ /\\ /g')
+			VPN_NVRAM="$(Get_Guest_Name "$2")"
+			VPN_IFACE_NVRAM="<$VPN_NVRAM>$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").0/24>0.0.0.0>VPN"
+			VPN_IFACE_NVRAM_SAFE="$(echo "$VPN_IFACE_NVRAM" | sed -e 's/\//\\\//g;s/\./\\./g;s/ /\\ /g')"
 			
 			# Check if guest network has already been added to policy routing for VPN client. If not, append to list.
-			if [ ! "$(echo $(eval echo '$'"VPN_IP_LIST_ORIG_"$3) | grep "$VPN_IFACE_NVRAM")" ] ; then
-				eval "VPN_IP_LIST_NEW_"$3=$(echo $(eval echo '$'"VPN_IP_LIST_NEW_"$3)$VPN_IFACE_NVRAM | Escape_Sed)
+			if ! eval echo '$'"VPN_IP_LIST_ORIG_""$3" | grep -q "$VPN_IFACE_NVRAM" ; then
+				eval "VPN_IP_LIST_NEW_""$3"="$(echo "$(eval echo '$'"VPN_IP_LIST_NEW_""$3")""$VPN_IFACE_NVRAM" | Escape_Sed)"
 			fi
 			
 			# Remove guest interface from any other VPN clients (i.e. config has changed from client 2 to client 1)
 			COUNTER=1
 			until [ $COUNTER -gt 5 ] ; do
-				if [ $COUNTER -eq $3 ] ; then
-					let COUNTER+=1
+				if [ $COUNTER -eq "$3" ] ; then
+					COUNTER=$((COUNTER + 1))
 					continue
 				fi
-				eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER) | sed -e "s/$VPN_IFACE_NVRAM_SAFE//g" | Escape_Sed)
-				let COUNTER+=1
+				eval "VPN_IP_LIST_NEW_"$COUNTER="$(eval echo '$'"VPN_IP_LIST_NEW_""$COUNTER" | sed -e "s/$VPN_IFACE_NVRAM_SAFE//g" | Escape_Sed)"
+				COUNTER=$((COUNTER + 1))
 			done
 		;;
 		delete)
@@ -678,7 +678,7 @@ Routing_NVRAM() {
 			COUNTER=1
 			until [ $COUNTER -gt 5 ] ; do
 				if [ "$(eval echo '$'"VPN_IP_LIST_ORIG_"$COUNTER)" != "$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)" ] ; then
-					Print_Output "true" "VPN Client $COUNTER client list has changed, restarting VPN Client$COUNTER"
+					Print_Output "true" "VPN Client $COUNTER client list has changed, restarting VPN Client $COUNTER"
 					
 					if [ $(uname -m) = "aarch64" ] ; then 
 						fullstring="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
@@ -869,6 +869,19 @@ case "$1" in
 		Iface_Manage deleteall 2>/dev/null
 		DHCP_Conf deleteall 2>/dev/null
 		exit 0
+	;;
+	status)
+		. "$YAZFI_CONF"
+		for IFACE in $IFACELIST ; do
+			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ] ; then
+				macinfo="$(wl -i "$IFACE" assoclist)"
+				if [ "$macinfo" != "" ] ; then
+					macaddr="${macinfo#* }"
+					arpinfo="$(arp -a | grep -iF "$macaddr" | awk '{print $1 " " $2}')"
+					printf "%s %s\\n" "$macaddr" "$arpinfo"
+				fi
+			fi
+		done
 	;;
 	*)
 		echo "Command not recognised, please try again"
