@@ -2,18 +2,14 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.0.0                        ######
+######                          v2.1.0                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
-
-#shellcheck disable=SC2034
-#shellcheck disable=SC1091
-#shellcheck source=/dev/null
 
 ### Start of script variables ###
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.0.0"
+readonly YAZFI_VERSION="v2.1.0"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi"
 ### End of script variables ###
 
@@ -660,16 +656,16 @@ Routing_NVRAM() {
 		delete)
 			COUNTER=1
 			until [ $COUNTER -gt 5 ] ; do
-				VPN_NVRAM="$(Get_Guest_Name $2)"
-				eval "VPN_IP_LIST_NEW_"$COUNTER=$(echo $(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER) | sed -e "s/$(echo '<'$VPN_NVRAM |  sed -e 's/\//\\\//g' | sed -e 's/ /\\ /g').*>VPN//g" | Escape_Sed)
-				let COUNTER+=1
+				VPN_NVRAM="$(Get_Guest_Name "$2")"
+				eval "VPN_IP_LIST_NEW_"$COUNTER="$(echo "$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)" | sed -e "s/$(echo '<'$VPN_NVRAM |  sed -e 's/\//\\\//g' | sed -e 's/ /\\ /g').*>VPN//g" | Escape_Sed)"
+				COUNTER=$((COUNTER + 1))
 			done
 		;;
 		deleteall)
 			Routing_NVRAM initialise 2>/dev/null
 			
 			for IFACE in $IFACELIST ; do
-				Routing_NVRAM delete $IFACE 2>/dev/null
+				Routing_NVRAM delete "$IFACE" 2>/dev/null
 			done
 			
 			Routing_NVRAM save 2>/dev/null
@@ -680,28 +676,27 @@ Routing_NVRAM() {
 				if [ "$(eval echo '$'"VPN_IP_LIST_ORIG_"$COUNTER)" != "$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)" ] ; then
 					Print_Output "true" "VPN Client $COUNTER client list has changed, restarting VPN Client $COUNTER"
 					
-					if [ $(uname -m) = "aarch64" ] ; then 
+					if [ "$(uname -m)" = "aarch64" ] ; then 
 						fullstring="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
-						nvram set "vpn_client"$COUNTER"_clientlist"="${fullstring:0:255}"
-						nvram set "vpn_client"$COUNTER"_clientlist1"="${fullstring:255:255}"
-						nvram set "vpn_client"$COUNTER"_clientlist2"="${fullstring:510:255}"
-						nvram set "vpn_client"$COUNTER"_clientlist3"="${fullstring:765:255}"
-						nvram set "vpn_client"$COUNTER"_clientlist4"="${fullstring:1020:255}"
-						nvram set "vpn_client"$COUNTER"_clientlist5"="${fullstring:1275:255}"
+						nvram set "vpn_client""$COUNTER""_clientlist"="$(echo "$fullstring" | cut -c0-255)"
+						nvram set "vpn_client""$COUNTER""_clientlist1"="$(echo "$fullstring" | cut -c256-510)"
+						nvram set "vpn_client""$COUNTER""_clientlist2"="$(echo "$fullstring" | cut -c511-765)"
+						nvram set "vpn_client""$COUNTER""_clientlist3"="$(echo "$fullstring" | cut -c766-1020)"
+						nvram set "vpn_client""$COUNTER""_clientlist4"="$(echo "$fullstring" | cut -c1021-1275)"
+						nvram set "vpn_client""$COUNTER""_clientlist5"="$(echo "$fullstring" | cut -c1276-1530)"
 					else
-						nvram set "vpn_client"$COUNTER"_clientlist"="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
+						nvram set "vpn_client""$COUNTER""_clientlist"="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
 					fi
 					nvram commit
 					service restart_vpnclient$COUNTER >/dev/null 2>&1
 				fi
-				let COUNTER+=1
+				COUNTER=$((COUNTER + 1))
 			done
 		;;
 	esac
 }
 
 DHCP_Conf() {
-	
 	
 	case $1 in
 		initialise)
@@ -712,13 +707,13 @@ DHCP_Conf() {
 			fi
 		;;
 		create)
-			CONFSTRING="interface=$2||||dhcp-range=$2,$(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").$(eval echo '$'$(Get_Iface_Var "$2")"_DHCPSTART"),$(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").$(eval echo '$'$(Get_Iface_Var "$2")"_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(echo $(eval echo '$'$(Get_Iface_Var "$2")"_IPADDR") | cut -f1-3 -d".").1||||dhcp-option=$2,6,$(eval echo '$'$(Get_Iface_Var "$2")"_DNS1"),$(eval echo '$'$(Get_Iface_Var "$2")"_DNS2")"
+			CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").1||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")"
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
 				sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"$BEGIN"'||||'"$CONFSTRING"'||||'"$END" $TMPCONF
 			else
-				echo -e "\n\n$BEGIN\n$CONFSTRING\n$END" >> $TMPCONF
+				printf "\\n\\n%s\\n%s\\n%s" "$BEGIN" "$CONFSTRING" "$END" >> $TMPCONF
 			fi
 		;;
 		delete)
@@ -772,51 +767,51 @@ Config_Networks () {
 	Firewall_Chains create 2>/dev/null
 	
 	for IFACE in $IFACELIST ; do
-		VPNCLIENTNO=$(eval echo '$'$(Get_Iface_Var "$IFACE")"_VPNCLIENTNUMBER")
+		VPNCLIENTNO=$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_VPNCLIENTNUMBER")
 		
-		if [ "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_ENABLED")" = "true" ] ; then
-			Iface_Manage create $IFACE 2>/dev/null
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ] ; then
+			Iface_Manage create "$IFACE" 2>/dev/null
 			
-			Firewall_Rules create $IFACE 2>/dev/null
+			Firewall_Rules create "$IFACE" 2>/dev/null
 			
-			if [ "$(eval echo '$'$(Get_Iface_Var "$IFACE")"_REDIRECTALLTOVPN")" = "true" ] ; then
-				Print_Output "true" "$IFACE (SSID: $(nvram get $IFACE"_ssid")) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
+			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_REDIRECTALLTOVPN")" = "true" ] ; then
+				Print_Output "true" "$IFACE (SSID: $(nvram get "$IFACE""_ssid")) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
 				
-				Routing_NVRAM create $IFACE $VPNCLIENTNO 2>/dev/null
+				Routing_NVRAM create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
 				
-				Routing_RPDB create $IFACE $VPNCLIENTNO 2>/dev/null
+				Routing_RPDB create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
 				
-				Routing_FWNAT create $IFACE $VPNCLIENTNO 2>/dev/null
+				Routing_FWNAT create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
 			else
-				Print_Output "true" "$IFACE (SSID: $(nvram get $IFACE"_ssid")) - sending all interface internet traffic over WAN interface"
+				Print_Output "true" "$IFACE (SSID: $(nvram get "$IFACE""_ssid")) - sending all interface internet traffic over WAN interface"
 				
 				# Remove guest interface from VPN client routing table
-				Routing_RPDB delete $IFACE 2>/dev/null
+				Routing_RPDB delete "$IFACE" 2>/dev/null
 				
 				# Remove guest interface VPN NAT rules and interface access
-				Routing_FWNAT delete $IFACE 2>/dev/null
+				Routing_FWNAT delete "$IFACE" 2>/dev/null
 				
 				# Remove guest interface from all policy routing
-				Routing_NVRAM delete $IFACE 2>/dev/null
+				Routing_NVRAM delete "$IFACE" 2>/dev/null
 			fi
 			
-			DHCP_Conf create $IFACE 2>/dev/null
+			DHCP_Conf create "$IFACE" 2>/dev/null
 			
 			sleep 1
 		else
-			Iface_Manage delete $IFACE 2>/dev/null
+			Iface_Manage delete "$IFACE" 2>/dev/null
 			
 			# Remove dnsmasq entries for this interface
-			DHCP_Conf delete $IFACE 2>/dev/null
+			DHCP_Conf delete "$IFACE" 2>/dev/null
 			
 			# Remove guest interface from all policy routing
-			Routing_NVRAM delete $IFACE 2>/dev/null
+			Routing_NVRAM delete "$IFACE" 2>/dev/null
 			
 			# Remove guest interface from VPN client routing table
-			Routing_RPDB delete $IFACE 2>/dev/null
+			Routing_RPDB delete "$IFACE" 2>/dev/null
 			
 			# Remove guest interface VPN NAT rules and interface access
-			Routing_FWNAT delete $IFACE 2>/dev/null
+			Routing_FWNAT delete "$IFACE" 2>/dev/null
 			
 		fi
 	done
