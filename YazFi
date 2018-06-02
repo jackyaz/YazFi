@@ -2,14 +2,14 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.1.1                        ######
+######                          v2.2.0                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ####################################################################
 
 ### Start of script variables ###
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.1.1"
+readonly YAZFI_VERSION="v2.2.0"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi"
 ### End of script variables ###
 
@@ -519,8 +519,7 @@ Firewall_Rules () {
 		iptables "$ACTION" "$FWRD" -i br0 -o "$IFACE" -m state --state NEW -j "$LGRJT"
 		
 		for IFACE_GUEST in $IFACELIST ; do
-			IFACETMP_GUEST="$(Get_Iface_Var "$IFACE_GUEST")"
-			if [ "$(eval echo '$'"$IFACETMP"_GUEST_ENABLED)" = "true" ] ; then
+			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE_GUEST")"_ENABLED)" = "true" ] ; then
 				iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_GUEST" -m state --state NEW -j "$LGRJT"
 			fi
 		done
@@ -867,19 +866,40 @@ case "$1" in
 	;;
 	status)
 		. "$YAZFI_CONF"
+		
+		Print_Output "false" "Querying router for connected WiFi clients..." "$PASS"
+		
 		for IFACE in $IFACELIST ; do
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ] ; then
-				macinfo="$(wl -i "$IFACE" assoclist)"
-				if [ "$macinfo" != "" ] ; then
-					macaddr="${macinfo#* }"
-					arpinfo="$(arp -a | grep -iF "$macaddr" | awk '{print $1 " " $2}')"
-					printf "%s %s\\n" "$macaddr" "$arpinfo"
+				printf "%75s\\n\\n" |tr " " "-"
+				printf "\\e[1mINTERFACE: %-5s\\e[0m\\n" "$IFACE"
+				printf "\\e[1mSSID: %-20s\\e[0m\\n\\n" "$(nvram get "$IFACE""_ssid")"
+				IFACE_MACS="$(wl -i "$IFACE" assoclist)"
+				if [ "$IFACE_MACS" != "" ] ; then
+					printf "\\e[1m%-20s%-20s%-20s\\e[0m\\n" "HOSTNAME" "IP ADDRESS" "MAC"
+					
+					IFS=$'\n'
+					for GUEST_MAC in $IFACE_MACS ; do
+						GUEST_MACADDR="${GUEST_MAC#* }"
+						GUEST_ARPINFO="$(arp -a | grep "$IFACE" | grep -i "$GUEST_MACADDR")"
+						GUEST_HOST="$(echo "$GUEST_ARPINFO" | awk '{print $1}')"
+						GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
+						printf "%-20s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
+					done
+					unset IFS
+				else
+					printf "\\e[1m\\e[33mNo clients connected\\e[0m\\n\\n"
 				fi
 			fi
 		done
+		
+		printf "%75s\\n\\n" |tr " " "-"
+		
+		Print_Output "false" "Query complete, please see above for results" "$PASS"
 	;;
 	*)
 		echo "Command not recognised, please try again"
 		exit 1
 	;;
 esac
+
