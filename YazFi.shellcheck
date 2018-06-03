@@ -2,8 +2,12 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.2.0                        ######
+######                          v2.2.1                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
+######                                                        ######
+######            Credit to @RMerlin for the original         ######
+######             guest network DHCP script and for          ######
+######                  AsusWRT-Merlin firmware               ######
 ####################################################################
 
 # shellcheck source=/dev/null
@@ -18,7 +22,7 @@
 ### Start of script variables ###
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.2.0"
+readonly YAZFI_VERSION="v2.2.1"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi"
 ### End of script variables ###
 
@@ -874,6 +878,7 @@ case "$1" in
 		exit 0
 	;;
 	status)
+		### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
 		. "$YAZFI_CONF"
 		
 		Print_Output "false" "Querying router for connected WiFi clients..." "$PASS"
@@ -905,6 +910,7 @@ case "$1" in
 		printf "%75s\\n\\n" |tr " " "-"
 		
 		Print_Output "false" "Query complete, please see above for results" "$PASS"
+		#######################################################################################################
 	;;
 	*)
 		echo "Command not recognised, please try again"
