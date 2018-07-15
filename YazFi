@@ -38,8 +38,10 @@ readonly TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
 ### Start of firewall variables ###
 readonly INPT="$YAZFI_NAME""INPUT"
 readonly FWRD="$YAZFI_NAME""FORWARD"
-readonly LGRJT="$YAZFI_NAME""Reject"
+readonly LGRJT="$YAZFI_NAME""REJECT"
+readonly DNSFLTR="$YAZFI_NAME""DNSFILTER"
 readonly CHAINS="$INPT $FWRD $LGRJT"
+readonly NATCHAINS="$DNSFLTR"
 ### End of firewall variables ###
 
 ### Start of VPN clientlist variables ###
@@ -468,6 +470,18 @@ Firewall_Chains() {
 							
 							# Optional rule to log all rejected packets to syslog
 							#iptables -I $LGRJT -m state --state NEW -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
+						;;
+					esac
+				fi
+			done
+			for CHAIN in $NATCHAINS ; do
+				if ! iptables -t nat -n -L "$CHAIN" >/dev/null 2>&1 ; then
+					iptables -t nat -N "$CHAIN"
+					case $CHAIN in
+						$DNSFLTR)
+							iptables -t nat -A PREROUTING -p udp -m udp --dport 53 -j "$CHAIN"
+							iptables -t nat -A PREROUTING -p tcp -m tcp --dport 53 -j "$CHAIN"
+						;;
 					esac
 				fi
 			done
@@ -484,6 +498,20 @@ Firewall_Chains() {
 						;;
 						$LGRJT)
 							iptables -D "$LGRJT" -j REJECT
+						;;
+					esac
+					
+					iptables -F "$CHAIN"
+					iptables -X "$CHAIN"
+				fi
+			done
+			for CHAIN in $NATCHAINS ; do
+				if ! iptables -t nat -n -L "$CHAIN" >/dev/null 2>&1 ; then
+					case $CHAIN in
+						$DNSFLTR)
+							iptables -t nat -D PREROUTING -p udp -m udp --dport 53 -j "$CHAIN"
+							iptables -t nat -D PREROUTING -p tcp -m tcp --dport 53 -j "$CHAIN"
+						;;
 					esac
 					
 					iptables -F "$CHAIN"
@@ -552,10 +580,20 @@ Firewall_Rules () {
 			for PROTO in tcp udp ; do
 				iptables "$ACTION" "$INPT" -i "$IFACE" -p "$PROTO" --dport 53 -j ACCEPT
 			done
+			
 		else
 			RULES=$(iptables -nvL $INPT --line-number | grep "dpt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES ; do
 				iptables -D "$INPT" "$RULENO"
+			done
+		fi
+		
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNSFORCE")" = "true" ] ; then
+			iptables -t nat "$ACTION" "$DNSFLTR" -i "$IFACE" -j DNAT --to-destination "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")"
+		else
+			RULES=$(iptables -t nat -nvL $DNSFLTR --line-number | grep "$IFACE" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			for RULENO in $RULES ; do
+				iptables -t nat -D "$DNSFLTR" "$RULENO"
 			done
 		fi
 		
