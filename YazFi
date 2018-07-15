@@ -90,7 +90,7 @@ Get_Guest_Name () {
 Iface_Manage () {
 	case $1 in
 		create)
-			ifconfig "$2" "$(eval echo '$'"$(Get_Iface_Var "$IFACE")"_IPADDR | cut -f1-3 -d".").1" netmask 255.255.255.0 # Assign the .1 address to the interface
+			ifconfig "$2" "$(eval echo '$'"$(Get_Iface_Var "$2")"_IPADDR | cut -f1-3 -d".").1" netmask 255.255.255.0 # Assign the .1 address to the interface
 		;;
 		delete)
 			ifconfig "$2" 0.0.0.0
@@ -561,18 +561,6 @@ Firewall_Rules () {
 		
 		### End of IP firewall rules ###
 		
-		# COUNTER=1
-		# until [ $COUNTER -gt 5 ] ; do
-			# if ifconfig "tun1$COUNTER" >/dev/null 2>&1 ; then
-				# ip route del $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$COUNTER src $IPADDR.1
-				# ip route add $IPADDR.0/24 dev $IFACE proto kernel table ovpnc$COUNTER src $IPADDR.1
-				# iptables -t nat -D POSTROUTING -s $IPADDR.0/24 -o tun1$COUNTER -j MASQUERADE
-				# iptables -t nat -I POSTROUTING -s $IPADDR.0/24 -o tun1$COUNTER -j MASQUERADE
-			# fi
-			
-			# let COUNTER+=1
-		# done
-		
 	done
 }
 
@@ -598,6 +586,22 @@ Routing_RPDB () {
 	esac
 	
 	ip route flush cache
+}
+
+Routing_RPDB_LAN () {
+	
+	case $1 in
+		create)
+			COUNTER=1
+			until [ $COUNTER -gt 5 ] ; do
+				if ifconfig "tun1$COUNTER" >/dev/null 2>&1 ; then
+					ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".1
+					ip route add "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".1
+				fi
+				COUNTER=$((COUNTER+1))
+			done
+		;;
+	esac
 }
 
 Routing_FWNAT () {
@@ -739,7 +743,7 @@ DHCP_Conf() {
 					sed -i -e '/'"$BEGIN"'/,+5d' $TMPCONF
 				fi
 			done
-			DHCP_Conf save 2/dev/null
+			DHCP_Conf save 2>/dev/null
 		;;
 		save)
 			sed -i -e 's/||||/\n/g' $TMPCONF
@@ -751,6 +755,7 @@ DHCP_Conf() {
 			fi
 			
 			rm -f $TMPCONF
+		;;
 	esac
 	
 }
@@ -804,6 +809,8 @@ Config_Networks () {
 				Routing_NVRAM delete "$IFACE" 2>/dev/null
 			fi
 			
+			Routing_RPDB_LAN create "$IFACE" 2>/dev/null
+			
 			DHCP_Conf create "$IFACE" 2>/dev/null
 			
 			sleep 1
@@ -827,7 +834,7 @@ Config_Networks () {
 	
 	Routing_NVRAM save 2>/dev/null
 	
-	DHCP_Conf save 2/dev/null
+	DHCP_Conf save 2>/dev/null
 	
 	rm -f /tmp/$YAZFI_NAME.lock
 	
