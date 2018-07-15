@@ -10,15 +10,6 @@
 ######                  AsusWRT-Merlin firmware               ######
 ####################################################################
 
-# shellcheck source=/dev/null
-# shellcheck disable=SC1003
-# shellcheck disable=SC2005
-# shellcheck disable=SC2034
-# shellcheck disable=SC2039
-# shellcheck disable=SC2086
-# shellcheck disable=SC2140
-# shellcheck disable=SC2183
-
 ### Start of script variables ###
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
