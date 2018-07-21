@@ -21,8 +21,11 @@ wl01_DHCPSTART=2
 wl01_DHCPEND=254
 wl01_DNS1=8.8.8.8
 wl01_DNS2=8.8.4.4
+wl01_FORCEDNS=true
 wl01_REDIRECTALLTOVPN=true
 wl01_VPNCLIENTNUMBER=2
+wl01_LANACCESS=false
+wl01_CLIENTISOLATION=
 ####################################################################
 ######                 Guest Network 2 (wl0.2)                 #####
 ####################################################################
@@ -32,8 +35,11 @@ wl02_DHCPSTART=2
 wl02_DHCPEND=254
 wl02_DNS1=
 wl02_DNS2=
+wl02_FORCEDNS=false
 wl02_REDIRECTALLTOVPN=false
 wl02_VPNCLIENTNUMBER=
+wl02_LANACCESS=true
+wl02_CLIENTISOLATION=
 ####################################################################
 ######                 Guest Network 3 (wl0.3)                 #####
 ####################################################################
@@ -43,8 +49,11 @@ wl03_DHCPSTART=
 wl03_DHCPEND=
 wl03_DNS1=
 wl03_DNS2=
+wl03_FORCEDNS=
 wl03_REDIRECTALLTOVPN=
 wl03_VPNCLIENTNUMBER=
+wl03_LANACCESS=
+wl03_CLIENTISOLATION=
 ####################################################################
 ######                     5 GHz Networks                     ######
 ####################################################################
@@ -56,8 +65,11 @@ wl11_DHCPSTART=
 wl11_DHCPEND=
 wl11_DNS1=
 wl11_DNS2=
+wl11_FORCEDNS=
 wl11_REDIRECTALLTOVPN=
 wl11_VPNCLIENTNUMBER=
+wl11_LANACCESS=
+wl11_CLIENTISOLATION=
 ####################################################################
 ######                 Guest Network 2 (wl1.2)                 #####
 ####################################################################
@@ -67,8 +79,11 @@ wl12_DHCPSTART=
 wl12_DHCPEND=
 wl12_DNS1=
 wl12_DNS2=
+wl12_FORCEDNS=
 wl12_REDIRECTALLTOVPN=
 wl12_VPNCLIENTNUMBER=
+wl12_LANACCESS=
+wl12_CLIENTISOLATION=
 ####################################################################
 ######                 Guest Network 3 (wl1.3)                 #####
 ####################################################################
@@ -78,8 +93,11 @@ wl13_DHCPSTART=
 wl13_DHCPEND=
 wl13_DNS1=
 wl13_DNS2=
+wl13_FORCEDNS=
 wl13_REDIRECTALLTOVPN=
 wl13_VPNCLIENTNUMBER=
+wl13_LANACCESS=
+wl13_CLIENTISOLATION=
 ####################################################################
 ######                    5 GHz - 2 Networks                  ######
 ######     (for those with 2 5GHz radios, e.g. RT-AC5300)     ######
@@ -92,8 +110,11 @@ wl21_DHCPSTART=
 wl21_DHCPEND=
 wl21_DNS1=
 wl21_DNS2=
+wl21_FORCEDNS=
 wl21_REDIRECTALLTOVPN=
 wl21_VPNCLIENTNUMBER=
+wl21_LANACCESS=
+wl21_CLIENTISOLATION=
 ####################################################################
 ######                 Guest Network 2 (wl2.2)                 #####
 ####################################################################
@@ -103,8 +124,11 @@ wl22_DHCPSTART=
 wl22_DHCPEND=
 wl22_DNS1=
 wl22_DNS2=
+wl22_FORCEDNS=
 wl22_REDIRECTALLTOVPN=
 wl22_VPNCLIENTNUMBER=
+wl22_LANACCESS=
+wl22_CLIENTISOLATION=
 ####################################################################
 ######                 Guest Network 3 (wl2.3)                 #####
 ####################################################################
@@ -114,6 +138,9 @@ wl23_DHCPSTART=
 wl23_DHCPEND=
 wl23_DNS1=
 wl23_DNS2=
+wl23_FORCEDNS=
 wl23_REDIRECTALLTOVPN=
 wl23_VPNCLIENTNUMBER=
+wl23_LANACCESS=
+wl23_CLIENTISOLATION=
 ####################################################################

@@ -370,11 +370,11 @@ Conf_Validate () {
 					IFACE_PASS=false
 				fi
 				
-				# Validate _DNSFORCE
-				if [ -z "$(eval echo '$'"$IFACETMP""_DNSFORCE")" ]; then
-					sed -i -e "s/""$IFACETMP""_DNSFORCE=/""$IFACETMP""_DNSFORCE=false/" "$YAZFI_CONF"
-					Print_Output "false" "$IFACETMP""_DNSFORCE is blank, setting to false" "$WARN"
-				elif ! Validate_TrueFalse "$IFACETMP""_DNSFORCE" "$(eval echo '$'"$IFACETMP""_DNSFORCE")"; then
+				# Validate _FORCEDNS
+				if [ -z "$(eval echo '$'"$IFACETMP""_FORCEDNS")" ]; then
+					sed -i -e "s/""$IFACETMP""_FORCEDNS=/""$IFACETMP""_FORCEDNS=false/" "$YAZFI_CONF"
+					Print_Output "false" "$IFACETMP""_FORCEDNS is blank, setting to false" "$WARN"
+				elif ! Validate_TrueFalse "$IFACETMP""_FORCEDNS" "$(eval echo '$'"$IFACETMP""_FORCEDNS")"; then
 					IFACE_PASS=false
 				fi
 				
@@ -596,7 +596,7 @@ Firewall_Rules () {
 			done
 		fi
 		
-		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNSFORCE")" = "true" ]; then
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_FORCEDNS")" = "true" ]; then
 			iptables -t nat "$ACTION" "$DNSFLTR" -i "$IFACE" -j DNAT --to-destination "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")"
 		else
 			RULES=$(iptables -t nat -nvL $DNSFLTR --line-number | grep "$IFACE" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
