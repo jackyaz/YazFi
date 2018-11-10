@@ -451,6 +451,7 @@ Conf_Exists () {
 	elif [ -f "$YAZFI_CONF_OLD" ]; then
 		Print_Output "true" "$YAZFI_NAME.conf found in old directory, moving to new $YAZFI_NAME directory" "$WARN"
 		mkdir -p "/jffs/configs/$YAZFI_NAME"
+		cp "$YAZFI_CONF_OLD" "$YAZFI_CONF_OLD.bak"
 		mv "$YAZFI_CONF_OLD" "$YAZFI_CONF"
 		Conf_Exists
 	else
@@ -824,6 +825,7 @@ Config_Networks () {
 	DHCP_Conf initialise 2>/dev/null
 	
 	Routing_NVRAM initialise 2>/dev/null
+	
 	Firewall_Chains create 2>/dev/null
 	
 	for IFACE in $IFACELIST; do
@@ -855,7 +857,7 @@ Config_Networks () {
 				Routing_NVRAM delete "$IFACE" 2>/dev/null
 			fi
 			
-			Routing_RPDB_LAN create "$IFACE" 2>/dev/null
+			#Routing_RPDB_LAN create "$IFACE" 2>/dev/null
 			
 			DHCP_Conf create "$IFACE" 2>/dev/null
 			
