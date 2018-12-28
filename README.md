@@ -7,6 +7,7 @@ Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not l
 * Dedicated VPN WiFi networks
 * Separate subnets for enhanced organisation of devices
 * Allow guest networks to make use of pixelserv-tls (if installed)
+* Extend DNS Filter to guest networks
 
 ## Supported Models
 
