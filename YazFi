@@ -2,7 +2,7 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.3.0                        ######
+######                          v2.3.1                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ######                                                        ######
 ######            Credit to @RMerlin for the original         ######
@@ -14,7 +14,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.3.0"
+readonly YAZFI_VERSION="v2.3.1"
 readonly YAZFI_BRANCH="master"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -603,7 +603,7 @@ Firewall_Rules () {
 		
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_FORCEDNS")" = "true" ]; then
 			VPNDNS="$(nvram get "vpn_client""$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_VPNCLIENTNUMBER")""_adns")"
-			if [ "$VPN" -lt 3 ]; then
+			if [ "$VPNDNS" -lt 3 ]; then
 				iptables -t nat "$ACTION" "$DNSFLTR" -i "$IFACE" -j DNAT --to-destination "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")"
 			fi
 		else
