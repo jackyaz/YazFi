@@ -56,13 +56,13 @@ What do each of the settings mean?
 ### wl01_ENABLED
 Enable YazFi for this Guest Network
 
-### wl01_IPADDR=10.14.17.0
+### wl01_IPADDR
 IP address/subnet to use for Guest Network
 
-### wl01_DHCPSTART=2
+### wl01_DHCPSTART
 Start of DHCP pool (2-253)
 
-### wl01_DHCPEND=254
+### wl01_DHCPEND
 End of DHCP pool (3-254)
 
 ### wl01_DNS1
