@@ -2,7 +2,7 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.2.5                        ######
+######                          v2.3.0                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ######                                                        ######
 ######            Credit to @RMerlin for the original         ######
@@ -14,7 +14,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.2.5"
+readonly YAZFI_VERSION="v2.2.6"
 readonly YAZFI_BRANCH="testing"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -433,6 +433,7 @@ Conf_Validate () {
 Conf_Download () {
 	Print_Output "false" "Downloading a blank configuration file to $1"
 	sleep 1
+	mkdir -p "/jffs/configs/$YAZFI_NAME/"
 	/usr/sbin/curl -s --retry 3 "$YAZFI_REPO.config" -o "$1"
 	chmod 0644 "$1"
 	dos2unix "$1"
@@ -558,6 +559,8 @@ Firewall_Rules () {
 		ebtables "$ACTION" FORWARD -o "$IFACE" -j DROP
 		
 		ebtables -t broute -D BROUTING -p IPv4 -i "$IFACE" --ip-dst "$LAN"/24 --ip-proto tcp -j DROP
+		ebtables -t broute -D BROUTING -p IPv4 -i "$IFACE" --ip-dst "$LAN" --ip-proto icmp -j ACCEPT
+		ebtables -t broute -D BROUTING -p IPv4 -i "$IFACE" --ip-dst "$LAN"/24 --ip-proto icmp -j DROP
 		### End of bridge rules ###
 		
 		### Start of IP firewall rules ###
