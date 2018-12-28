@@ -1,5 +1,5 @@
 # YazFi - enhanced AsusWRT-Merlin Guest WiFi Networks
-## v2.2.4
+## v2.3.0
 ## About
 
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
@@ -7,6 +7,7 @@ Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not l
 * Dedicated VPN WiFi networks
 * Separate subnets for enhanced organisation of devices
 * Allow guest networks to make use of pixelserv-tls (if installed)
+* Extend DNS Filter to guest networks
 
 ## Supported Models
 
@@ -47,6 +48,44 @@ Using your preferred SSH client/terminal, copy and paste the following command, 
 ## Help
 
 Please post about any issues and problems here: https://www.snbforums.com/threads/yazfi-enhanced-asuswrt-merlin-guest-wifi-networks.45924/
+
+## FAQs
+
+What do each of the settings mean?
+
+### wl01_ENABLED
+Enable YazFi for this Guest Network
+
+### wl01_IPADDR=10.14.17.0
+IP address/subnet to use for Guest Network
+
+### wl01_DHCPSTART=2
+Start of DHCP pool (2-253)
+
+### wl01_DHCPEND=254
+End of DHCP pool (3-254)
+
+### wl01_DNS1
+IP address for primary DNS resolver
+
+### wl01_DNS2
+IP address for secondary DNS resolver
+
+### wl01_FORCEDNS
+Should Guest Network DNS requests be forced/redirected to DNS1? (true/false)
+N.B. This setting is ignored if sending to VPN, and VPN Client's DNS configuration is Exclusive
+
+### wl01_REDIRECTALLTOVPN
+Should Guest Network traffic be sent via VPN? (true/false)
+
+### wl01_VPNCLIENTNUMBER
+The number of the VPN Client to send traffic through (1-5)
+
+### wl01_LANACCESS
+Not implemented
+
+### wl01_CLIENTISOLATION
+Not implemented
 
 ## Known Issues/Limitations
 
