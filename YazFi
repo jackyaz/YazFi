@@ -2,7 +2,7 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.4.0                        ######
+######                          v2.4.1                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ######                                                        ######
 ######            Credit to @RMerlin for the original         ######
@@ -14,7 +14,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.4.0"
+readonly YAZFI_VERSION="v2.4.1"
 readonly YAZFI_BRANCH="testing"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 readonly BLOCKDHCP="false"
@@ -663,7 +663,6 @@ Firewall_Rules () {
 }
 
 Routing_RPDB () {
-	
 	case $1 in
 		create)
 			ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$3" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".1
@@ -687,7 +686,6 @@ Routing_RPDB () {
 }
 
 Routing_RPDB_LAN () {
-	
 	case $1 in
 		create)
 			COUNTER=1
@@ -703,7 +701,6 @@ Routing_RPDB_LAN () {
 }
 
 Routing_FWNAT () {
-	
 	case $1 in
 		create)
 			for ACTION in -D -I; do
@@ -733,7 +730,6 @@ Routing_FWNAT () {
 }
 
 Routing_NVRAM() {
-	
 	case $1 in
 		initialise)
 			COUNTER=1
@@ -807,8 +803,25 @@ Routing_NVRAM() {
 	esac
 }
 
+DHCP_Conf_Block() {
+	case $1 in
+		create)
+			DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $TMPCONF)
+			
+			if [ "$DHCPBLOCK_BR0" -eq 0 ]; then
+				printf "\\n\\nno-dhcp-interface=br0 # %s Guest Networks\\n" "$YAZFI_NAME" >> $TMPCONF
+			fi
+		;;
+		delete)
+			DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $TMPCONF)
+			if [ "$DHCPBLOCK_BR0" -gt 0 ]; then
+				sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' $TMPCONF
+			fi
+		;;
+	esac
+}
+
 DHCP_Conf() {
-	
 	case $1 in
 		initialise)
 			if [ -f $DNSCONF ]; then
@@ -835,7 +848,11 @@ DHCP_Conf() {
 		delete)
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
-				sed -i -e '/'"$BEGIN"'/,+6d' $TMPCONF
+				if [ "$BLOCKDHCP" = "true" ]; then
+					sed -i -e '/'"$BEGIN"'/,+6d' $TMPCONF
+				else
+					sed -i -e '/'"$BEGIN"'/,+5d' $TMPCONF
+				fi
 			fi
 		;;
 		deleteall)
@@ -843,15 +860,15 @@ DHCP_Conf() {
 			for IFACE in $IFACELIST; do
 				BEGIN="### Start of script-generated configuration for interface $IFACE ###"
 				if grep -q "### Start of script-generated configuration for interface $IFACE ###" $TMPCONF; then
-					sed -i -e '/'"$BEGIN"'/,+6d' $TMPCONF
+					if [ "$BLOCKDHCP" = "true" ]; then
+						sed -i -e '/'"$BEGIN"'/,+6d' $TMPCONF
+					else
+						sed -i -e '/'"$BEGIN"'/,+5d' $TMPCONF
+					fi
 				fi
 			done
 			
-			DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $TMPCONF)
-			
-			if [ "$DHCPBLOCK_BR0" -gt 0 ]; then
-				sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' $TMPCONF
-			fi
+			DHCP_Conf_Block delete 2>/dev/null
 			
 			DHCP_Conf save 2>/dev/null
 		;;
@@ -859,11 +876,7 @@ DHCP_Conf() {
 			sed -i -e 's/||||/\n/g' $TMPCONF
 			
 			if [ "$BLOCKDHCP" = "true" ]; then
-				DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $TMPCONF)
-				
-				if [ "$DHCPBLOCK_BR0" -eq 0 ]; then
-					printf "\\n\\nno-dhcp-interface=br0 # %s Guest Networks\\n" "$YAZFI_NAME" >> $TMPCONF
-				fi
+				DHCP_Conf_Block create 2>/dev/null
 			fi
 			
 			if ! diff -q $DNSCONF $TMPCONF >/dev/null 2>&1; then
@@ -875,11 +888,9 @@ DHCP_Conf() {
 			rm -f $TMPCONF
 		;;
 	esac
-	
 }
 
 Config_Networks () {
-	
 	if ! Conf_Exists; then
 		Conf_Download $YAZFI_CONF
 		exit 1
