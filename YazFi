@@ -2,7 +2,7 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.3.3                        ######
+######                          v2.4.0                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ######                                                        ######
 ######            Credit to @RMerlin for the original         ######
@@ -14,8 +14,8 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.3.3"
-readonly YAZFI_BRANCH="master"
+readonly YAZFI_VERSION="v2.4.0"
+readonly YAZFI_BRANCH="testing"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
 
@@ -111,7 +111,7 @@ Startup_Auto () {
 		create)
 			if [ -f /jffs/scripts/firewall-start ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME"' & # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME"' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					Print_Output "true" "Purging duplicate/invalid entries for $YAZFI_NAME in firewall-start"
@@ -121,13 +121,13 @@ Startup_Auto () {
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					Print_Output "true" "Adding $YAZFI_NAME to firewall-start"
 					echo "" >> /jffs/scripts/firewall-start
-					echo "/jffs/scripts/$YAZFI_NAME"' & # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
+					echo "/jffs/scripts/$YAZFI_NAME"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 				fi
 			else
 				Print_Output "true" "firewall-start doesn't exist, creating"
 				echo "#!/bin/sh" > /jffs/scripts/firewall-start
 				echo "" >> /jffs/scripts/firewall-start
-				echo "/jffs/scripts/$YAZFI_NAME"' & # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
+				echo "/jffs/scripts/$YAZFI_NAME"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 				chmod 0755 /jffs/scripts/firewall-start
 			fi
 		;;
