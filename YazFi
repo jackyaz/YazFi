@@ -880,12 +880,12 @@ DHCP_Conf() {
 			fi
 			
 			if ! diff -q $DNSCONF $TMPCONF >/dev/null 2>&1; then
-				cp $TMPCONF $DNSCONF
-				service restart_dnsmasq >/dev/null 2>&1
+				#cp $TMPCONF $DNSCONF
+				#service restart_dnsmasq >/dev/null 2>&1
 				Print_Output "true" "DHCP configuration updated"
 			fi
 			
-			rm -f $TMPCONF
+			#rm -f $TMPCONF
 		;;
 	esac
 }
