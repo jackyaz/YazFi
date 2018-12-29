@@ -2,7 +2,7 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.4.1                        ######
+######                          v2.4.2                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ######                                                        ######
 ######            Credit to @RMerlin for the original         ######
@@ -14,10 +14,9 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.4.1"
+readonly YAZFI_VERSION="v2.4.2"
 readonly YAZFI_BRANCH="testing"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
-readonly BLOCKDHCP="false"
 ### End of script variables ###
 
 ### Start of output format variables ###
@@ -35,6 +34,8 @@ readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
 ### Start of path variables ###
 readonly DNSCONF="/jffs/configs/dnsmasq.conf.add"
 readonly TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
+readonly YAZFI_BLOCKDHCPFILE="/jffs/configs/$YAZFI_NAME/.blockdhcp"
+readonly YAZFI_ALLOWDHCPFILE="/tmp/$YAZFI_NAME.allowdhcp"
 ### End of path variables ###
 
 ### Start of firewall variables ###
@@ -44,6 +45,12 @@ readonly LGRJT="$YAZFI_NAME""REJECT"
 readonly DNSFLTR="$YAZFI_NAME""DNSFILTER"
 readonly CHAINS="$INPT $FWRD $LGRJT"
 readonly NATCHAINS="$DNSFLTR"
+BLOCKDHCP=""
+if [ -f "$YAZFI_BLOCKDHCPFILE" ] && [ ! -f "$YAZFI_ALLOWDHCPFILE" ]; then
+	BLOCKDHCP="true"
+else
+	BLOCKDHCP="false"
+fi
 ### End of firewall variables ###
 
 ### Start of VPN clientlist variables ###
@@ -107,12 +114,12 @@ Iface_Manage () {
 	esac
 }
 
-Block_DHCP () {
+Auto_Block_DHCP () {
 	case $1 in
 		create)
 			if [ -f /jffs/scripts/dnsmasq.postconf ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/dnsmasq.postconf)
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME"' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/dnsmasq.postconf)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME checkdhcp"' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/dnsmasq.postconf)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					Print_Output "true" "Purging duplicate/invalid entries for $YAZFI_NAME in dnsmasq.postconf"
@@ -122,13 +129,13 @@ Block_DHCP () {
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					Print_Output "true" "Adding $YAZFI_NAME to dnsmasq.postconf"
 					echo "" >> /jffs/scripts/dnsmasq.postconf
-					echo "/jffs/scripts/$YAZFI_NAME"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/dnsmasq.postconf
+					echo "/jffs/scripts/$YAZFI_NAME checkdhcp"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/dnsmasq.postconf
 				fi
 			else
 				Print_Output "true" "dnsmasq.postcon doesn't exist, creating"
 				echo "#!/bin/sh" > /jffs/scripts/dnsmasq.postconf
 				echo "" >> /jffs/scripts/dnsmasq.postconf
-				echo "/jffs/scripts/$YAZFI_NAME"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/dnsmasq.postconf
+				echo "/jffs/scripts/$YAZFI_NAME checkdhcp"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/dnsmasq.postconf
 				chmod 0755 /jffs/scripts/dnsmasq.postconf
 			fi
 		;;
@@ -144,7 +151,7 @@ Block_DHCP () {
 	esac
 }
 
-Startup_Auto () {
+Auto_Startup () {
 	case $1 in
 		create)
 			if [ -f /jffs/scripts/firewall-start ]; then
@@ -902,7 +909,11 @@ Config_Networks () {
 	
 	. $YAZFI_CONF
 	
-	Startup_Auto create 2>/dev/null
+	Auto_Startup create 2>/dev/null
+	
+	if [ "$BLOCKDHCP" = "true" ]; then
+		Auto_Block_DHCP create 2>/dev/null
+	fi
 	
 	DHCP_Conf initialise 2>/dev/null
 	
@@ -975,6 +986,9 @@ if [ -z "$1" ]; then
 	Check_Lock
 	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
 	Config_Networks
+	if [ "$BLOCKDHCP" = "true" ]; then
+		unblockdhcp
+	fi
 	exit 0
 fi
 
@@ -1001,8 +1015,31 @@ case "$1" in
 		Update_Version
 		exit 0
 	;;
+	checkdhcp)
+		. "$YAZFI_CONF"
+		Print_Output "true" "Allowing dnsmasq to provide DHCP" "$PASS"
+		if [ -f "$YAZFI_ALLOWDHCPFILE" ]; then
+			for IFACE in $IFACELIST; do
+				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
+					sed -i "/$(echo "no-dhcp-interface=""$IFACE" | sed 's/[]\/$*.^|[]/\\&/g')/d" "/etc/dnsmasq.conf"
+				fi
+			done
+			sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' "/etc/dnsmasq.conf"
+		fi
+		exit 0
+	;;
+	blockdhcp)
+		echo "$$" > "$YAZFI_BLOCKDHCPFILE"
+		Auto_Block_DHCP create 2>/dev/null
+		exit 0
+	;;
+	unblockdhcp)
+		echo "$$" > "$YAZFI_ALLOWDHCPFILE"
+		exit 0
+	;;
 	uninstall)
-		Startup_Auto delete 2>/dev/null
+		Auto_Startup delete 2>/dev/null
+		Auto_Block_DHCP delete 2>/dev/null
 		Routing_NVRAM deleteall 2>/dev/null
 		Routing_FWNAT deleteall 2>/dev/null
 		Routing_RPDB deleteall 2>/dev/null
@@ -1019,7 +1056,7 @@ case "$1" in
 		
 		for IFACE in $IFACELIST; do
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
-				printf "%75s\\n\\n" |tr " " "-"
+				printf "%75s\\n\\n" "" |tr " " "-"
 				printf "\\e[1mINTERFACE: %-5s\\e[0m\\n" "$IFACE"
 				printf "\\e[1mSSID: %-20s\\e[0m\\n\\n" "$(nvram get "$IFACE""_ssid")"
 				IFACE_MACS="$(wl -i "$IFACE" assoclist)"
@@ -1041,9 +1078,10 @@ case "$1" in
 			fi
 		done
 		
-		printf "%75s\\n\\n" |tr " " "-"
+		printf "%75s\\n\\n" "" |tr " " "-"
 		
 		Print_Output "false" "Query complete, please see above for results" "$PASS"
+		exit 0
 		#######################################################################################################
 	;;
 	*)
