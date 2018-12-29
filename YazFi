@@ -17,6 +17,7 @@ readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_VERSION="v2.4.0"
 readonly YAZFI_BRANCH="testing"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
+readonly BLOCKDHCP="false"
 ### End of script variables ###
 
 ### Start of output format variables ###
@@ -102,6 +103,43 @@ Iface_Manage () {
 			for IFACE in $IFACELIST; do
 				Iface_Manage delete "$IFACE"
 			done
+		;;
+	esac
+}
+
+Block_DHCP () {
+	case $1 in
+		create)
+			if [ -f /jffs/scripts/dnsmasq.postconf ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/dnsmasq.postconf)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME"' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/dnsmasq.postconf)
+				
+				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
+					Print_Output "true" "Purging duplicate/invalid entries for $YAZFI_NAME in dnsmasq.postconf"
+					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/dnsmasq.postconf
+				fi
+				
+				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
+					Print_Output "true" "Adding $YAZFI_NAME to dnsmasq.postconf"
+					echo "" >> /jffs/scripts/dnsmasq.postconf
+					echo "/jffs/scripts/$YAZFI_NAME"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/dnsmasq.postconf
+				fi
+			else
+				Print_Output "true" "dnsmasq.postcon doesn't exist, creating"
+				echo "#!/bin/sh" > /jffs/scripts/dnsmasq.postconf
+				echo "" >> /jffs/scripts/dnsmasq.postconf
+				echo "/jffs/scripts/$YAZFI_NAME"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/dnsmasq.postconf
+				chmod 0755 /jffs/scripts/dnsmasq.postconf
+			fi
+		;;
+		delete)
+			if [ -f /jffs/scripts/dnsmasq.postconf ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/dnsmasq.postconf)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/dnsmasq.postconf
+				fi
+			fi
 		;;
 	esac
 }
@@ -780,7 +818,12 @@ DHCP_Conf() {
 			fi
 		;;
 		create)
-			CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").1||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")"
+			CONFSTRING=""
+			if [ "$BLOCKDHCP" = "true" ]; then
+				CONFSTRING="interface=$2||||no-dhcp-interface=$2|||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").1||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")"
+			else
+				CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").1||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")"
+			fi
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
@@ -792,7 +835,7 @@ DHCP_Conf() {
 		delete)
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
-				sed -i -e '/'"$BEGIN"'/,+5d' $TMPCONF
+				sed -i -e '/'"$BEGIN"'/,+6d' $TMPCONF
 			fi
 		;;
 		deleteall)
@@ -800,13 +843,28 @@ DHCP_Conf() {
 			for IFACE in $IFACELIST; do
 				BEGIN="### Start of script-generated configuration for interface $IFACE ###"
 				if grep -q "### Start of script-generated configuration for interface $IFACE ###" $TMPCONF; then
-					sed -i -e '/'"$BEGIN"'/,+5d' $TMPCONF
+					sed -i -e '/'"$BEGIN"'/,+6d' $TMPCONF
 				fi
 			done
+			
+			DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $TMPCONF)
+			
+			if [ "$DHCPBLOCK_BR0" -gt 0 ]; then
+				sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' $TMPCONF
+			fi
+			
 			DHCP_Conf save 2>/dev/null
 		;;
 		save)
 			sed -i -e 's/||||/\n/g' $TMPCONF
+			
+			if [ "$BLOCKDHCP" = "true" ]; then
+				DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $TMPCONF)
+				
+				if [ "$DHCPBLOCK_BR0" -eq 0 ]; then
+					printf "\\n\\nno-dhcp-interface=br0 # %s Guest Networks\\n" "$YAZFI_NAME" >> $TMPCONF
+				fi
+			fi
 			
 			if ! diff -q $DNSCONF $TMPCONF >/dev/null 2>&1; then
 				cp $TMPCONF $DNSCONF
