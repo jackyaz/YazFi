@@ -1025,6 +1025,7 @@ case "$1" in
 				fi
 			done
 			sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' "/etc/dnsmasq.conf"
+			service restart_dnsmasq >/dev/null 2>&1
 		fi
 		exit 0
 	;;
