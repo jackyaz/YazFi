@@ -2,7 +2,7 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.4.5                        ######
+######                          v2.4.6                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ######                                                        ######
 ######            Credit to @RMerlin for the original         ######
@@ -14,7 +14,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.4.5"
+readonly YAZFI_VERSION="v2.4.6"
 readonly YAZFI_BRANCH="testing"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -811,8 +811,12 @@ Routing_NVRAM() {
 }
 
 DHCP_Unblock() {
-	Print_Output "true" "Allowing dnsmasq to provide DHCP" "$PASS"
-	echo "$$" > "$YAZFI_ALLOWDHCPFILE"
+	if [ ! -f "$YAZFI_ALLOWDHCPFILE" ]
+		Print_Output "true" "Allowing dnsmasq to provide DHCP" "$PASS"
+		echo "$$" > "$YAZFI_ALLOWDHCPFILE"
+		sleep 5
+		service restart_dnsmasq >/dev/null 2>&1
+	fi
 	return 0
 }
 
@@ -894,11 +898,6 @@ DHCP_Conf() {
 			
 			if ! diff -q $DNSCONF $TMPCONF >/dev/null 2>&1; then
 				cp $TMPCONF $DNSCONF
-				
-				if [ "$BLOCKDHCP" = "true" ]; then
-					DHCP_Unblock
-				fi
-				
 				service restart_dnsmasq >/dev/null 2>&1
 				Print_Output "true" "DHCP configuration updated"
 			fi
@@ -987,6 +986,10 @@ Config_Networks () {
 	Routing_NVRAM save 2>/dev/null
 	
 	DHCP_Conf save 2>/dev/null
+	
+	if [ "$BLOCKDHCP" = "true" ]; then
+		DHCP_Unblock
+	fi
 	
 	rm -f /tmp/$YAZFI_NAME.lock
 	
