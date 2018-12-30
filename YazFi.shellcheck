@@ -1057,14 +1057,17 @@ case "$1" in
 	;;
 	unblockdhcp)
 		Check_Lock
+		Print_Output "true" "Allowing dnsmasq to provide DHCP" "$PASS"
 		rm -f "$YAZFI_BLOCKDHCPFILE" 2>/dev/null
 		rm -f "$YAZFI_ALLOWDHCPFILE" 2>/dev/null
 		Auto_Block_DHCP delete 2>/dev/null
+		DHCP_Conf_Block delete 2>/dev/null
 		Clear_Lock
 		exit 0
 	;;
 	uninstall)
 		Check_Lock
+		Print_Output "true" "Removing YazFi..." "$PASS"
 		Auto_Startup delete 2>/dev/null
 		Auto_Block_DHCP delete 2>/dev/null
 		Routing_NVRAM deleteall 2>/dev/null
