@@ -2,7 +2,7 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.4.6                        ######
+######                          v2.4.7                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ######                                                        ######
 ######            Credit to @RMerlin for the original         ######
@@ -14,7 +14,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.4.6"
+readonly YAZFI_VERSION="v2.4.7"
 readonly YAZFI_BRANCH="testing"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -811,7 +811,7 @@ Routing_NVRAM() {
 }
 
 DHCP_Unblock() {
-	if [ ! -f "$YAZFI_ALLOWDHCPFILE" ]
+	if [ ! -f "$YAZFI_ALLOWDHCPFILE" ]; then
 		Print_Output "true" "Allowing dnsmasq to provide DHCP" "$PASS"
 		echo "$$" > "$YAZFI_ALLOWDHCPFILE"
 		sleep 5
