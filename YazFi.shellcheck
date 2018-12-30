@@ -2,7 +2,7 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.4.2                        ######
+######                          v2.3.5                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ######                                                        ######
 ######            Credit to @RMerlin for the original         ######
@@ -14,7 +14,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.4.2"
+readonly YAZFI_VERSION="v2.3.5"
 readonly YAZFI_BRANCH="testing"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -34,7 +34,7 @@ readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
 ### Start of path variables ###
 readonly DNSCONF="/jffs/configs/dnsmasq.conf.add"
 readonly TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
-readonly YAZFI_BLOCKDHCPFILE="/jffs/configs/$YAZFI_NAME/.blockdhcp"
+readonly YAZFI_BLOCKDHCPFILE="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.blockdhcp"
 readonly YAZFI_ALLOWDHCPFILE="/tmp/$YAZFI_NAME.allowdhcp"
 ### End of path variables ###
 
@@ -46,7 +46,7 @@ readonly DNSFLTR="$YAZFI_NAME""DNSFILTER"
 readonly CHAINS="$INPT $FWRD $LGRJT"
 readonly NATCHAINS="$DNSFLTR"
 BLOCKDHCP=""
-if [ -f "$YAZFI_BLOCKDHCPFILE" ] && [ ! -f "$YAZFI_ALLOWDHCPFILE" ]; then
+if [ -f "$YAZFI_BLOCKDHCPFILE" ]; then
 	BLOCKDHCP="true"
 else
 	BLOCKDHCP="false"
@@ -132,7 +132,7 @@ Auto_Block_DHCP () {
 					echo "/jffs/scripts/$YAZFI_NAME checkdhcp"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/dnsmasq.postconf
 				fi
 			else
-				Print_Output "true" "dnsmasq.postcon doesn't exist, creating"
+				Print_Output "true" "dnsmasq.postconf doesn't exist, creating"
 				echo "#!/bin/sh" > /jffs/scripts/dnsmasq.postconf
 				echo "" >> /jffs/scripts/dnsmasq.postconf
 				echo "/jffs/scripts/$YAZFI_NAME checkdhcp"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/dnsmasq.postconf
@@ -195,7 +195,7 @@ Check_Lock () {
 		if [ "$ageoflock" -gt 120 ]; then
 			Print_Output "true" "Stale lock file found (>120 seconds old) - purging lock" "$ERR"
 			kill "$(sed -n '1p' /tmp/$YAZFI_NAME.lock)" >/dev/null 2>&1
-			rm -f "/tmp/$YAZFI_NAME.lock"
+			Clear_Lock
 			echo "$$" > "/tmp/$YAZFI_NAME.lock"
 			return 0
 		else
@@ -208,19 +208,24 @@ Check_Lock () {
 	fi
 }
 
+Clear_Lock () {
+	rm -f "/tmp/$YAZFI_NAME.lock" 2>/dev/null
+	return 0
+}
+
 Update_Version () {
 	localver=$(grep "YAZFI_VERSION=" /jffs/scripts/$YAZFI_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-	/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; rm -f "/tmp/$YAZFI_NAME.lock"; exit 1; }
+	/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; Clear_Lock; exit 1; }
 	serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 	if [ "$localver" != "$serverver" ]; then
 		Print_Output "true" "New version of $YAZFI_NAME available - updating to $serverver" "$PASS"
 		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
 		chmod 0755 "/jffs/scripts/$YAZFI_NAME"
-		rm -f "/tmp/$YAZFI_NAME.lock"
+		Clear_Lock
 		service restart_firewall >/dev/null 2>&1
 	else
 		Print_Output "true" "No new version - latest is $localver" "$WARN"
-		rm -f "/tmp/$YAZFI_NAME.lock"
+		Clear_Lock
 	fi
 }
 ############################################################################
@@ -469,7 +474,7 @@ Conf_Validate () {
 	if [ "$CONF_VALIDATED" = true ]; then
 		return 0
 	else
-		rm -f "/tmp/$YAZFI_NAME.lock"
+		Clear_Lock
 		return 1
 	fi
 	
@@ -485,7 +490,7 @@ Conf_Download () {
 	Print_Output "false" "Please edit $1 with your desired settings. For a sample configuration file, see $YAZFI_REPO.config.sample"
 	sleep 1
 	Print_Output "false" "Please run \\n\\n/jffs/scripts/$YAZFI_NAME\\n\\nin your SSH client/terminal when you have finished editing the configuration file"
-	rm -f "/tmp/$YAZFI_NAME.lock"
+	Clear_Lock
 }
 
 Conf_Exists () {
@@ -736,7 +741,7 @@ Routing_FWNAT () {
 	esac
 }
 
-Routing_NVRAM() {
+Routing_NVRAM () {
 	case $1 in
 		initialise)
 			COUNTER=1
@@ -810,7 +815,17 @@ Routing_NVRAM() {
 	esac
 }
 
-DHCP_Conf_Block() {
+DHCP_Unblock () {
+	if [ ! -f "$YAZFI_ALLOWDHCPFILE" ]; then
+		Print_Output "true" "Allowing dnsmasq to provide DHCP" "$PASS"
+		echo "$$" > "$YAZFI_ALLOWDHCPFILE"
+		sleep 5
+		service restart_dnsmasq >/dev/null 2>&1
+	fi
+	return 0
+}
+
+DHCP_Conf_Block () {
 	case $1 in
 		create)
 			DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $TMPCONF)
@@ -828,7 +843,7 @@ DHCP_Conf_Block() {
 	esac
 }
 
-DHCP_Conf() {
+DHCP_Conf () {
 	case $1 in
 		initialise)
 			if [ -f $DNSCONF ]; then
@@ -887,12 +902,12 @@ DHCP_Conf() {
 			fi
 			
 			if ! diff -q $DNSCONF $TMPCONF >/dev/null 2>&1; then
-				#cp $TMPCONF $DNSCONF
-				#service restart_dnsmasq >/dev/null 2>&1
+				cp $TMPCONF $DNSCONF
+				service restart_dnsmasq >/dev/null 2>&1
 				Print_Output "true" "DHCP configuration updated"
 			fi
 			
-			#rm -f $TMPCONF
+			rm -f $TMPCONF
 		;;
 	esac
 }
@@ -977,7 +992,11 @@ Config_Networks () {
 	
 	DHCP_Conf save 2>/dev/null
 	
-	rm -f /tmp/$YAZFI_NAME.lock
+	if [ "$BLOCKDHCP" = "true" ]; then
+		DHCP_Unblock
+	fi
+	
+	Clear_Lock
 	
 	Print_Output "true" "YazFi $YAZFI_VERSION completed successfully" "$PASS"
 }
@@ -986,9 +1005,7 @@ if [ -z "$1" ]; then
 	Check_Lock
 	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
 	Config_Networks
-	if [ "$BLOCKDHCP" = "true" ]; then
-		unblockdhcp
-	fi
+	Clear_Lock
 	exit 0
 fi
 
@@ -1005,7 +1022,7 @@ case "$1" in
 			Conf_Download $YAZFI_CONF".blank"
 			Config_Networks
 		fi
-		
+		Clear_Lock
 		exit 0
 	;;
 	update)
@@ -1013,11 +1030,12 @@ case "$1" in
 		Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
 		sleep 1
 		Update_Version
+		Clear_Lock
 		exit 0
 	;;
 	checkdhcp)
+		Check_Lock
 		. "$YAZFI_CONF"
-		Print_Output "true" "Allowing dnsmasq to provide DHCP" "$PASS"
 		if [ -f "$YAZFI_ALLOWDHCPFILE" ]; then
 			for IFACE in $IFACELIST; do
 				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
@@ -1025,20 +1043,28 @@ case "$1" in
 				fi
 			done
 			sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' "/etc/dnsmasq.conf"
-			service restart_dnsmasq >/dev/null 2>&1
 		fi
+		Clear_Lock
 		exit 0
 	;;
 	blockdhcp)
+		Check_Lock
+		Print_Output "true" "Preventing dnsmasq from providing DHCP" "$PASS"
 		echo "$$" > "$YAZFI_BLOCKDHCPFILE"
 		Auto_Block_DHCP create 2>/dev/null
+		Clear_Lock
 		exit 0
 	;;
 	unblockdhcp)
-		echo "$$" > "$YAZFI_ALLOWDHCPFILE"
+		Check_Lock
+		rm -f "$YAZFI_BLOCKDHCPFILE" 2>/dev/null
+		rm -f "$YAZFI_ALLOWDHCPFILE" 2>/dev/null
+		Auto_Block_DHCP delete 2>/dev/null
+		Clear_Lock
 		exit 0
 	;;
 	uninstall)
+		Check_Lock
 		Auto_Startup delete 2>/dev/null
 		Auto_Block_DHCP delete 2>/dev/null
 		Routing_NVRAM deleteall 2>/dev/null
@@ -1047,10 +1073,12 @@ case "$1" in
 		Firewall_Chains deleteall 2>/dev/null
 		Iface_Manage deleteall 2>/dev/null
 		DHCP_Conf deleteall 2>/dev/null
+		Clear_Lock
 		exit 0
 	;;
 	status)
 		### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
+		Check_Lock
 		. "$YAZFI_CONF"
 		
 		Print_Output "false" "Querying router for connected WiFi clients..." "$PASS"
@@ -1082,11 +1110,14 @@ case "$1" in
 		printf "%75s\\n\\n" "" |tr " " "-"
 		
 		Print_Output "false" "Query complete, please see above for results" "$PASS"
+		Clear_Lock
 		exit 0
 		#######################################################################################################
 	;;
 	*)
+		Check_Lock
 		echo "Command not recognised, please try again"
+		Clear_Lock
 		exit 1
 	;;
 esac
