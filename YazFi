@@ -2,7 +2,7 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.4.4                        ######
+######                          v2.4.5                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ######                                                        ######
 ######            Credit to @RMerlin for the original         ######
@@ -14,7 +14,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.4.4"
+readonly YAZFI_VERSION="v2.4.5"
 readonly YAZFI_BRANCH="testing"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -894,6 +894,11 @@ DHCP_Conf() {
 			
 			if ! diff -q $DNSCONF $TMPCONF >/dev/null 2>&1; then
 				cp $TMPCONF $DNSCONF
+				
+				if [ "$BLOCKDHCP" = "true" ]; then
+					DHCP_Unblock
+				fi
+				
 				service restart_dnsmasq >/dev/null 2>&1
 				Print_Output "true" "DHCP configuration updated"
 			fi
@@ -992,9 +997,6 @@ if [ -z "$1" ]; then
 	Check_Lock
 	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
 	Config_Networks
-	if [ "$BLOCKDHCP" = "true" ]; then
-		DHCP_Unblock
-	fi
 	exit 0
 fi
 
@@ -1031,7 +1033,6 @@ case "$1" in
 				fi
 			done
 			sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' "/etc/dnsmasq.conf"
-			service restart_dnsmasq >/dev/null 2>&1
 		fi
 		exit 0
 	;;
