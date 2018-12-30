@@ -2,7 +2,7 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.4.3                        ######
+######                          v2.4.4                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ######                                                        ######
 ######            Credit to @RMerlin for the original         ######
@@ -14,7 +14,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.4.3"
+readonly YAZFI_VERSION="v2.4.4"
 readonly YAZFI_BRANCH="testing"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -810,6 +810,12 @@ Routing_NVRAM() {
 	esac
 }
 
+DHCP_Unblock() {
+	Print_Output "true" "Allowing dnsmasq to provide DHCP" "$PASS"
+	echo "$$" > "$YAZFI_ALLOWDHCPFILE"
+	return 0
+}
+
 DHCP_Conf_Block() {
 	case $1 in
 		create)
@@ -987,7 +993,7 @@ if [ -z "$1" ]; then
 	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
 	Config_Networks
 	if [ "$BLOCKDHCP" = "true" ]; then
-		unblockdhcp
+		DHCP_Unblock
 	fi
 	exit 0
 fi
@@ -1036,8 +1042,7 @@ case "$1" in
 		exit 0
 	;;
 	unblockdhcp)
-		Print_Output "true" "Allowing dnsmasq to provide DHCP" "$PASS"
-		echo "$$" > "$YAZFI_ALLOWDHCPFILE"
+		DHCP_Unblock
 		exit 0
 	;;
 	uninstall)
