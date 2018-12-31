@@ -817,7 +817,6 @@ Routing_NVRAM () {
 
 DHCP_Unblock () {
 	if [ ! -f "$YAZFI_ALLOWDHCPFILE" ]; then
-		Print_Output "true" "Allowing dnsmasq to provide DHCP" "$PASS"
 		echo "$$" > "$YAZFI_ALLOWDHCPFILE"
 		sleep 5
 		service restart_dnsmasq >/dev/null 2>&1
@@ -828,16 +827,17 @@ DHCP_Unblock () {
 DHCP_Conf_Block () {
 	case $1 in
 		create)
-			DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $TMPCONF)
+			DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $DNSCONF)
 			
 			if [ "$DHCPBLOCK_BR0" -eq 0 ]; then
-				printf "\\n\\nno-dhcp-interface=br0 # %s Guest Networks\\n" "$YAZFI_NAME" >> $TMPCONF
+				printf "no-dhcp-interface=br0 # %s Guest Networks\\n" "$YAZFI_NAME" >> $DNSCONF
 			fi
 		;;
 		delete)
-			DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $TMPCONF)
+			DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $DNSCONF)
+			
 			if [ "$DHCPBLOCK_BR0" -gt 0 ]; then
-				sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' $TMPCONF
+				sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' $DNSCONF
 			fi
 		;;
 	esac
@@ -890,16 +890,10 @@ DHCP_Conf () {
 				fi
 			done
 			
-			DHCP_Conf_Block delete 2>/dev/null
-			
 			DHCP_Conf save 2>/dev/null
 		;;
 		save)
 			sed -i -e 's/||||/\n/g' $TMPCONF
-			
-			if [ "$BLOCKDHCP" = "true" ]; then
-				DHCP_Conf_Block create 2>/dev/null
-			fi
 			
 			if ! diff -q $DNSCONF $TMPCONF >/dev/null 2>&1; then
 				cp $TMPCONF $DNSCONF
@@ -927,6 +921,7 @@ Config_Networks () {
 	Auto_Startup create 2>/dev/null
 	
 	if [ "$BLOCKDHCP" = "true" ]; then
+		DHCP_Conf_Block create 2>/dev/null
 		Auto_Block_DHCP create 2>/dev/null
 	fi
 	
@@ -1052,6 +1047,7 @@ case "$1" in
 		Print_Output "true" "Preventing dnsmasq from providing DHCP" "$PASS"
 		echo "$$" > "$YAZFI_BLOCKDHCPFILE"
 		Auto_Block_DHCP create 2>/dev/null
+		DHCP_Conf_Block create 2>/dev/null
 		BLOCKDHCP="true"
 		Config_Networks
 		Clear_Lock
@@ -1080,6 +1076,7 @@ case "$1" in
 		Firewall_Chains deleteall 2>/dev/null
 		Iface_Manage deleteall 2>/dev/null
 		DHCP_Conf deleteall 2>/dev/null
+		DHCP_Conf_Block delete 2>/dev/null
 		Clear_Lock
 		exit 0
 	;;
