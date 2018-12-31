@@ -2,7 +2,7 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.3.5                        ######
+######                          v2.3.6                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ######                                                        ######
 ######            Credit to @RMerlin for the original         ######
@@ -14,7 +14,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.3.5"
+readonly YAZFI_VERSION="v2.3.6"
 readonly YAZFI_BRANCH="testing"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -1052,6 +1052,7 @@ case "$1" in
 		Print_Output "true" "Preventing dnsmasq from providing DHCP" "$PASS"
 		echo "$$" > "$YAZFI_BLOCKDHCPFILE"
 		Auto_Block_DHCP create 2>/dev/null
+		Config_Networks
 		Clear_Lock
 		exit 0
 	;;
@@ -1062,6 +1063,7 @@ case "$1" in
 		rm -f "$YAZFI_ALLOWDHCPFILE" 2>/dev/null
 		Auto_Block_DHCP delete 2>/dev/null
 		DHCP_Conf_Block delete 2>/dev/null
+		Config_Networks
 		Clear_Lock
 		exit 0
 	;;
