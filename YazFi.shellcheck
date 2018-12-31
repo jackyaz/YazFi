@@ -1052,6 +1052,7 @@ case "$1" in
 		Print_Output "true" "Preventing dnsmasq from providing DHCP" "$PASS"
 		echo "$$" > "$YAZFI_BLOCKDHCPFILE"
 		Auto_Block_DHCP create 2>/dev/null
+		BLOCKDHCP="true"
 		Config_Networks
 		Clear_Lock
 		exit 0
@@ -1063,6 +1064,7 @@ case "$1" in
 		rm -f "$YAZFI_ALLOWDHCPFILE" 2>/dev/null
 		Auto_Block_DHCP delete 2>/dev/null
 		DHCP_Conf_Block delete 2>/dev/null
+		BLOCKDHCP="false"
 		Config_Networks
 		Clear_Lock
 		exit 0
