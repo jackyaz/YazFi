@@ -2,7 +2,7 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.3.3                        ######
+######                          v2.3.6                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ######                                                        ######
 ######            Credit to @RMerlin for the original         ######
@@ -14,7 +14,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.3.3"
+readonly YAZFI_VERSION="v2.3.6"
 readonly YAZFI_BRANCH="master"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -34,6 +34,8 @@ readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
 ### Start of path variables ###
 readonly DNSCONF="/jffs/configs/dnsmasq.conf.add"
 readonly TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
+readonly YAZFI_BLOCKDHCPFILE="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.blockdhcp"
+readonly YAZFI_ALLOWDHCPFILE="/tmp/$YAZFI_NAME.allowdhcp"
 ### End of path variables ###
 
 ### Start of firewall variables ###
@@ -43,6 +45,12 @@ readonly LGRJT="$YAZFI_NAME""REJECT"
 readonly DNSFLTR="$YAZFI_NAME""DNSFILTER"
 readonly CHAINS="$INPT $FWRD $LGRJT"
 readonly NATCHAINS="$DNSFLTR"
+BLOCKDHCP=""
+if [ -f "$YAZFI_BLOCKDHCPFILE" ]; then
+	BLOCKDHCP="true"
+else
+	BLOCKDHCP="false"
+fi
 ### End of firewall variables ###
 
 ### Start of VPN clientlist variables ###
@@ -106,12 +114,49 @@ Iface_Manage () {
 	esac
 }
 
-Startup_Auto () {
+Auto_Block_DHCP () {
+	case $1 in
+		create)
+			if [ -f /jffs/scripts/dnsmasq.postconf ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/dnsmasq.postconf)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME checkdhcp"' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/dnsmasq.postconf)
+				
+				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
+					Print_Output "true" "Purging duplicate/invalid entries for $YAZFI_NAME in dnsmasq.postconf"
+					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/dnsmasq.postconf
+				fi
+				
+				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
+					Print_Output "true" "Adding $YAZFI_NAME to dnsmasq.postconf"
+					echo "" >> /jffs/scripts/dnsmasq.postconf
+					echo "/jffs/scripts/$YAZFI_NAME checkdhcp"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/dnsmasq.postconf
+				fi
+			else
+				Print_Output "true" "dnsmasq.postconf doesn't exist, creating"
+				echo "#!/bin/sh" > /jffs/scripts/dnsmasq.postconf
+				echo "" >> /jffs/scripts/dnsmasq.postconf
+				echo "/jffs/scripts/$YAZFI_NAME checkdhcp"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/dnsmasq.postconf
+				chmod 0755 /jffs/scripts/dnsmasq.postconf
+			fi
+		;;
+		delete)
+			if [ -f /jffs/scripts/dnsmasq.postconf ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/dnsmasq.postconf)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/dnsmasq.postconf
+				fi
+			fi
+		;;
+	esac
+}
+
+Auto_Startup () {
 	case $1 in
 		create)
 			if [ -f /jffs/scripts/firewall-start ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME"' & # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME"' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					Print_Output "true" "Purging duplicate/invalid entries for $YAZFI_NAME in firewall-start"
@@ -121,13 +166,13 @@ Startup_Auto () {
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					Print_Output "true" "Adding $YAZFI_NAME to firewall-start"
 					echo "" >> /jffs/scripts/firewall-start
-					echo "/jffs/scripts/$YAZFI_NAME"' & # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
+					echo "/jffs/scripts/$YAZFI_NAME"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 				fi
 			else
 				Print_Output "true" "firewall-start doesn't exist, creating"
 				echo "#!/bin/sh" > /jffs/scripts/firewall-start
 				echo "" >> /jffs/scripts/firewall-start
-				echo "/jffs/scripts/$YAZFI_NAME"' & # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
+				echo "/jffs/scripts/$YAZFI_NAME"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 				chmod 0755 /jffs/scripts/firewall-start
 			fi
 		;;
@@ -150,7 +195,7 @@ Check_Lock () {
 		if [ "$ageoflock" -gt 120 ]; then
 			Print_Output "true" "Stale lock file found (>120 seconds old) - purging lock" "$ERR"
 			kill "$(sed -n '1p' /tmp/$YAZFI_NAME.lock)" >/dev/null 2>&1
-			rm -f "/tmp/$YAZFI_NAME.lock"
+			Clear_Lock
 			echo "$$" > "/tmp/$YAZFI_NAME.lock"
 			return 0
 		else
@@ -163,19 +208,24 @@ Check_Lock () {
 	fi
 }
 
+Clear_Lock () {
+	rm -f "/tmp/$YAZFI_NAME.lock" 2>/dev/null
+	return 0
+}
+
 Update_Version () {
 	localver=$(grep "YAZFI_VERSION=" /jffs/scripts/$YAZFI_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-	/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; rm -f "/tmp/$YAZFI_NAME.lock"; exit 1; }
+	/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; Clear_Lock; exit 1; }
 	serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 	if [ "$localver" != "$serverver" ]; then
 		Print_Output "true" "New version of $YAZFI_NAME available - updating to $serverver" "$PASS"
 		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
 		chmod 0755 "/jffs/scripts/$YAZFI_NAME"
-		rm -f "/tmp/$YAZFI_NAME.lock"
+		Clear_Lock
 		service restart_firewall >/dev/null 2>&1
 	else
 		Print_Output "true" "No new version - latest is $localver" "$WARN"
-		rm -f "/tmp/$YAZFI_NAME.lock"
+		Clear_Lock
 	fi
 }
 ############################################################################
@@ -424,7 +474,7 @@ Conf_Validate () {
 	if [ "$CONF_VALIDATED" = true ]; then
 		return 0
 	else
-		rm -f "/tmp/$YAZFI_NAME.lock"
+		Clear_Lock
 		return 1
 	fi
 	
@@ -440,7 +490,7 @@ Conf_Download () {
 	Print_Output "false" "Please edit $1 with your desired settings. For a sample configuration file, see $YAZFI_REPO.config.sample"
 	sleep 1
 	Print_Output "false" "Please run \\n\\n/jffs/scripts/$YAZFI_NAME\\n\\nin your SSH client/terminal when you have finished editing the configuration file"
-	rm -f "/tmp/$YAZFI_NAME.lock"
+	Clear_Lock
 }
 
 Conf_Exists () {
@@ -625,7 +675,6 @@ Firewall_Rules () {
 }
 
 Routing_RPDB () {
-	
 	case $1 in
 		create)
 			ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$3" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".1
@@ -649,7 +698,6 @@ Routing_RPDB () {
 }
 
 Routing_RPDB_LAN () {
-	
 	case $1 in
 		create)
 			COUNTER=1
@@ -665,7 +713,6 @@ Routing_RPDB_LAN () {
 }
 
 Routing_FWNAT () {
-	
 	case $1 in
 		create)
 			for ACTION in -D -I; do
@@ -694,8 +741,7 @@ Routing_FWNAT () {
 	esac
 }
 
-Routing_NVRAM() {
-	
+Routing_NVRAM () {
 	case $1 in
 		initialise)
 			COUNTER=1
@@ -769,8 +815,35 @@ Routing_NVRAM() {
 	esac
 }
 
-DHCP_Conf() {
-	
+DHCP_Unblock () {
+	if [ ! -f "$YAZFI_ALLOWDHCPFILE" ]; then
+		echo "$$" > "$YAZFI_ALLOWDHCPFILE"
+		sleep 5
+		service restart_dnsmasq >/dev/null 2>&1
+	fi
+	return 0
+}
+
+DHCP_Conf_Block () {
+	case $1 in
+		create)
+			DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $DNSCONF)
+			
+			if [ "$DHCPBLOCK_BR0" -eq 0 ]; then
+				printf "no-dhcp-interface=br0 # %s Guest Networks\\n" "$YAZFI_NAME" >> $DNSCONF
+			fi
+		;;
+		delete)
+			DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $DNSCONF)
+			
+			if [ "$DHCPBLOCK_BR0" -gt 0 ]; then
+				sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' $DNSCONF
+			fi
+		;;
+	esac
+}
+
+DHCP_Conf () {
 	case $1 in
 		initialise)
 			if [ -f $DNSCONF ]; then
@@ -780,7 +853,12 @@ DHCP_Conf() {
 			fi
 		;;
 		create)
-			CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").1||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")"
+			CONFSTRING=""
+			if [ "$BLOCKDHCP" = "true" ]; then
+				CONFSTRING="interface=$2||||no-dhcp-interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").1||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")"
+			else
+				CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").1||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")"
+			fi
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
@@ -792,7 +870,11 @@ DHCP_Conf() {
 		delete)
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
-				sed -i -e '/'"$BEGIN"'/,+5d' $TMPCONF
+				if [ "$BLOCKDHCP" = "true" ]; then
+					sed -i -e '/'"$BEGIN"'/,+6d' $TMPCONF
+				else
+					sed -i -e '/'"$BEGIN"'/,+5d' $TMPCONF
+				fi
 			fi
 		;;
 		deleteall)
@@ -800,9 +882,14 @@ DHCP_Conf() {
 			for IFACE in $IFACELIST; do
 				BEGIN="### Start of script-generated configuration for interface $IFACE ###"
 				if grep -q "### Start of script-generated configuration for interface $IFACE ###" $TMPCONF; then
-					sed -i -e '/'"$BEGIN"'/,+5d' $TMPCONF
+					if [ "$BLOCKDHCP" = "true" ]; then
+						sed -i -e '/'"$BEGIN"'/,+6d' $TMPCONF
+					else
+						sed -i -e '/'"$BEGIN"'/,+5d' $TMPCONF
+					fi
 				fi
 			done
+			
 			DHCP_Conf save 2>/dev/null
 		;;
 		save)
@@ -817,11 +904,9 @@ DHCP_Conf() {
 			rm -f $TMPCONF
 		;;
 	esac
-	
 }
 
 Config_Networks () {
-	
 	if ! Conf_Exists; then
 		Conf_Download $YAZFI_CONF
 		exit 1
@@ -833,7 +918,12 @@ Config_Networks () {
 	
 	. $YAZFI_CONF
 	
-	Startup_Auto create 2>/dev/null
+	Auto_Startup create 2>/dev/null
+	
+	if [ "$BLOCKDHCP" = "true" ]; then
+		DHCP_Conf_Block create 2>/dev/null
+		Auto_Block_DHCP create 2>/dev/null
+	fi
 	
 	DHCP_Conf initialise 2>/dev/null
 	
@@ -897,7 +987,11 @@ Config_Networks () {
 	
 	DHCP_Conf save 2>/dev/null
 	
-	rm -f /tmp/$YAZFI_NAME.lock
+	if [ "$BLOCKDHCP" = "true" ]; then
+		DHCP_Unblock
+	fi
+	
+	Clear_Lock
 	
 	Print_Output "true" "YazFi $YAZFI_VERSION completed successfully" "$PASS"
 }
@@ -906,6 +1000,7 @@ if [ -z "$1" ]; then
 	Check_Lock
 	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
 	Config_Networks
+	Clear_Lock
 	exit 0
 fi
 
@@ -922,7 +1017,7 @@ case "$1" in
 			Conf_Download $YAZFI_CONF".blank"
 			Config_Networks
 		fi
-		
+		Clear_Lock
 		exit 0
 	;;
 	update)
@@ -930,27 +1025,69 @@ case "$1" in
 		Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
 		sleep 1
 		Update_Version
+		Clear_Lock
+		exit 0
+	;;
+	checkdhcp)
+		. "$YAZFI_CONF"
+		if [ -f "$YAZFI_ALLOWDHCPFILE" ]; then
+			for IFACE in $IFACELIST; do
+				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
+					sed -i "/$(echo "no-dhcp-interface=""$IFACE" | sed 's/[]\/$*.^|[]/\\&/g')/d" "/etc/dnsmasq.conf"
+				fi
+			done
+			sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' "/etc/dnsmasq.conf"
+		fi
+		exit 0
+	;;
+	blockdhcp)
+		Check_Lock
+		Print_Output "true" "Preventing dnsmasq from providing DHCP" "$PASS"
+		echo "$$" > "$YAZFI_BLOCKDHCPFILE"
+		Auto_Block_DHCP create 2>/dev/null
+		DHCP_Conf_Block create 2>/dev/null
+		BLOCKDHCP="true"
+		Config_Networks
+		Clear_Lock
+		exit 0
+	;;
+	unblockdhcp)
+		Check_Lock
+		Print_Output "true" "Allowing dnsmasq to provide DHCP" "$PASS"
+		rm -f "$YAZFI_BLOCKDHCPFILE" 2>/dev/null
+		rm -f "$YAZFI_ALLOWDHCPFILE" 2>/dev/null
+		Auto_Block_DHCP delete 2>/dev/null
+		DHCP_Conf_Block delete 2>/dev/null
+		BLOCKDHCP="false"
+		Config_Networks
+		Clear_Lock
 		exit 0
 	;;
 	uninstall)
-		Startup_Auto delete 2>/dev/null
+		Check_Lock
+		Print_Output "true" "Removing YazFi..." "$PASS"
+		Auto_Startup delete 2>/dev/null
+		Auto_Block_DHCP delete 2>/dev/null
 		Routing_NVRAM deleteall 2>/dev/null
 		Routing_FWNAT deleteall 2>/dev/null
 		Routing_RPDB deleteall 2>/dev/null
 		Firewall_Chains deleteall 2>/dev/null
 		Iface_Manage deleteall 2>/dev/null
 		DHCP_Conf deleteall 2>/dev/null
+		DHCP_Conf_Block delete 2>/dev/null
+		Clear_Lock
 		exit 0
 	;;
 	status)
 		### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
+		Check_Lock
 		. "$YAZFI_CONF"
 		
 		Print_Output "false" "Querying router for connected WiFi clients..." "$PASS"
 		
 		for IFACE in $IFACELIST; do
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
-				printf "%75s\\n\\n" |tr " " "-"
+				printf "%75s\\n\\n" "" |tr " " "-"
 				printf "\\e[1mINTERFACE: %-5s\\e[0m\\n" "$IFACE"
 				printf "\\e[1mSSID: %-20s\\e[0m\\n\\n" "$(nvram get "$IFACE""_ssid")"
 				IFACE_MACS="$(wl -i "$IFACE" assoclist)"
@@ -972,13 +1109,17 @@ case "$1" in
 			fi
 		done
 		
-		printf "%75s\\n\\n" |tr " " "-"
+		printf "%75s\\n\\n" "" |tr " " "-"
 		
 		Print_Output "false" "Query complete, please see above for results" "$PASS"
+		Clear_Lock
+		exit 0
 		#######################################################################################################
 	;;
 	*)
+		Check_Lock
 		echo "Command not recognised, please try again"
+		Clear_Lock
 		exit 1
 	;;
 esac
