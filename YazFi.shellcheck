@@ -1029,7 +1029,6 @@ case "$1" in
 		exit 0
 	;;
 	checkdhcp)
-		Check_Lock
 		. "$YAZFI_CONF"
 		if [ -f "$YAZFI_ALLOWDHCPFILE" ]; then
 			for IFACE in $IFACELIST; do
@@ -1039,7 +1038,6 @@ case "$1" in
 			done
 			sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' "/etc/dnsmasq.conf"
 		fi
-		Clear_Lock
 		exit 0
 	;;
 	blockdhcp)
