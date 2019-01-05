@@ -91,12 +91,12 @@ Not implemented
 ## How do I enable/disable the experimental DHCP Blocking feature?
 To enable:
 ```
-/jffs/scripts/Yazfi blockdchp
+/jffs/scripts/YazFi blockdchp
 ```
 
 To disable:
 ```
-/jffs/scripts/Yazfi unblockdchp
+/jffs/scripts/YazFi unblockdchp
 ```
 
 A file is created in /jffs/configs/YazFi to enable this feature. It is implemented by adding no-dhcp-interface to /jffs/configs/dnsmasq.conf.add , and removing it using /jffs/scripts/dnsmasq.postconf once YazFi has completed initialisation.
