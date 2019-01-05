@@ -88,6 +88,19 @@ Not implemented
 ### wl01_CLIENTISOLATION
 Not implemented
 
+## How do I enable/disable the experimental DHCP Blocking feature?
+To enable:
+```
+/jffs/scripts/Yazfi blockdchp
+```
+
+To disable:
+```
+/jffs/scripts/Yazfi unblockdchp
+```
+
+A file is created in /jffs/configs/YazFi to enable this feature. It is implemented by adding no-dhcp-interface to /jffs/configs/dnsmasq.conf.add , and removing it using /jffs/scripts/dnsmasq.postconf once YazFi has completed initialisation.
+
 ## Known Issues/Limitations
 
 The script overrides the "Access Intranet" WebUI setting (for now, see "Upcoming Features" above). If you want guests to be able to access Intranet resources, do not include the network in YazFi.
