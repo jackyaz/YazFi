@@ -115,7 +115,7 @@ Iface_Manage () {
 }
 
 Iface_BounceClients () {
-	Print_Output "false" "De-authenticating YazFi Guest WiFi clients..." "$PASS"
+	Print_Output "true" "Forcing YazFi Guest WiFi clients to reauthenticate" "$PASS"
 	
 	for IFACE in $IFACELIST; do
 		wl -i "$IFACE" deauthenticate  >/dev/null 2>&1
@@ -1059,8 +1059,13 @@ case "$1" in
 		exit 0
 	;;
 	bounceclients)
-		if [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
+		if [ -z "$2" ] && [ -z "$3" ]; then
 			Check_Lock
+			Iface_BounceClients
+			Clear_Lock
+		elif [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
+			Check_Lock
+			Print_Output "true" "Wireless restarted - sleeping 30s before running YazFi" "$PASS"
 			sleep 30
 			Config_Networks
 			Iface_BounceClients
