@@ -236,19 +236,32 @@ Clear_Lock () {
 }
 
 Update_Version () {
-	localver=$(grep "YAZFI_VERSION=" /jffs/scripts/$YAZFI_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-	/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; Clear_Lock; exit 1; }
-	serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-	if [ "$localver" != "$serverver" ]; then
-		Print_Output "true" "New version of $YAZFI_NAME available - updating to $serverver" "$PASS"
-		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
-		chmod 0755 "/jffs/scripts/$YAZFI_NAME"
-		Clear_Lock
-		service restart_firewall >/dev/null 2>&1
-	else
-		Print_Output "true" "No new version - latest is $localver" "$WARN"
-		Clear_Lock
+	if [ -z "$1" ]; then
+		localver=$(grep "YAZFI_VERSION=" /jffs/scripts/$YAZFI_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; Clear_Lock; exit 1; }
+		serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+		if [ "$localver" != "$serverver" ]; then
+			Print_Output "true" "New version of $YAZFI_NAME available - updating to $serverver" "$PASS"
+			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
+			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
+			Clear_Lock
+			service restart_firewall >/dev/null 2>&1
+		else
+			Print_Output "true" "No new version - latest is $localver" "$WARN"
+			Clear_Lock
+		fi
 	fi
+	
+	case "$1" in
+		force)
+			serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+			Print_Output "true" "Downloading latest version ($serverver) of $YAZFI_NAME" "$PASS"
+			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
+			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
+			Clear_Lock
+			service restart_firewall >/dev/null 2>&1
+		;;
+	esac
 }
 ############################################################################
 
@@ -1023,6 +1036,14 @@ case "$1" in
 		Clear_Lock
 		exit 0
 	;;
+	forceupdate)
+		Check_Lock
+		Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
+		sleep 1
+		Update_Version force
+		Clear_Lock
+		exit 0
+	;;
 	uninstall)
 		Check_Lock
 		Print_Output "true" "Removing YazFi..." "$PASS"
@@ -1038,13 +1059,13 @@ case "$1" in
 		exit 0
 	;;
 	bounceclients)
-		Check_Lock
 		if [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
+			Check_Lock
 			sleep 30
-			. "$YAZFI_CONF"
+			Config_Networks
 			Iface_BounceClients
+			Clear_Lock
 		fi
-		Clear_Lock
 		exit 0
 	;;
 	status)
