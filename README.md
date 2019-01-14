@@ -1,5 +1,5 @@
 # YazFi - enhanced AsusWRT-Merlin Guest WiFi Networks
-## v2.3.6
+## v2.3.7
 ## About
 
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
@@ -14,9 +14,11 @@ Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not l
 
 All Asus models that are supported by Merlin, and have the Guest Network feature should be supported by this script. That being said, I will maintain a list of confirmed supported models as per user reports.
 * RT-AC56U
+* RT-AC66U
 * RT-AC68U
 * RT-AC86U
 * RT-AC87U (2.4GHz guests only)
+* RT-AC88U
 * RT-AC3200
 * RT-AC5300
 
