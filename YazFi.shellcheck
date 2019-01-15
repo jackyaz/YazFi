@@ -999,7 +999,10 @@ Config_Networks () {
 	
 	DHCP_Conf save 2>/dev/null
 	
+	#Clean DHCP blocking
 	rm -f "$YAZFI_BLOCKDHCPFILE" 2>/dev/null
+	Auto_Block_DHCP delete 2>/dev/null
+	DHCP_Conf_Block delete 2>/dev/null
 	
 	Print_Output "true" "YazFi $YAZFI_VERSION completed successfully" "$PASS"
 }
