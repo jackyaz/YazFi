@@ -35,7 +35,6 @@ readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
 readonly DNSCONF="/jffs/configs/dnsmasq.conf.add"
 readonly TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
 readonly YAZFI_BLOCKDHCPFILE="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.blockdhcp"
-readonly YAZFI_ALLOWDHCPFILE="/tmp/$YAZFI_NAME.allowdhcp"
 ### End of path variables ###
 
 ### Start of firewall variables ###
@@ -1000,9 +999,9 @@ Config_Networks () {
 	DHCP_Conf save 2>/dev/null
 	
 	#Clean DHCP blocking
-	rm -f "$YAZFI_BLOCKDHCPFILE" 2>/dev/null
 	Auto_Block_DHCP delete 2>/dev/null
-	DHCP_Conf_Block delete 2>/dev/null
+	DHCP_Conf_Block delete 2>/dev/null	
+	rm -f "$YAZFI_BLOCKDHCPFILE" 2>/dev/null
 	
 	Print_Output "true" "YazFi $YAZFI_VERSION completed successfully" "$PASS"
 }
