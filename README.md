@@ -12,7 +12,7 @@ Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not l
 
 ## Supported Models
 
-All Asus models that are supported by Merlin, and have the Guest Network feature should be supported by this script. That being said, I will maintain a list of confirmed supported models as per user reports.
+All models running Asuswrt-Merlin 384.5 or later, and have the Guest Network feature should be supported by this script. That being said, I will maintain a list of confirmed supported models as per user reports.
 * RT-AC56U
 * RT-AC66U
 * RT-AC68U
