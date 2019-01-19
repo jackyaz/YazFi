@@ -126,7 +126,7 @@ Auto_ServiceEvent () {
 		create)
 			if [ -f /jffs/scripts/service-event ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/service-event)
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2"'' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/service-event)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/service-event)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					Print_Output "true" "Purging duplicate/invalid entries for $YAZFI_NAME in service-event"
@@ -136,13 +136,13 @@ Auto_ServiceEvent () {
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					Print_Output "true" "Adding $YAZFI_NAME to service-event"
 					echo "" >> /jffs/scripts/service-event
-					echo "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2"'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
+					echo "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
 				fi
 			else
 				Print_Output "true" "service-event doesn't exist, creating"
 				echo "#!/bin/sh" > /jffs/scripts/service-event
 				echo "" >> /jffs/scripts/service-event
-				echo "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2"'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
+				echo "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
 				chmod 0755 /jffs/scripts/service-event
 			fi
 		;;
