@@ -48,6 +48,12 @@ Using your preferred SSH client/terminal, copy and paste the following command, 
 /jffs/scripts/YazFi update
 ```
 
+To force a re-install of the current version, use the following command instead (requires YazFi 2.3.7 or later):
+
+```
+/jffs/scripts/YazFi forceupdate
+```
+
 ## Help
 
 Please post about any issues and problems here: https://www.snbforums.com/threads/yazfi-enhanced-asuswrt-merlin-guest-wifi-networks.45924/
@@ -89,19 +95,6 @@ Not implemented
 
 ### wl01_CLIENTISOLATION
 Not implemented
-
-## How do I enable/disable the experimental DHCP Blocking feature?
-To enable:
-```
-/jffs/scripts/YazFi blockdhcp
-```
-
-To disable:
-```
-/jffs/scripts/YazFi unblockdhcp
-```
-
-A file is created in /jffs/configs/YazFi to enable this feature. It is implemented by adding no-dhcp-interface to /jffs/configs/dnsmasq.conf.add , and removing it using /jffs/scripts/dnsmasq.postconf once YazFi has completed initialisation.
 
 ## Known Issues/Limitations
 
