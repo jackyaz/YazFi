@@ -1,5 +1,5 @@
 # YazFi - enhanced AsusWRT-Merlin Guest WiFi Networks
-## v2.3.6
+## v2.3.7
 ## About
 
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
@@ -12,11 +12,13 @@ Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not l
 
 ## Supported Models
 
-All Asus models that are supported by Merlin, and have the Guest Network feature should be supported by this script. That being said, I will maintain a list of confirmed supported models as per user reports.
+All models running Asuswrt-Merlin 384.5/john9527's fork 374.43_32D6j9527 and later, and have the Guest Network feature should be supported by this script. That being said, I will maintain a list of confirmed supported models as per user reports.
 * RT-AC56U
+* RT-AC66U
 * RT-AC68U
 * RT-AC86U
 * RT-AC87U (2.4GHz guests only)
+* RT-AC88U
 * RT-AC3200
 * RT-AC5300
 
@@ -44,6 +46,12 @@ Using your preferred SSH client/terminal, copy and paste the following command, 
 
 ```
 /jffs/scripts/YazFi update
+```
+
+To force a re-install of the current version, use the following command instead (requires YazFi 2.3.7 or later):
+
+```
+/jffs/scripts/YazFi forceupdate
 ```
 
 ## Help
@@ -87,19 +95,6 @@ Not implemented
 
 ### wl01_CLIENTISOLATION
 Not implemented
-
-## How do I enable/disable the experimental DHCP Blocking feature?
-To enable:
-```
-/jffs/scripts/YazFi blockdhcp
-```
-
-To disable:
-```
-/jffs/scripts/YazFi unblockdhcp
-```
-
-A file is created in /jffs/configs/YazFi to enable this feature. It is implemented by adding no-dhcp-interface to /jffs/configs/dnsmasq.conf.add , and removing it using /jffs/scripts/dnsmasq.postconf once YazFi has completed initialisation.
 
 ## Known Issues/Limitations
 
