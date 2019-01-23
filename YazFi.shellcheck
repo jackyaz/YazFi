@@ -14,7 +14,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.3.7"
+readonly YAZFI_VERSION="v2.3.8"
 readonly YAZFI_BRANCH="testing"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -677,7 +677,8 @@ Firewall_Rules () {
 			for PROTO in tcp udp; do
 				iptables "$ACTION" "$INPT" -i "$IFACE" -p "$PROTO" --dport 53 -j ACCEPT
 			done
-			
+		elif [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ]; then
+			echo "LAN DNS specified"
 		else
 			RULES=$(iptables -nvL $INPT --line-number | grep "$IFACE" | grep "dpt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES; do
