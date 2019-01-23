@@ -660,7 +660,7 @@ Firewall_Rules () {
 		done
 		
 		iptables "$ACTION" "$INPT" -i "$IFACE" -m state --state NEW -j "$LGRJT"
-		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT
+		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -m state --state NEW -j ACCEPT
 		
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ]; then
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
@@ -676,10 +676,19 @@ Firewall_Rules () {
 				fi
 				
 				for PROTO in tcp udp; do
-					iptables "$ACTION" "$INPT" -i "$IFACE" -p "$PROTO" --dport 53 -j ACCEPT
+					iptables "$ACTION" "$INPT" -i "$IFACE" -p "$PROTO" --dport 53 -m state --state NEW -j ACCEPT
 				done
 			elif [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ]; then
-				echo "LAN DNS specified"
+				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ]; then
+					for PROTO in tcp udp; do
+						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -m state --state NEW -m comment --comment "LAN_DNS" -j ACCEPT
+					done
+				fi
+				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ]; then
+					for PROTO in tcp udp; do
+						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" -p "$PROTO" --dport 53 -m state --state NEW -m comment --comment "LAN_DNS" -j ACCEPT
+					done
+				fi
 			else
 				RULES=$(iptables -nvL $INPT --line-number | grep "$IFACE" | grep "dpt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 				for RULENO in $RULES; do
@@ -722,7 +731,6 @@ Firewall_Rules () {
 		fi
 		
 		### End of IP firewall rules ###
-		
 	done
 }
 
