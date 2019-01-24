@@ -1,12 +1,14 @@
 # YazFi - enhanced AsusWRT-Merlin Guest WiFi Networks
-## v2.3.7
+## v2.3.8
 ## About
 
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
 
 * Dedicated VPN WiFi networks
 * Separate subnets for enhanced organisation of devices
+* Restrict guests to only contact router for DHCP, DNS and NTP
 * Allow guest networks to make use of pixelserv-tls (if installed)
+* Allow guests to use a local DNS server
 * Extend DNS Filter to guest networks
 
 ## Supported Models
@@ -97,7 +99,7 @@ Not implemented
 
 ## Known Issues/Limitations
 
-The script overrides the "Access Intranet" WebUI setting (for now, see "Upcoming Features" above). If you want guests to be able to access Intranet resources, do not include the network in YazFi.
+The script overrides the "Access Intranet" WebUI setting (except for DNS). If you want guests to be able to access other Intranet resources, do not include the guest network in YazFi.
 
 ![Access Intranet settings](https://puu.sh/zYWp9/a5541ed706.png)
 
