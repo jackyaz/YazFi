@@ -679,14 +679,20 @@ Firewall_Rules () {
 					iptables "$ACTION" "$INPT" -i "$IFACE" -p "$PROTO" --dport 53 -m state --state NEW -j ACCEPT
 				done
 			elif [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ]; then
-				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ]; then
+				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" ]; then
+					if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ]; then
+						for PROTO in tcp udp; do
+							iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -m state --state NEW -m comment --comment "LAN_DNS" -j ACCEPT
+						done
+					fi
+					if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ]; then
+						for PROTO in tcp udp; do
+							iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" -p "$PROTO" --dport 53 -m state --state NEW -m comment --comment "LAN_DNS" -j ACCEPT
+						done
+					fi
+				else
 					for PROTO in tcp udp; do
 						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -m state --state NEW -m comment --comment "LAN_DNS" -j ACCEPT
-					done
-				fi
-				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ]; then
-					for PROTO in tcp udp; do
-						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" -p "$PROTO" --dport 53 -m state --state NEW -m comment --comment "LAN_DNS" -j ACCEPT
 					done
 				fi
 			else
