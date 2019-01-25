@@ -681,6 +681,7 @@ Firewall_Rules () {
 					iptables "$ACTION" "$INPT" -i "$IFACE" -p "$PROTO" --dport 53 -m state --state NEW -j ACCEPT
 				done
 			elif [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ]; then
+				modprobe xt_comment
 				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" ]; then
 					if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1" | cut -f1-3 -d".")" = "$(nvram get lan_ipaddr | cut -f1-3 -d".")" ]; then
 						for PROTO in tcp udp; do
@@ -1013,6 +1014,10 @@ Config_Networks () {
 			
 			sleep 1
 		else
+			#Remove firewall rules for guest interface
+			Firewall_Rules delete "$IFACE" 2>/dev/null
+			
+			#Remove guest interface
 			Iface_Manage delete "$IFACE" 2>/dev/null
 			
 			# Remove dnsmasq entries for this interface
