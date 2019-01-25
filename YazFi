@@ -2,7 +2,7 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.3.7                        ######
+######                          v2.3.8                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ######                                                        ######
 ######            Credit to @RMerlin for the original         ######
@@ -569,6 +569,7 @@ Firewall_Chains() {
 					esac
 				fi
 			done
+			### DNSFilter rules - credit to @RMerlin for the original implementation in Asuswrt ###
 			for CHAIN in $NATCHAINS; do
 				if ! iptables -t nat -n -L "$CHAIN" >/dev/null 2>&1; then
 					iptables -t nat -N "$CHAIN"
@@ -580,6 +581,7 @@ Firewall_Chains() {
 					esac
 				fi
 			done
+			###
 		;;
 		deleteall)
 			for CHAIN in $CHAINS; do
@@ -718,6 +720,7 @@ Firewall_Rules () {
 			done
 		fi
 		
+		### DNSFilter rules - credit to @RMerlin for the original implementation in Asuswrt ###
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_FORCEDNS")" = "true" ]; then
 			
 			RULES=$(iptables -t nat -nvL $DNSFLTR --line-number | grep "$IFACE" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
@@ -735,6 +738,7 @@ Firewall_Rules () {
 				iptables -t nat -D "$DNSFLTR" "$RULENO"
 			done
 		fi
+		###
 		
 		### End of IP firewall rules ###
 	done
