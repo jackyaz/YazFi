@@ -2,7 +2,7 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.3.7                        ######
+######                          v2.3.8                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ######                                                        ######
 ######            Credit to @RMerlin for the original         ######
@@ -14,7 +14,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.3.7"
+readonly YAZFI_VERSION="v2.3.8"
 readonly YAZFI_BRANCH="master"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -264,6 +264,14 @@ Update_Version () {
 }
 ############################################################################
 
+IP_Local() {
+	if echo "$1" | grep -qE '(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)'; then 
+		return 0
+	else
+		return 1
+	fi
+}
+
 Validate_IFACE () {
 	if ! ifconfig "$1" >/dev/null 2>&1; then
 		Print_Output "false" "$1 - Interface not enabled/configured in Web GUI (Guest Network menu)" "$ERR"
@@ -283,16 +291,15 @@ Validate_IP () {
 		done
 		
 		if [ "$3" != "DNS" ]; then
-			if echo "$2" | grep -qE '(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)'; then 
+			if IP_Local "$2"; then
 				return 0
 			else
-				Print_Output "false" "$1 - $2 - Non-routable IP address block used" "$ERR"
+				Print_Output "false" "$1 - $2 - Non-local IP address block used" "$ERR"
 				return 1
 			fi
 		else
 			return 0
 		fi
-		
 	else
 		Print_Output "false" "$1 - $2 - is not a valid IPv4 address, valid format is 1.2.3.4" "$ERR"
 		return 1
@@ -569,6 +576,7 @@ Firewall_Chains() {
 					esac
 				fi
 			done
+			### DNSFilter rules - credit to @RMerlin for the original implementation in Asuswrt ###
 			for CHAIN in $NATCHAINS; do
 				if ! iptables -t nat -n -L "$CHAIN" >/dev/null 2>&1; then
 					iptables -t nat -N "$CHAIN"
@@ -580,6 +588,7 @@ Firewall_Chains() {
 					esac
 				fi
 			done
+			###
 		;;
 		deleteall)
 			for CHAIN in $CHAINS; do
@@ -660,31 +669,61 @@ Firewall_Rules () {
 		done
 		
 		iptables "$ACTION" "$INPT" -i "$IFACE" -m state --state NEW -j "$LGRJT"
-		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT
+		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -m state --state NEW -j ACCEPT
 		
-		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
-			if ifconfig "br0:pixelserv-tls" | grep -q "inet addr:" >/dev/null 2>&1; then
-				modprobe xt_comment
-				IP_PXLSRV=$(ifconfig br0:pixelserv-tls | grep "inet addr:" | cut -d: -f2 | awk '{print $1}')
-				iptables "$ACTION" "$INPT" -i "$IFACE" -d "$IP_PXLSRV" -p tcp -m multiport --dports 80,443 -m state --state NEW -m comment --comment "PixelServ" -j ACCEPT
-			else
-				RULES=$(iptables -nvL $INPT --line-number | grep "$IFACE" | grep "PixelServ" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
-				for RULENO in $RULES; do
-					iptables -D "$INPT" "$RULENO"
-				done
-			fi
-			
-			for PROTO in tcp udp; do
-				iptables "$ACTION" "$INPT" -i "$IFACE" -p "$PROTO" --dport 53 -j ACCEPT
+		if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" || IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")"; then
+			modprobe xt_comment
+			RULES=$(iptables -nvL $FWRD --line-number | grep "$IFACE" | grep "dpt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			for RULENO in $RULES; do
+				iptables -D "$FWRD" "$RULENO"
 			done
 			
+			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
+				if ifconfig "br0:pixelserv-tls" | grep -q "inet addr:" >/dev/null 2>&1; then
+					IP_PXLSRV=$(ifconfig br0:pixelserv-tls | grep "inet addr:" | cut -d: -f2 | awk '{print $1}')
+					iptables "$ACTION" "$INPT" -i "$IFACE" -d "$IP_PXLSRV" -p tcp -m multiport --dports 80,443 -m state --state NEW -m comment --comment "PixelServ" -j ACCEPT
+				else
+					RULES=$(iptables -nvL $INPT --line-number | grep "$IFACE" | grep "PixelServ" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+					for RULENO in $RULES; do
+						iptables -D "$INPT" "$RULENO"
+					done
+				fi
+				
+				for PROTO in tcp udp; do
+					iptables "$ACTION" "$INPT" -i "$IFACE" -p "$PROTO" --dport 53 -m state --state NEW -j ACCEPT
+				done
+			fi
+			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" ]; then
+				if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
+					for PROTO in tcp udp; do
+						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -m state --state NEW -m comment --comment "LAN_DNS" -j ACCEPT
+					done
+				fi
+				if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
+					for PROTO in tcp udp; do
+						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" -p "$PROTO" --dport 53 -m state --state NEW -m comment --comment "LAN_DNS" -j ACCEPT
+					done
+				fi
+			else
+				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
+					for PROTO in tcp udp; do
+						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -m state --state NEW -m comment --comment "LAN_DNS" -j ACCEPT
+					done
+				fi
+			fi
 		else
 			RULES=$(iptables -nvL $INPT --line-number | grep "$IFACE" | grep "dpt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES; do
 				iptables -D "$INPT" "$RULENO"
 			done
+			
+			RULES=$(iptables -nvL $FWRD --line-number | grep "$IFACE" | grep "dpt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			for RULENO in $RULES; do
+				iptables -D "$FWRD" "$RULENO"
+			done
 		fi
 		
+		### DNSFilter rules - credit to @RMerlin for the original implementation in Asuswrt ###
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_FORCEDNS")" = "true" ]; then
 			
 			RULES=$(iptables -t nat -nvL $DNSFLTR --line-number | grep "$IFACE" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
@@ -702,9 +741,9 @@ Firewall_Rules () {
 				iptables -t nat -D "$DNSFLTR" "$RULENO"
 			done
 		fi
+		###
 		
 		### End of IP firewall rules ###
-		
 	done
 }
 
@@ -977,6 +1016,10 @@ Config_Networks () {
 			
 			sleep 1
 		else
+			#Remove firewall rules for guest interface
+			Firewall_Rules delete "$IFACE" 2>/dev/null
+			
+			#Remove guest interface
 			Iface_Manage delete "$IFACE" 2>/dev/null
 			
 			# Remove dnsmasq entries for this interface

@@ -1,25 +1,27 @@
 # YazFi - enhanced AsusWRT-Merlin Guest WiFi Networks
-## v2.3.7
+## v2.3.8
 ## About
 
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
 
-* Dedicated VPN WiFi networks
-* Separate subnets for enhanced organisation of devices
-* Allow guest networks to make use of pixelserv-tls (if installed)
-* Extend DNS Filter to guest networks
+*  Dedicated VPN WiFi networks
+*  Separate subnets for enhanced organisation of devices
+*  Restrict guests to only contact router for DHCP, DNS and NTP
+*  Allow guest networks to make use of pixelserv-tls (if installed)
+*  Allow guests to use a local DNS server
+*  Extend DNS Filter to guest networks
 
 ## Supported Models
 
 All models running Asuswrt-Merlin 384.5/john9527's fork 374.43_32D6j9527 and later, and have the Guest Network feature should be supported by this script. That being said, I will maintain a list of confirmed supported models as per user reports.
-* RT-AC56U
-* RT-AC66U
-* RT-AC68U
-* RT-AC86U
-* RT-AC87U (2.4GHz guests only)
-* RT-AC88U
-* RT-AC3200
-* RT-AC5300
+*  RT-AC56U
+*  RT-AC66U
+*  RT-AC68U
+*  RT-AC86U
+*  RT-AC87U (2.4GHz guests only)
+*  RT-AC88U
+*  RT-AC3200
+*  RT-AC5300
 
 ## Installation
 
@@ -35,7 +37,7 @@ For ease of reference, a sample configuration file is available here: https://ra
 
 ### I haven't used scripts before on AsusWRT-Merlin, what do I do?
 
-If this is the first time you are using scripts, don't panic! In your router's WebUI, go to the Administration area of the left menu, and then the System tab. Set Enable JFFS custom scripts and configs to Yes. Further reading about scripts is available here: https://github.com/RMerl/asuswrt-merlin/wiki/User-scripts
+If this is the first time you are using scripts, don't panic! In your router's WebUI, go to the Administration area of the left menu, and then the System tab. Set Enable JFFS custom scripts and configs to Yes. Further reading about scripts is available here: [https://github.com/RMerl/asuswrt-merlin/wiki/User-scripts]
 
 ![WebUI enable scripts](https://puu.sh/A3wnG/00a43283ed.png)
 
@@ -55,7 +57,7 @@ To force a re-install of the current version, use the following command instead 
 
 ## Help
 
-Please post about any issues and problems here: https://www.snbforums.com/threads/yazfi-enhanced-asuswrt-merlin-guest-wifi-networks.45924/
+Please post about any issues and problems here: [https://www.snbforums.com/threads/yazfi-enhanced-asuswrt-merlin-guest-wifi-networks.45924/]
 
 ## FAQs
 
@@ -97,7 +99,7 @@ Not implemented
 
 ## Known Issues/Limitations
 
-The script overrides the "Access Intranet" WebUI setting (for now, see "Upcoming Features" above). If you want guests to be able to access Intranet resources, do not include the network in YazFi.
+The script overrides the "Access Intranet" WebUI setting (except for DNS). If you want guests to be able to access other Intranet resources, do not include the guest network in YazFi.
 
 ![Access Intranet settings](https://puu.sh/zYWp9/a5541ed706.png)
 
