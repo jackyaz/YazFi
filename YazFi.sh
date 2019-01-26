@@ -1179,6 +1179,7 @@ Menu_Install(){
 		Print_Output "false" "Existing $YAZFI_CONF found. This will be kept by $YAZFI_NAME. Downloading a blank file for comparison (e.g. new settings)"
 		Conf_Download $YAZFI_CONF".blank"
 	fi
+	
 	PressEnter
 	Clear_Lock
 }
@@ -1215,7 +1216,19 @@ Menu_Uninstall(){
 	Iface_Manage deleteall 2>/dev/null
 	DHCP_Conf deleteall 2>/dev/null
 	rm -f "/jffs/scripts/$YAZFI_NAME" 2>/dev/null
-	rm -rf "/jffs/configs/$YAZFI_NAME" 2>/dev/null
+	while true; do
+		printf "\\n\\e[1mDo you want to delete YazFi configuration file(s)? (y/n)\\e[0m\\n"
+		read -r "confirm"
+		case "$confirm" in
+			y|Y)
+				rm -rf "/jffs/configs/$YAZFI_NAME" 2>/dev/null
+				break
+			;;
+			*)
+				break
+			;;
+		esac
+	done
 	Clear_Lock
 }
 
