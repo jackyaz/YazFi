@@ -1073,6 +1073,14 @@ Config_Networks () {
 	Print_Output "true" "YazFi $YAZFI_VERSION completed successfully" "$PASS"
 }
 
+Shortcut_YazFi() {
+	if [ -d "/opt/bin" ] && [ ! -f "/opt/bin/$YAZFI_NAME" ] && [ -f "/jffs/scripts/$YAZFI_NAME" ]; then
+		ln -s /jffs/scripts/$YAZFI_NAME /opt/bin
+		chmod 0755 /opt/bin/$YAZFI_NAME
+		Print_Output "false" "You can access YazFi's menu with /jffs/scripts/$YAZFI_NAME or simply with $YAZFI_NAME"
+	fi
+}
+
 PressEnter() {
 	while true; do
 		printf "Press enter to continue..."
@@ -1107,6 +1115,7 @@ ScriptHeader() {
 }
 
 MainMenu() {
+	Shortcut_YazFi
 	printf "1.    Run %s now\\n" "$YAZFI_NAME"
 	printf "2.    Edit YazFi configuration\\n"
 	printf "3.    Check for updates\\n"
@@ -1191,6 +1200,8 @@ Menu_Install(){
 		Print_Output "false" "Existing $YAZFI_CONF found. This will be kept by $YAZFI_NAME. Downloading an example file for comparison (e.g. new settings)"
 		Conf_Download $YAZFI_CONF".example"
 	fi
+	
+	Shortcut_YazFi
 	
 	PressEnter
 	Clear_Lock
