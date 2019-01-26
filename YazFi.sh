@@ -529,7 +529,7 @@ Conf_Validate () {
 			return 1
 		fi
 	else
-		: 
+		:
 	fi
 }
 
@@ -1107,8 +1107,8 @@ MainMenu() {
 	printf "1.    Run %s now\\n" "$YAZFI_NAME"
 	printf "2.    Check for updates\\n"
 	printf "3.    Show connected clients using %s\\n" "$YAZFI_NAME"
-	printf "4.    Exit YazFi\\n"
-	printf "5.    Uninstall YazFi\\n"
+	printf "4.    Uninstall YazFi\\n"
+	printf "5.    Exit YazFi\\n"
 	printf "\\n"
 	printf "\\e[1m#####################################################\\e[0m\\n"
 	printf "\\n"
@@ -1138,12 +1138,23 @@ MainMenu() {
 				break
 			;;
 			4)
-				ScriptHeader
-				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n\\n\\n" "$YAZFI_NAME"
-				exit 0
+				while true; do
+					printf "\\n\\e[1mAre you sure you want to uninstall YazFi? (y/n)\\e[0m\\n"
+					read -r "confirm"
+					case "$confirm" in
+						y|Y)
+							Menu_Uninstall
+							exit 0
+						;;
+						*)
+							break
+						;;
+					esac
+				done
 			;;
 			5)
-				Menu_Uninstall
+				ScriptHeader
+				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n\\n\\n" "$YAZFI_NAME"
 				exit 0
 			;;
 			*)
