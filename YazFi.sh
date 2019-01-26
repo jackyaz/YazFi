@@ -211,7 +211,7 @@ Auto_Startup () {
 				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
 				
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
-					sed -i -e '/# '"$YAZFI_NAME runnow"' Guest Networks/d' /jffs/scripts/firewall-start
+					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
 				fi
 			fi
 		;;
