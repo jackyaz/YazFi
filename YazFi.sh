@@ -1104,6 +1104,7 @@ MainMenu() {
 	printf "2.    Check for updates\\n"
 	printf "3.    Show connected clients using %s\\n" "$YAZFI_NAME"
 	printf "4.    Exit YazFi\\n"
+	printf "5.    Uninstall YazFi\\n"
 	printf "\\n"
 	printf "\\e[1m#####################################################\\e[0m\\n"
 	printf "\\n"
@@ -1137,6 +1138,10 @@ MainMenu() {
 				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n\\n\\n" "$YAZFI_NAME"
 				exit 0
 			;;
+			5)
+				Menu_Uninstall
+				exit 0
+			;;
 			*)
 				printf "\\nPlease choose a valid option\\n\\n"
 			;;
@@ -1157,8 +1162,8 @@ Menu_Install(){
 	else
 		Print_Output "false" "Existing $YAZFI_CONF found. This will be kept by $YAZFI_NAME. Downloading a blank file for comparison (e.g. new settings)"
 		Conf_Download $YAZFI_CONF".blank"
-		Config_Networks
 	fi
+	PressEnter
 	Clear_Lock
 }
 
@@ -1193,6 +1198,8 @@ Menu_Uninstall(){
 	Firewall_Chains deleteall 2>/dev/null
 	Iface_Manage deleteall 2>/dev/null
 	DHCP_Conf deleteall 2>/dev/null
+	rm -f "/jffs/scripts/$YAZFI_NAME" 2>/dev/null
+	rm -rf "/jffs/configs/$YAZFI_NAME" 2>/dev/null
 	Clear_Lock
 }
 
