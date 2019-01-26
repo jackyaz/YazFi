@@ -4,7 +4,7 @@
 
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
 
- * Dedicated VPN WiFi networks
+*  Dedicated VPN WiFi networks
 *  Separate subnets for enhanced organisation of devices
 *  Restrict guests to only contact router for DHCP, DNS and NTP
 *  Allow guest networks to make use of pixelserv-tls (if installed)
@@ -14,7 +14,7 @@ Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not l
 ## Supported Models
 
 All models running Asuswrt-Merlin 384.5/john9527's fork 374.43_32D6j9527 and later, and have the Guest Network feature should be supported by this script. That being said, I will maintain a list of confirmed supported models as per user reports.
- * RT-AC56U
+*  RT-AC56U
 *  RT-AC66U
 *  RT-AC68U
 *  RT-AC86U
