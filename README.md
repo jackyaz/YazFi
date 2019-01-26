@@ -27,17 +27,16 @@ All models running Asuswrt-Merlin 384.5/john9527's fork 374.43_32D6j9527 and lat
 
 Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:
 
-```
+```sh
 /usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi" -o "/jffs/scripts/YazFi" && chmod 0755 /jffs/scripts/YazFi && /jffs/scripts/YazFi install
 ```
 
-Please then follow instructions shown in the SSH client/terminal session.
-
-For ease of reference, a sample configuration file is available here: [Sample Config file](https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.config.sample)
+Please then follow instructions shown in the SSH client/terminal session. For ease of reference, a sample configuration file is available here: [Sample Config file](https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.config.sample)
 
 ### I haven't used scripts before on AsusWRT-Merlin, what do I do?
 
 If this is the first time you are using scripts, don't panic! In your router's WebUI, go to the Administration area of the left menu, and then the System tab. Set Enable JFFS custom scripts and configs to Yes.
+
 Further reading about scripts is available here: [AsusWRT-Merlin User-scripts](https://github.com/RMerl/asuswrt-merlin/wiki/User-scripts)
 
 ![WebUI enable scripts](https://puu.sh/A3wnG/00a43283ed.png)
@@ -46,13 +45,13 @@ Further reading about scripts is available here: [AsusWRT-Merlin User-scripts](h
 
 Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:
 
-```
+```sh
 /jffs/scripts/YazFi update
 ```
 
 To force a re-install of the current version, use the following command instead (requires YazFi 2.3.7 or later):
 
-```
+```sh
 /jffs/scripts/YazFi forceupdate
 ```
 
@@ -107,4 +106,5 @@ The script overrides the "Access Intranet" WebUI setting (except for DNS). If yo
 ### Donations
 
 Love the script and want to support future development? Any and all donations gratefully received!
-[PayPal donation](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=JFQLSCWJJUGZ6)
+
+[**PayPal donation**](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=JFQLSCWJJUGZ6)
