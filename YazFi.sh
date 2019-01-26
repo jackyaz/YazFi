@@ -1077,7 +1077,6 @@ Shortcut_YazFi() {
 	if [ -d "/opt/bin" ] && [ ! -f "/opt/bin/$YAZFI_NAME" ] && [ -f "/jffs/scripts/$YAZFI_NAME" ]; then
 		ln -s /jffs/scripts/$YAZFI_NAME /opt/bin
 		chmod 0755 /opt/bin/$YAZFI_NAME
-		Print_Output "false" "You can access YazFi's menu with /jffs/scripts/$YAZFI_NAME or simply with $YAZFI_NAME"
 	fi
 }
 
@@ -1202,7 +1201,7 @@ Menu_Install(){
 	fi
 	
 	Shortcut_YazFi
-	
+	Print_Output "true" "You can access YazFi's menu with /jffs/scripts/$YAZFI_NAME or simply with $YAZFI_NAME"
 	PressEnter
 	Clear_Lock
 }
