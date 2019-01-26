@@ -103,7 +103,7 @@ The script overrides the "Access Intranet" WebUI setting (except for DNS). If yo
 
 ![Access Intranet settings](https://puu.sh/zYWp9/a5541ed706.png)
 
-### Donations
+## Donations
 
 Love the script and want to support future development? Any and all donations gratefully received!
 
