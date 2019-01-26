@@ -31,7 +31,7 @@ All models running Asuswrt-Merlin 384.5/john9527's fork 374.43_32D6j9527 and lat
 Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:
 
 ```sh
-/usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi" -o "/jffs/scripts/YazFi" && chmod 0755 /jffs/scripts/YazFi && /jffs/scripts/YazFi install
+/usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.sh" -o "/jffs/scripts/YazFi" && chmod 0755 /jffs/scripts/YazFi && /jffs/scripts/YazFi install
 ```
 
 Please then follow instructions shown in the SSH client/terminal session. For ease of reference, a sample configuration file is available here: [Sample Config file](https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.config.sample)
