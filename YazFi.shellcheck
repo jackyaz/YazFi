@@ -2,7 +2,7 @@
 
 ####################################################################
 ######                    YazFi by jackyaz                    ######
-######                          v2.3.8                        ######
+######                          v3.0.0                        ######
 ######            https://github.com/jackyaz/YazFi/           ######
 ######                                                        ######
 ######            Credit to @RMerlin for the original         ######
@@ -14,8 +14,8 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v2.3.8"
-readonly YAZFI_BRANCH="master"
+readonly YAZFI_VERSION="v3.0.0"
+readonly YAZFI_BRANCH="testing"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
 
@@ -129,17 +129,14 @@ Auto_ServiceEvent () {
 				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/service-event)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
-					Print_Output "true" "Purging duplicate/invalid entries for $YAZFI_NAME in service-event"
 					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/service-event
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					Print_Output "true" "Adding $YAZFI_NAME to service-event"
 					echo "" >> /jffs/scripts/service-event
 					echo "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
 				fi
 			else
-				Print_Output "true" "service-event doesn't exist, creating"
 				echo "#!/bin/sh" > /jffs/scripts/service-event
 				echo "" >> /jffs/scripts/service-event
 				echo "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
@@ -177,23 +174,20 @@ Auto_Startup () {
 		create)
 			if [ -f /jffs/scripts/firewall-start ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME"' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME runnow"' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
-					Print_Output "true" "Purging duplicate/invalid entries for $YAZFI_NAME in firewall-start"
 					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					Print_Output "true" "Adding $YAZFI_NAME to firewall-start"
 					echo "" >> /jffs/scripts/firewall-start
-					echo "/jffs/scripts/$YAZFI_NAME"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
+					echo "/jffs/scripts/$YAZFI_NAME runnow"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 				fi
 			else
-				Print_Output "true" "firewall-start doesn't exist, creating"
 				echo "#!/bin/sh" > /jffs/scripts/firewall-start
 				echo "" >> /jffs/scripts/firewall-start
-				echo "/jffs/scripts/$YAZFI_NAME"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
+				echo "/jffs/scripts/$YAZFI_NAME runnow"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 				chmod 0755 /jffs/scripts/firewall-start
 			fi
 		;;
@@ -202,7 +196,7 @@ Auto_Startup () {
 				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
 				
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
-					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
+					sed -i -e '/# '"$YAZFI_NAME runnow"' Guest Networks/d' /jffs/scripts/firewall-start
 				fi
 			fi
 		;;
@@ -961,6 +955,8 @@ DHCP_Conf () {
 }
 
 Config_Networks () {
+	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
+	
 	if ! Conf_Exists; then
 		Conf_Download $YAZFI_CONF
 		exit 1
@@ -1052,65 +1048,191 @@ Config_Networks () {
 	Print_Output "true" "YazFi $YAZFI_VERSION completed successfully" "$PASS"
 }
 
-if [ -z "$1" ]; then
+ScriptHeader() {
+clear
+printf "\\n\\e[1m####################################################################\\e[0m\\n"
+printf "\\e[1m######                                                        ######\\e[0m\\n"
+printf "\\e[1m######                    %s by jackyaz                    ######\\e[0m\\n" "$YAZFI_NAME"
+printf "\\e[1m######                          %s                        ######\\e[0m\\n" "$YAZFI_VERSION"
+printf "\\e[1m######            https://github.com/jackyaz/YazFi/           ######\\e[0m\\n"
+printf "\\e[1m######                                                        ######\\e[0m\\n"
+printf "\\e[1m####################################################################\\e[0m\\n"
+printf "\\n"
+}
+
+MainMenu() {
+	printf "1.    Run %s now\\n" "$YAZFI_NAME"
+	printf "2.    Check for updates\\n"
+	printf "3.    Show connected clients using %s\\n" "$YAZFI_NAME"
+	printf "4.    Exit YazFi\\n"
+	printf "\\e[1m\\n####################################################################\\e[0m\\n\\n"
+	
+	while true; do
+		printf "Choose an option:    "
+		read -r "menu"
+		case "$menu" in
+			1)
+				Menu_RunNow
+				read -p "Press enter to continue..."
+				break
+			;;
+			2)
+				Menu_Update
+				read -p "Press enter to continue..."
+				break
+			;;
+			2f)
+				Menu_ForceUpdate
+				read -p "Press enter to continue..."
+				break
+			;;
+			3)
+				Menu_Status
+				read -p "Press enter to continue..."
+				break
+			;;
+			4)
+				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n" "$YAZFI_NAME"
+				sleep 2
+				clear
+				exit 0
+			;;
+			*)
+				printf "\\nPlease choose a valid option\\n\\n"
+			;;
+		esac
+	done
+	
+	ScriptHeader
+	MainMenu
+}
+
+Menu_Install(){
 	Check_Lock
-	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
+	Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
+	sleep 1
+	
+	if ! Conf_Exists; then
+		Conf_Download "$YAZFI_CONF"
+	else
+		Print_Output "false" "Existing $YAZFI_CONF found. This will be kept by $YAZFI_NAME. Downloading a blank file for comparison (e.g. new settings)"
+		Conf_Download $YAZFI_CONF".blank"
+		Config_Networks
+	fi
+	Clear_Lock
+}
+
+Menu_RunNow(){
+	Check_Lock
 	Config_Networks
 	Clear_Lock
+}
+
+Menu_Update(){
+	Check_Lock
+	sleep 1
+	Update_Version
+	Clear_Lock
+}
+
+Menu_ForceUpdate(){
+	Check_Lock
+	sleep 1
+	Update_Version force
+	Clear_Lock
+}
+
+Menu_Uninstall(){
+	Check_Lock
+	Print_Output "true" "Removing YazFi..." "$PASS"
+	Auto_Startup delete 2>/dev/null
+	Auto_ServiceEvent delete 2>/dev/null
+	Routing_NVRAM deleteall 2>/dev/null
+	Routing_FWNAT deleteall 2>/dev/null
+	Routing_RPDB deleteall 2>/dev/null
+	Firewall_Chains deleteall 2>/dev/null
+	Iface_Manage deleteall 2>/dev/null
+	DHCP_Conf deleteall 2>/dev/null
+	Clear_Lock
+}
+
+Menu_BounceClients(){
+	Check_Lock
+	Iface_BounceClients
+	Clear_Lock
+}
+
+Menu_Status(){
+	### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
+	Check_Lock
+	sleep 1
+	. "$YAZFI_CONF"
+	
+	Print_Output "false" "Querying router for connected WiFi clients..." "$PASS"
+	
+	for IFACE in $IFACELIST; do
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
+			printf "%75s\\n\\n" "" |tr " " "-"
+			printf "\\e[1mINTERFACE: %-5s\\e[0m\\n" "$IFACE"
+			printf "\\e[1mSSID: %-20s\\e[0m\\n\\n" "$(nvram get "$IFACE""_ssid")"
+			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
+			if [ "$IFACE_MACS" != "" ]; then
+				printf "\\e[1m%-20s%-20s%-20s\\e[0m\\n" "HOSTNAME" "IP ADDRESS" "MAC"
+				
+				IFS=$'\n'
+				for GUEST_MAC in $IFACE_MACS; do
+					GUEST_MACADDR="${GUEST_MAC#* }"
+					GUEST_ARPINFO="$(arp -a | grep "$IFACE" | grep -i "$GUEST_MACADDR")"
+					GUEST_HOST="$(echo "$GUEST_ARPINFO" | awk '{print $1}' | cut -f1 -d ".")"
+					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
+					printf "%-20s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
+				done
+				unset IFS
+			else
+				printf "\\e[1m\\e[33mNo clients connected\\e[0m\\n\\n"
+			fi
+		fi
+	done
+	
+	printf "%75s\\n\\n" "" |tr " " "-"
+	
+	Print_Output "false" "Query complete, please see above for results" "$PASS"
+	Clear_Lock
+	#######################################################################################################
+}
+
+if [ -z "$1" ]; then
+	Auto_Startup create 2>/dev/null
+	Auto_ServiceEvent create 2>/dev/null
+	ScriptHeader
+	MainMenu
 	exit 0
 fi
 
 case "$1" in
 	install)
-		Check_Lock
-		Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
-		sleep 1
-		
-		if ! Conf_Exists; then
-			Conf_Download "$YAZFI_CONF"
-		else
-			Print_Output "false" "Existing $YAZFI_CONF found. This will be kept by $YAZFI_NAME. Downloading a blank file for comparison (e.g. new settings)"
-			Conf_Download $YAZFI_CONF".blank"
-			Config_Networks
-		fi
-		Clear_Lock
+		Menu_Install
+		exit 0
+	;;
+	runnow)
+		Menu_RunNow
 		exit 0
 	;;
 	update)
-		Check_Lock
-		Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
-		sleep 1
-		Update_Version
-		Clear_Lock
+		Menu_Update
 		exit 0
 	;;
 	forceupdate)
-		Check_Lock
-		Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
-		sleep 1
-		Update_Version force
-		Clear_Lock
+		Menu_ForceUpdate
 		exit 0
 	;;
 	uninstall)
-		Check_Lock
-		Print_Output "true" "Removing YazFi..." "$PASS"
-		Auto_Startup delete 2>/dev/null
-		Auto_ServiceEvent delete 2>/dev/null
-		Routing_NVRAM deleteall 2>/dev/null
-		Routing_FWNAT deleteall 2>/dev/null
-		Routing_RPDB deleteall 2>/dev/null
-		Firewall_Chains deleteall 2>/dev/null
-		Iface_Manage deleteall 2>/dev/null
-		DHCP_Conf deleteall 2>/dev/null
-		Clear_Lock
+		Menu_Uninstall
 		exit 0
 	;;
 	bounceclients)
 		if [ -z "$2" ] && [ -z "$3" ]; then
-			Check_Lock
-			Iface_BounceClients
-			Clear_Lock
+			Menu_BounceClients
 		elif [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
 			Check_Lock
 			Print_Output "true" "Wireless restarted - sleeping 30s before running YazFi" "$PASS"
@@ -1122,42 +1244,8 @@ case "$1" in
 		exit 0
 	;;
 	status)
-		### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
-		Check_Lock
-		. "$YAZFI_CONF"
-		
-		Print_Output "false" "Querying router for connected WiFi clients..." "$PASS"
-		
-		for IFACE in $IFACELIST; do
-			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
-				printf "%75s\\n\\n" "" |tr " " "-"
-				printf "\\e[1mINTERFACE: %-5s\\e[0m\\n" "$IFACE"
-				printf "\\e[1mSSID: %-20s\\e[0m\\n\\n" "$(nvram get "$IFACE""_ssid")"
-				IFACE_MACS="$(wl -i "$IFACE" assoclist)"
-				if [ "$IFACE_MACS" != "" ]; then
-					printf "\\e[1m%-20s%-20s%-20s\\e[0m\\n" "HOSTNAME" "IP ADDRESS" "MAC"
-					
-					IFS=$'\n'
-					for GUEST_MAC in $IFACE_MACS; do
-						GUEST_MACADDR="${GUEST_MAC#* }"
-						GUEST_ARPINFO="$(arp -a | grep "$IFACE" | grep -i "$GUEST_MACADDR")"
-						GUEST_HOST="$(echo "$GUEST_ARPINFO" | awk '{print $1}' | cut -f1 -d ".")"
-						GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
-						printf "%-20s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
-					done
-					unset IFS
-				else
-					printf "\\e[1m\\e[33mNo clients connected\\e[0m\\n\\n"
-				fi
-			fi
-		done
-		
-		printf "%75s\\n\\n" "" |tr " " "-"
-		
-		Print_Output "false" "Query complete, please see above for results" "$PASS"
-		Clear_Lock
+		Menu_Status
 		exit 0
-		#######################################################################################################
 	;;
 	*)
 		Check_Lock
