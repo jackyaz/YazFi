@@ -33,11 +33,12 @@ Using your preferred SSH client/terminal, copy and paste the following command, 
 
 Please then follow instructions shown in the SSH client/terminal session.
 
-For ease of reference, a sample configuration file is available here: https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.config.sample
+For ease of reference, a sample configuration file is available here: [Sample Config file](https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.config.sample)
 
 ### I haven't used scripts before on AsusWRT-Merlin, what do I do?
 
-If this is the first time you are using scripts, don't panic! In your router's WebUI, go to the Administration area of the left menu, and then the System tab. Set Enable JFFS custom scripts and configs to Yes. Further reading about scripts is available here: [AsusWRT-Merlin User-scripts](https://github.com/RMerl/asuswrt-merlin/wiki/User-scripts)
+If this is the first time you are using scripts, don't panic! In your router's WebUI, go to the Administration area of the left menu, and then the System tab. Set Enable JFFS custom scripts and configs to Yes.
+Further reading about scripts is available here: [AsusWRT-Merlin User-scripts](https://github.com/RMerl/asuswrt-merlin/wiki/User-scripts)
 
 ![WebUI enable scripts](https://puu.sh/A3wnG/00a43283ed.png)
 
