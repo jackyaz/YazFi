@@ -16,6 +16,10 @@
 ######    guest network DHCP script and for    ######
 ######        AsusWRT-Merlin firmware          ######
 #####################################################
+### Shellcheck directives ###
+# shellcheck disable=SC2034
+# shellcheck source=/jffs/configs/YazFi/YazFi.config
+####
 
 ### Start of script variables ###
 readonly YAZFI_NAME="YazFi"
@@ -74,7 +78,7 @@ VPN_IP_LIST_NEW_5=""
 
 # $1 = print to syslog, $2 = message to print, $3 = log level
 Print_Output () {
-	if [ "$1" = "true" ]; then 
+	if [ "$1" = "true" ]; then
 		logger -t "$YAZFI_NAME" "$2"
 		printf "\\e[1m$3%s: $2\\e[0m\\n\\n" "$YAZFI_NAME"
 	else
@@ -266,7 +270,7 @@ Update_Version () {
 ############################################################################
 
 IP_Local() {
-	if echo "$1" | grep -qE '(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)'; then 
+	if echo "$1" | grep -qE '(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)'; then
 		return 0
 	else
 		return 1
@@ -519,7 +523,6 @@ Conf_Validate () {
 		Clear_Lock
 		return 1
 	fi
-	
 }
 
 Conf_Download () {
@@ -869,7 +872,8 @@ Routing_NVRAM () {
 				if [ "$(eval echo '$'"VPN_IP_LIST_ORIG_"$COUNTER)" != "$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)" ]; then
 					Print_Output "true" "VPN Client $COUNTER client list has changed, restarting VPN Client $COUNTER"
 					
-					if [ "$(uname -m)" = "aarch64" ]; then 
+					# shellcheck disable=SC2140
+					if [ "$(uname -m)" = "aarch64" ]; then
 						fullstring="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
 						nvram set "vpn_client""$COUNTER""_clientlist"="$(echo "$fullstring" | cut -c0-255)"
 						nvram set "vpn_client""$COUNTER""_clientlist1"="$(echo "$fullstring" | cut -c256-510)"
@@ -1055,24 +1059,37 @@ Config_Networks () {
 	Print_Output "true" "YazFi $YAZFI_VERSION completed successfully" "$PASS"
 }
 
+PressEnter() {
+	while true; do
+		printf "Press enter to continue..."
+		read -r "key"
+		case "$key" in
+			*)
+				break;
+			;;
+		esac
+	done
+	return 0
+}
+
 ScriptHeader() {
-clear
-printf "\\n"
-printf "\\e[1m#####################################################\\e[0m\\n"
-printf "\\e[1m######                                         ######\\e[0m\\n"
-printf "\\e[1m######     __     __          ______  _        ######\\e[0m\\n"
-printf "\\e[1m######     \ \   / /         |  ____|(_)       ######\\e[0m\\n"
-printf "\\e[1m######      \ \_/ /__ _  ____| |__    _        ######\\e[0m\\n"
-printf "\\e[1m######       \   // _  ||_  /|  __|  | |       ######\\e[0m\\n"
-printf "\\e[1m######        | || (_| | / / | |     | |       ######\\e[0m\\n"
-printf "\\e[1m######        |_| \__,_|/___||_|     |_|       ######\\e[0m\\n"
-printf "\\e[1m######                                         ######\\e[0m\\n"
-printf "\\e[1m######                 %s                  ######\\e[0m\\n" "$YAZFI_VERSION"
-printf "\\e[1m######                                         ######\\e[0m\\n"
-printf "\\e[1m######    https://github.com/jackyaz/YazFi/    ######\\e[0m\\n"
-printf "\\e[1m######                                         ######\\e[0m\\n"
-printf "\\e[1m#####################################################\\e[0m\\n"
-printf "\\n"
+	clear
+	printf "\\n"
+	printf "\\e[1m#####################################################\\e[0m\\n"
+	printf "\\e[1m######                                         ######\\e[0m\\n"
+	printf "\\e[1m######     __     __          ______  _        ######\\e[0m\\n"
+	printf "\\e[1m######     \ \   / /         |  ____|(_)       ######\\e[0m\\n"
+	printf "\\e[1m######      \ \_/ /__ _  ____| |__    _        ######\\e[0m\\n"
+	printf "\\e[1m######       \   // _  ||_  /|  __|  | |       ######\\e[0m\\n"
+	printf "\\e[1m######        | || (_| | / / | |     | |       ######\\e[0m\\n"
+	printf "\\e[1m######        |_| \__,_|/___||_|     |_|       ######\\e[0m\\n"
+	printf "\\e[1m######                                         ######\\e[0m\\n"
+	printf "\\e[1m######                 %s                  ######\\e[0m\\n" "$YAZFI_VERSION"
+	printf "\\e[1m######                                         ######\\e[0m\\n"
+	printf "\\e[1m######    https://github.com/jackyaz/YazFi/    ######\\e[0m\\n"
+	printf "\\e[1m######                                         ######\\e[0m\\n"
+	printf "\\e[1m#####################################################\\e[0m\\n"
+	printf "\\n"
 }
 
 MainMenu() {
@@ -1090,22 +1107,22 @@ MainMenu() {
 		case "$menu" in
 			1)
 				Menu_RunNow
-				read -p "Press enter to continue..."
+				PressEnter
 				break
 			;;
 			2)
 				Menu_Update
-				read -p "Press enter to continue..."
+				PressEnter
 				break
 			;;
 			2f)
 				Menu_ForceUpdate
-				read -p "Press enter to continue..."
+				PressEnter
 				break
 			;;
 			3)
 				Menu_Status
-				read -p "Press enter to continue..."
+				PressEnter
 				break
 			;;
 			4)
@@ -1194,7 +1211,7 @@ Menu_Status(){
 			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
 			if [ "$IFACE_MACS" != "" ]; then
 				printf "\\e[1m%-20s%-20s%-20s\\e[0m\\n" "HOSTNAME" "IP ADDRESS" "MAC"
-				
+				# shellcheck disable=SC2039
 				IFS=$'\n'
 				for GUEST_MAC in $IFACE_MACS; do
 					GUEST_MACADDR="${GUEST_MAC#* }"
