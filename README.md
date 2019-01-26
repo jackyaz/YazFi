@@ -53,13 +53,11 @@ Further reading about scripts is available here: [AsusWRT-Merlin User-scripts](h
 ## Updating
 
 Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:
-
 ```sh
 /jffs/scripts/YazFi update
 ```
 
 To force a re-install of the current version, use the following command instead (requires YazFi 2.3.7 or later):
-
 ```sh
 /jffs/scripts/YazFi forceupdate
 ```
