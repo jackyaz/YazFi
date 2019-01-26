@@ -529,7 +529,8 @@ Conf_Validate () {
 			return 1
 		fi
 	else
-		:
+		Print_Output "true" "No YazFi guests are enabled in the configuration file!" "$CRIT"
+		return 1
 	fi
 }
 
