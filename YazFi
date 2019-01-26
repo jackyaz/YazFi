@@ -1,0 +1,9 @@
+#!/bin/sh
+
+readonly YAZFI_NAME="YazFi"
+readonly YAZFI_BRANCH="testing"
+readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
+
+/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
+chmod 0755 "/jffs/scripts/$YAZFI_NAME"
+service restart_firewall >/dev/null 2>&1
