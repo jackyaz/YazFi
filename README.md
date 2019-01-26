@@ -37,7 +37,7 @@ For ease of reference, a sample configuration file is available here: https://ra
 
 ### I haven't used scripts before on AsusWRT-Merlin, what do I do?
 
-If this is the first time you are using scripts, don't panic! In your router's WebUI, go to the Administration area of the left menu, and then the System tab. Set Enable JFFS custom scripts and configs to Yes. Further reading about scripts is available here: [https://github.com/RMerl/asuswrt-merlin/wiki/User-scripts]
+If this is the first time you are using scripts, don't panic! In your router's WebUI, go to the Administration area of the left menu, and then the System tab. Set Enable JFFS custom scripts and configs to Yes. Further reading about scripts is available here: [AsusWRT-Merlin User-scripts](https://github.com/RMerl/asuswrt-merlin/wiki/User-scripts)
 
 ![WebUI enable scripts](https://puu.sh/A3wnG/00a43283ed.png)
 
@@ -57,7 +57,7 @@ To force a re-install of the current version, use the following command instead 
 
 ## Help
 
-Please post about any issues and problems here: [https://www.snbforums.com/threads/yazfi-enhanced-asuswrt-merlin-guest-wifi-networks.45924/]
+Please post about any issues and problems here: [YazFi on SNBForums](https://www.snbforums.com/threads/yazfi-enhanced-asuswrt-merlin-guest-wifi-networks.45924/)
 
 ## FAQs
 
