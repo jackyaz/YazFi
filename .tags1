@@ -4,44 +4,25 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.8	//
-Print_Output	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Print_Output () {$/;"	function	line:81
-Escape_Sed	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Escape_Sed () {$/;"	function	line:90
-Get_Iface_Var	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Get_Iface_Var () {$/;"	function	line:94
-Get_Guest_Name	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Get_Guest_Name () {$/;"	function	line:98
-Iface_Manage	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Iface_Manage () {$/;"	function	line:112
-Iface_BounceClients	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Iface_BounceClients () {$/;"	function	line:128
-Auto_ServiceEvent	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Auto_ServiceEvent () {$/;"	function	line:136
-Auto_Block_DHCP	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Auto_Block_DHCP () {$/;"	function	line:170
-Auto_Startup	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Auto_Startup () {$/;"	function	line:184
-Check_Lock	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Check_Lock () {$/;"	function	line:219
-Clear_Lock	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Clear_Lock () {$/;"	function	line:238
-Update_Version	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Update_Version () {$/;"	function	line:243
-IP_Local	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^IP_Local() {$/;"	function	line:273
-Validate_IFACE	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Validate_IFACE () {$/;"	function	line:281
-Validate_IP	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Validate_IP () {$/;"	function	line:290
-Validate_Number	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Validate_Number () {$/;"	function	line:315
-Validate_DHCP	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Validate_DHCP () {$/;"	function	line:325
-Validate_VPNClientNo	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Validate_VPNClientNo () {$/;"	function	line:340
-Validate_TrueFalse	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Validate_TrueFalse () {$/;"	function	line:353
-Conf_Validate	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Conf_Validate () {$/;"	function	line:365
-Conf_Download	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Conf_Download () {$/;"	function	line:529
-Conf_Exists	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Conf_Exists () {$/;"	function	line:542
-Firewall_Chains	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Firewall_Chains() {$/;"	function	line:560
-Firewall_Rules	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Firewall_Rules () {$/;"	function	line:634
-Routing_RPDB	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Routing_RPDB () {$/;"	function	line:755
-Routing_RPDB_LAN	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Routing_RPDB_LAN () {$/;"	function	line:778
-Routing_FWNAT	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Routing_FWNAT () {$/;"	function	line:793
-Routing_NVRAM	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Routing_NVRAM () {$/;"	function	line:822
-DHCP_Conf_Block	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^DHCP_Conf_Block () {$/;"	function	line:897
-DHCP_Conf	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^DHCP_Conf () {$/;"	function	line:909
-Config_Networks	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Config_Networks () {$/;"	function	line:969
-PressEnter	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^PressEnter() {$/;"	function	line:1063
-ScriptHeader	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^ScriptHeader() {$/;"	function	line:1076
-MainMenu	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^MainMenu() {$/;"	function	line:1096
-Menu_Install	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Menu_Install(){$/;"	function	line:1144
-Menu_RunNow	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Menu_RunNow(){$/;"	function	line:1159
-Menu_Update	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Menu_Update(){$/;"	function	line:1165
-Menu_ForceUpdate	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Menu_ForceUpdate(){$/;"	function	line:1172
-Menu_Uninstall	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Menu_Uninstall(){$/;"	function	line:1179
-Menu_BounceClients	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Menu_BounceClients(){$/;"	function	line:1193
-Menu_Status	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\YazFi.sh	/^Menu_Status(){$/;"	function	line:1199
+YazFi - enhanced AsusWRT-Merlin Guest WiFi Networks	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^# YazFi - enhanced AsusWRT-Merlin Guest WiFi Networks$/;"	function	line:1
+v3.0.0	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^## v3.0.0$/;"	function	line:5
+About	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^## About$/;"	function	line:6
+Supported Models	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^## Supported Models$/;"	function	line:17
+Installation	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^## Installation$/;"	function	line:29
+I haven't used scripts before on AsusWRT-Merlin, what do I do?	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^### I haven't used scripts before on AsusWRT-Merlin, what do I do?$/;"	function	line:39
+Updating	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^## Updating$/;"	function	line:47
+Help	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^## Help$/;"	function	line:61
+FAQs	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^## FAQs$/;"	function	line:65
+wl01_ENABLED	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^### wl01_ENABLED$/;"	function	line:69
+wl01_IPADDR	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^### wl01_IPADDR$/;"	function	line:72
+wl01_DHCPSTART	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^### wl01_DHCPSTART$/;"	function	line:75
+wl01_DHCPEND	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^### wl01_DHCPEND$/;"	function	line:78
+wl01_DNS1	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^### wl01_DNS1$/;"	function	line:81
+wl01_DNS2	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^### wl01_DNS2$/;"	function	line:84
+wl01_FORCEDNS	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^### wl01_FORCEDNS$/;"	function	line:87
+wl01_REDIRECTALLTOVPN	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^### wl01_REDIRECTALLTOVPN$/;"	function	line:91
+wl01_VPNCLIENTNUMBER	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^### wl01_VPNCLIENTNUMBER$/;"	function	line:94
+wl01_LANACCESS	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^### wl01_LANACCESS$/;"	function	line:97
+wl01_CLIENTISOLATION	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^### wl01_CLIENTISOLATION$/;"	function	line:100
+Known Issues/Limitations	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^## Known Issues\/Limitations$/;"	function	line:103
+Donations	D:\User Files\Jack\Dropbox\Jack\Documents\GitHub\YazFi\README.md	/^## Donations$/;"	function	line:109
