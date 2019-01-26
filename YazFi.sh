@@ -535,15 +535,15 @@ Conf_Validate () {
 }
 
 Conf_Download () {
-	Print_Output "false" "Downloading a blank configuration file to $1"
+	Print_Output "false" "Downloading an example configuration file to $1"
 	sleep 1
 	mkdir -p "/jffs/configs/$YAZFI_NAME/"
-	/usr/sbin/curl -s --retry 3 "$YAZFI_REPO.config" -o "$1"
+	/usr/sbin/curl -s --retry 3 "$YAZFI_REPO.config.example" -o "$1"
 	chmod 0644 "$1"
 	dos2unix "$1"
-	Print_Output "false" "Please edit $1 with your desired settings. For a sample configuration file, see $YAZFI_REPO.config.sample"
+	Print_Output "false" "Please edit $1 with your desired settings using option 2 from the YazFi menu."
 	sleep 1
-	Print_Output "false" "Please run \\n\\n/jffs/scripts/$YAZFI_NAME\\n\\nin your SSH client/terminal when you have finished editing the configuration file"
+	Print_Output "false" "Once done, run YazFi using option 1 from the YazFi menu."
 	Clear_Lock
 }
 
@@ -1106,10 +1106,11 @@ ScriptHeader() {
 
 MainMenu() {
 	printf "1.    Run %s now\\n" "$YAZFI_NAME"
-	printf "2.    Check for updates\\n"
-	printf "3.    Show connected clients using %s\\n" "$YAZFI_NAME"
-	printf "4.    Uninstall YazFi\\n"
-	printf "5.    Exit YazFi\\n"
+	printf "2.    Edit YazFi configuration\\n"
+	printf "3.    Check for updates\\n"
+	printf "4.    Show connected clients using %s\\n" "$YAZFI_NAME"
+	printf "5.    Uninstall YazFi\\n"
+	printf "6.    Exit YazFi\\n"
 	printf "\\n"
 	printf "\\e[1m#####################################################\\e[0m\\n"
 	printf "\\n"
@@ -1119,26 +1120,35 @@ MainMenu() {
 		read -r "menu"
 		case "$menu" in
 			1)
+				printf "\\n"
 				Menu_RunNow
 				PressEnter
 				break
 			;;
 			2)
+				printf "\\n"
+				Menu_Edit
+				break
+			;;
+			3)
+				printf "\\n"
 				Menu_Update
 				PressEnter
 				break
 			;;
-			2f)
+			3f)
+				printf "\\n"
 				Menu_ForceUpdate
 				PressEnter
 				break
 			;;
-			3)
+			4)
+				printf "\\n"
 				Menu_Status
 				PressEnter
 				break
 			;;
-			4)
+			5)
 				while true; do
 					printf "\\n\\e[1mAre you sure you want to uninstall YazFi? (y/n)\\e[0m\\n"
 					read -r "confirm"
@@ -1153,7 +1163,7 @@ MainMenu() {
 					esac
 				done
 			;;
-			5)
+			6)
 				ScriptHeader
 				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n\\n\\n" "$YAZFI_NAME"
 				exit 0
@@ -1176,11 +1186,17 @@ Menu_Install(){
 	if ! Conf_Exists; then
 		Conf_Download "$YAZFI_CONF"
 	else
-		Print_Output "false" "Existing $YAZFI_CONF found. This will be kept by $YAZFI_NAME. Downloading a blank file for comparison (e.g. new settings)"
-		Conf_Download $YAZFI_CONF".blank"
+		Print_Output "false" "Existing $YAZFI_CONF found. This will be kept by $YAZFI_NAME. Downloading an example file for comparison (e.g. new settings)"
+		Conf_Download $YAZFI_CONF".example"
 	fi
 	
 	PressEnter
+	Clear_Lock
+}
+
+Menu_Edit(){
+	Check_Lock
+	nano $YAZFI_CONF
 	Clear_Lock
 }
 
