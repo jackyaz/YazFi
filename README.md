@@ -14,6 +14,12 @@ Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not l
 *   Allow guests to use a local DNS server
 *   Extend DNS Filter to guest networks
 
+## Donations
+
+Love the script and want to support future development? Any and all donations gratefully received!
+
+[**PayPal donation**](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=JFQLSCWJJUGZ6)
+
 ## Supported Models
 
 All models running Asuswrt-Merlin 384.5/john9527's fork 374.43_32D6j9527 and later, and have the Guest Network feature should be supported by this script. That being said, I will maintain a list of confirmed supported models as per user reports.
@@ -105,9 +111,3 @@ Not implemented
 The script overrides the "Access Intranet" WebUI setting (except for DNS). If you want guests to be able to access other Intranet resources, do not include the guest network in YazFi.
 
 ![Access Intranet settings](https://puu.sh/zYWp9/a5541ed706.png)
-
-## Donations
-
-Love the script and want to support future development? Any and all donations gratefully received!
-
-[**PayPal donation**](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=JFQLSCWJJUGZ6)
