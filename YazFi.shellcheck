@@ -1,14 +1,21 @@
 #!/bin/sh
 
-####################################################################
-######                    YazFi by jackyaz                    ######
-######                          v3.0.0                        ######
-######            https://github.com/jackyaz/YazFi/           ######
-######                                                        ######
-######            Credit to @RMerlin for the original         ######
-######             guest network DHCP script and for          ######
-######                  AsusWRT-Merlin firmware               ######
-####################################################################
+#####################################################
+######                                         ######
+######     __     __          ______  _        ######
+######     \ \   / /         |  ____|(_)       ######
+######      \ \_/ /__ _  ____| |__    _        ######
+######       \   // _  ||_  /|  __|  | |       ######
+######        | || (_| | / / | |     | |       ######
+######        |_| \__,_|/___||_|     |_|       ######
+######                                         ######
+######    https://github.com/jackyaz/YazFi/    ######
+######                                         ######
+#####################################################
+######   Credit to @RMerlin for the original   ######
+######    guest network DHCP script and for    ######
+######        AsusWRT-Merlin firmware          ######
+#####################################################
 
 ### Start of script variables ###
 readonly YAZFI_NAME="YazFi"
@@ -1050,13 +1057,21 @@ Config_Networks () {
 
 ScriptHeader() {
 clear
-printf "\\n\\e[1m####################################################################\\e[0m\\n"
-printf "\\e[1m######                                                        ######\\e[0m\\n"
-printf "\\e[1m######                    %s by jackyaz                    ######\\e[0m\\n" "$YAZFI_NAME"
-printf "\\e[1m######                          %s                        ######\\e[0m\\n" "$YAZFI_VERSION"
-printf "\\e[1m######            https://github.com/jackyaz/YazFi/           ######\\e[0m\\n"
-printf "\\e[1m######                                                        ######\\e[0m\\n"
-printf "\\e[1m####################################################################\\e[0m\\n"
+printf "\\n"
+printf "\\e[1m#####################################################\\e[0m\\n"
+printf "\\e[1m######                                         ######\\e[0m\\n"
+printf "\\e[1m######     __     __          ______  _        ######\\e[0m\\n"
+printf "\\e[1m######     \ \   / /         |  ____|(_)       ######\\e[0m\\n"
+printf "\\e[1m######      \ \_/ /__ _  ____| |__    _        ######\\e[0m\\n"
+printf "\\e[1m######       \   // _  ||_  /|  __|  | |       ######\\e[0m\\n"
+printf "\\e[1m######        | || (_| | / / | |     | |       ######\\e[0m\\n"
+printf "\\e[1m######        |_| \__,_|/___||_|     |_|       ######\\e[0m\\n"
+printf "\\e[1m######                                         ######\\e[0m\\n"
+printf "\\e[1m######                 %s                  ######\\e[0m\\n" "$YAZFI_VERSION"
+printf "\\e[1m######                                         ######\\e[0m\\n"
+printf "\\e[1m######    https://github.com/jackyaz/YazFi/    ######\\e[0m\\n"
+printf "\\e[1m######                                         ######\\e[0m\\n"
+printf "\\e[1m#####################################################\\e[0m\\n"
 printf "\\n"
 }
 
@@ -1065,7 +1080,9 @@ MainMenu() {
 	printf "2.    Check for updates\\n"
 	printf "3.    Show connected clients using %s\\n" "$YAZFI_NAME"
 	printf "4.    Exit YazFi\\n"
-	printf "\\e[1m\\n####################################################################\\e[0m\\n\\n"
+	printf "\\n"
+	printf "\\e[1m#####################################################\\e[0m\\n"
+	printf "\\n"
 	
 	while true; do
 		printf "Choose an option:    "
@@ -1092,9 +1109,8 @@ MainMenu() {
 				break
 			;;
 			4)
-				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n" "$YAZFI_NAME"
-				sleep 2
-				clear
+				ScriptHeader
+				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n\\n\\n" "$YAZFI_NAME"
 				exit 0
 			;;
 			*)
