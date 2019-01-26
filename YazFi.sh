@@ -254,6 +254,7 @@ Update_Version () {
 			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
 			Clear_Lock
 			service restart_firewall >/dev/null 2>&1
+			exit 0
 		else
 			Print_Output "true" "No new version - latest is $localver" "$WARN"
 			Clear_Lock
@@ -268,6 +269,7 @@ Update_Version () {
 			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
 			Clear_Lock
 			service restart_firewall >/dev/null 2>&1
+			exit 0
 		;;
 	esac
 }
