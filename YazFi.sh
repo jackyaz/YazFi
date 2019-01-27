@@ -673,7 +673,7 @@ Firewall_Rules () {
 		### End of bridge rules ###
 		
 		### Start of IP firewall rules ###
-		iptables "$ACTION" "$FWRD" -i "$IFACE" -j "$LGRJT" #-m state --state NEW -j ACCEPT
+		iptables "$ACTION" "$FWRD" -i "$IFACE" -j ACCEPT #-m state --state NEW -j ACCEPT
 		
 		iptables "$ACTION" "$FWRD" -i "$IFACE" -o br0 -j "$LGRJT" #-m state --state NEW -j "$LGRJT"
 		iptables "$ACTION" "$FWRD" -i br0 -o "$IFACE" -j "$LGRJT" #-m state --state NEW -j "$LGRJT"
