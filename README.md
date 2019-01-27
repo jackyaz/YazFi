@@ -1,10 +1,9 @@
 # YazFi - enhanced AsusWRT-Merlin Guest WiFi Networks
-
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/a2cf9bdec17b4b6f9b6e113f802be694)](https://app.codacy.com/app/jackyaz/YazFi?utm_source=github.com&utm_medium=referral&utm_content=jackyaz/YazFi&utm_campaign=Badge_Grade_Dashboard)
+[![Build Status](https://travis-ci.com/jackyaz/YazFi.svg?branch=master)](https://travis-ci.com/jackyaz/YazFi)
 
 ## v3.0.0
 ## About
-
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
 
 *   Dedicated VPN WiFi networks
@@ -19,14 +18,13 @@ YazFi is free to use under the [GNU General Public License version 3](https://op
 ![Menu UI](https://puu.sh/CD8sh/1e9bf58218.png)
 
 ## Donations
-
 Love the script and want to support future development? Any and all donations gratefully received!
 
 [**PayPal donation**](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=JFQLSCWJJUGZ6)
 
 ## Supported Models
-
-All models running Asuswrt-Merlin 384.5/john9527's fork 374.43_32D6j9527 and later, and have the Guest Network feature should be supported by this script. Models confirmed to work by users are below:
+### Models
+Models confirmed to work by users are below:
 *   RT-AC56U
 *   RT-AC66U
 *   RT-AC68U
@@ -36,8 +34,12 @@ All models running Asuswrt-Merlin 384.5/john9527's fork 374.43_32D6j9527 and lat
 *   RT-AC3200
 *   RT-AC5300
 
-## Installation
+### Firmware versions
+You must be running firmware no older than:
+*   [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/) 384.5
+*   [john9527 fork](https://www.snbforums.com/threads/fork-asuswrt-merlin-374-43-lts-releases-v37ea.18914/) 374.43_32D6j9527
 
+## Installation
 Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:
 
 ```sh
@@ -58,16 +60,13 @@ If you do not have Entware installed, you will need to use the full path:
 ```
 
 ## Updating
-
-Using your preferred SSH client/terminal, open YazFi and select option 3
+Launch YazFi and select option 3
 
 ## Help
-
 Please post about any issues and problems here: [YazFi on SNBForums](https://www.snbforums.com/threads/yazfi-enhanced-asuswrt-merlin-guest-wifi-networks.45924/)
 
 ## FAQs
 ### I haven't used scripts before on AsusWRT-Merlin
-
 If this is the first time you are using scripts, don't panic! In your router's WebUI, go to the Administration area of the left menu, and then the System tab. Set Enable JFFS custom scripts and configs to Yes.
 
 Further reading about scripts is available here: [AsusWRT-Merlin User-scripts](https://github.com/RMerl/asuswrt-merlin/wiki/User-scripts)
@@ -75,7 +74,6 @@ Further reading about scripts is available here: [AsusWRT-Merlin User-scripts](h
 ![WebUI enable scripts](https://puu.sh/A3wnG/00a43283ed.png)
 
 ### Explanation of YazFi settings
-
 #### wl01_ENABLED
 Enable YazFi for this Guest Network
 
@@ -111,7 +109,6 @@ Not implemented
 Not implemented
 
 ## Known Issues/Limitations
-
 The script overrides the "Access Intranet" WebUI setting (except for DNS). If you want guests to be able to access other Intranet resources, do not include the guest network in YazFi.
 
 ![Access Intranet settings](https://puu.sh/zYWp9/a5541ed706.png)
