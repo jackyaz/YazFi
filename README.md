@@ -24,7 +24,7 @@ Love the script and want to support future development? Any and all donations gr
 
 ## Supported Models
 ### Models
-Models confirmed to work by users are below:
+All modes supported by [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/about). Models confirmed to work are below:
 *   RT-AC56U
 *   RT-AC66U
 *   RT-AC68U
