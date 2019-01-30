@@ -1089,16 +1089,17 @@ Config_Networks () {
 	
 	DHCP_Conf save 2>/dev/null
 	
-	if [ "$WIRELESSRESTART" = "true" ]; then
-		service restart_wireless >/dev/null 2>&1
-	fi
-	
 	#Clean DHCP blocking
 	if [ "$BLOCKDHCP" = "true" ]; then
 		Auto_Block_DHCP delete 2>/dev/null
 		DHCP_Conf_Block delete 2>/dev/null
 		rm -f "$YAZFI_BLOCKDHCPFILE" 2>/dev/null
 		service restart_dnsmasq >/dev/null 2>&1
+	fi
+	
+	if [ "$WIRELESSRESTART" = "true" ]; then
+		Clear_Lock
+		service restart_wireless >/dev/null 2>&1
 	fi
 	
 	Print_Output "true" "YazFi $YAZFI_VERSION completed successfully" "$PASS"
