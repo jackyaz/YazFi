@@ -763,6 +763,24 @@ Firewall_Rules () {
 	done
 }
 
+Firewall_NVRAM () {
+	case $1 in
+		create)
+			# shellcheck disable=SC2140
+			nvram set "$2""_ap_isolate"="1"
+		;;
+		delete)
+			# shellcheck disable=SC2140
+			nvram set "$2""_ap_isolate"="0"
+		;;
+		deleteall)
+			for IFACE in $IFACELIST; do
+				Firewall_NVRAM delete "$IFACE" 2>/dev/null
+			done
+		;;
+	esac
+}
+
 Routing_RPDB () {
 	case $1 in
 		create)
@@ -982,6 +1000,7 @@ DHCP_Conf () {
 
 Config_Networks () {
 	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
+	WIRELESSRESTART="false"
 	
 	if ! Conf_Exists; then
 		Conf_Download $YAZFI_CONF
@@ -1010,6 +1029,11 @@ Config_Networks () {
 			Iface_Manage create "$IFACE" 2>/dev/null
 			
 			Firewall_Rules create "$IFACE" 2>/dev/null
+			
+			if [ "$(nvram get "$IFACE""_ap_isolate")" != "1" ]; then
+				Firewall_NVRAM create "$IFACE" 2>/dev/null
+				WIRELESSRESTART="true"
+			fi
 			
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_REDIRECTALLTOVPN")" = "true" ]; then
 				Print_Output "true" "$IFACE (SSID: $(nvram get "$IFACE""_ssid")) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
@@ -1041,6 +1065,9 @@ Config_Networks () {
 			#Remove firewall rules for guest interface
 			Firewall_Rules delete "$IFACE" 2>/dev/null
 			
+			#Reset guest interface ISOLATION
+			Firewall_NVRAM delete "$IFACE" 2>/dev/null
+			
 			#Remove guest interface
 			Iface_Manage delete "$IFACE" 2>/dev/null
 			
@@ -1055,13 +1082,16 @@ Config_Networks () {
 			
 			# Remove guest interface VPN NAT rules and interface access
 			Routing_FWNAT delete "$IFACE" 2>/dev/null
-			
 		fi
 	done
 	
 	Routing_NVRAM save 2>/dev/null
 	
 	DHCP_Conf save 2>/dev/null
+	
+	if [ "$WIRELESSRESTART" = "true" ]; then
+		service restart_wireless >/dev/null 2>&1
+	fi
 	
 	#Clean DHCP blocking
 	if [ "$BLOCKDHCP" = "true" ]; then
@@ -1242,6 +1272,7 @@ Menu_Uninstall(){
 	Routing_FWNAT deleteall 2>/dev/null
 	Routing_RPDB deleteall 2>/dev/null
 	Firewall_Chains deleteall 2>/dev/null
+	Firewall_NVRAM deleteall "$IFACE" 2>/dev/null
 	Iface_Manage deleteall 2>/dev/null
 	DHCP_Conf deleteall 2>/dev/null
 	rm -f "/jffs/scripts/$YAZFI_NAME" 2>/dev/null
