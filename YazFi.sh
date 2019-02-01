@@ -673,20 +673,19 @@ Firewall_Rules () {
 		### End of bridge rules ###
 		
 		### Start of IP firewall rules ###
-		iptables "$ACTION" "$FWRD" -i "$IFACE" -j ACCEPT #-m state --state NEW -j ACCEPT
+		iptables "$ACTION" "$FWRD" -i "$IFACE" -j ACCEPT
 		
-		iptables "$ACTION" "$FWRD" -i "$IFACE" -o br0 -j "$LGRJT" #-m state --state NEW -j "$LGRJT"
-		iptables "$ACTION" "$FWRD" -i br0 -o "$IFACE" -j "$LGRJT" #-m state --state NEW -j "$LGRJT"
+		iptables "$ACTION" "$FWRD" -i "$IFACE" -o br0 -j "$LGRJT"
+		iptables "$ACTION" "$FWRD" -i br0 -o "$IFACE" -j "$LGRJT"
 		
 		for IFACE_GUEST in $IFACELIST; do
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE_GUEST")"_ENABLED)" = "true" ]; then
-				iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_GUEST" -j "$LGRJT" #-m state --state NEW -j "$LGRJT"
+				iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_GUEST" -j "$LGRJT"
 			fi
 		done
 		
-		iptables "$ACTION" "$INPT" -i "$IFACE" -j "$LGRJT" #-m state --state NEW -j "$LGRJT"
-		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT #-m state --state NEW -j ACCEPT
-		
+		iptables "$ACTION" "$INPT" -i "$IFACE" -j "$LGRJT"
+		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT
 		if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" || IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")"; then
 			modprobe xt_comment
 			RULES=$(iptables -nvL $FWRD --line-number | grep "$IFACE" | grep "dpt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
@@ -697,7 +696,7 @@ Firewall_Rules () {
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
 				if ifconfig "br0:pixelserv-tls" | grep -q "inet addr:" >/dev/null 2>&1; then
 					IP_PXLSRV=$(ifconfig br0:pixelserv-tls | grep "inet addr:" | cut -d: -f2 | awk '{print $1}')
-					iptables "$ACTION" "$INPT" -i "$IFACE" -d "$IP_PXLSRV" -p tcp -m multiport --dports 80,443 -m comment --comment "PixelServ" -j ACCEPT #-m state --state NEW -j ACCEPT
+					iptables "$ACTION" "$INPT" -i "$IFACE" -d "$IP_PXLSRV" -p tcp -m multiport --dports 80,443 -m comment --comment "PixelServ" -j ACCEPT
 				else
 					RULES=$(iptables -nvL $INPT --line-number | grep "$IFACE" | grep "PixelServ" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 					for RULENO in $RULES; do
@@ -706,24 +705,24 @@ Firewall_Rules () {
 				fi
 				
 				for PROTO in tcp udp; do
-					iptables "$ACTION" "$INPT" -i "$IFACE" -p "$PROTO" --dport 53 -j ACCEPT #-m state --state NEW -j ACCEPT
+					iptables "$ACTION" "$INPT" -i "$IFACE" -p "$PROTO" --dport 53 -j ACCEPT
 				done
 			fi
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" ]; then
 				if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
 					for PROTO in tcp udp; do
-						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -m comment --comment "LAN_DNS" -j ACCEPT #-m state --state NEW -j ACCEPT
+						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -m comment --comment "LAN_DNS" -j ACCEPT
 					done
 				fi
 				if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
 					for PROTO in tcp udp; do
-						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" -p "$PROTO" --dport 53 -m comment --comment "LAN_DNS" -j ACCEPT #-m state --state NEW -j ACCEPT
+						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" -p "$PROTO" --dport 53 -m comment --comment "LAN_DNS" -j ACCEPT
 					done
 				fi
 			else
 				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
 					for PROTO in tcp udp; do
-						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -m comment --comment "LAN_DNS" -j ACCEPT #-m state --state NEW -j ACCEPT
+						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -m comment --comment "LAN_DNS" -j ACCEPT
 					done
 				fi
 			fi
@@ -825,8 +824,8 @@ Routing_FWNAT () {
 			for ACTION in -D -I; do
 				modprobe xt_comment
 				iptables -t nat "$ACTION" POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 -o tun1"$3" -m comment --comment "$(Get_Guest_Name "$2")" -j MASQUERADE
-				iptables "$ACTION" "$FWRD" -i "$2" -o tun1"$3" -j ACCEPT #-m state --state NEW -j ACCEPT
-				iptables "$ACTION" "$FWRD" -i tun1"$3" -o "$2" -j ACCEPT #-m state --state NEW -j ACCEPT
+				iptables "$ACTION" "$FWRD" -i "$2" -o tun1"$3" -j ACCEPT
+				iptables "$ACTION" "$FWRD" -i tun1"$3" -o "$2" -j ACCEPT
 			done
 		;;
 		delete)
