@@ -568,7 +568,6 @@ Conf_Exists () {
 }
 
 Firewall_Chains() {
-	#FWRDSTART="$(($(iptables -nvL FORWARD --line | grep -E "ACCEPT     all.*state RELATED,ESTABLISHED" | tail -1 | awk '{print $1}') + 1))"
 	FWRDSTART="$(iptables -nvL FORWARD --line | grep -E "ACCEPT     all.*state RELATED,ESTABLISHED" | tail -1 | awk '{print $1}')"
 	
 	case $1 in
@@ -614,7 +613,7 @@ Firewall_Chains() {
 							iptables -D INPUT -j "$CHAIN"
 						;;
 						$FWRD)
-							iptables -D FORWARD "$FWRDSTART"
+							iptables -D FORWARD "$(($FWRDSTART+1))"
 						;;
 						$LGRJT)
 							iptables -D "$LGRJT" -j REJECT
