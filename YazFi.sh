@@ -78,7 +78,7 @@ VPN_IP_LIST_NEW_5=""
 ### End of VPN clientlist variables ###
 
 # $1 = print to syslog, $2 = message to print, $3 = log level
-Print_Output () {
+Print_Output(){
 	if [ "$1" = "true" ]; then
 		logger -t "$YAZFI_NAME" "$2"
 		printf "\\e[1m$3%s: $2\\e[0m\\n\\n" "$YAZFI_NAME"
@@ -87,15 +87,15 @@ Print_Output () {
 	fi
 }
 
-Escape_Sed () {
+Escape_Sed(){
 	sed -e 's/</\\</g;s/>/\\>/g;s/ /\\ /g'
 }
 
-Get_Iface_Var () {
+Get_Iface_Var(){
 	echo "$1" | sed -e 's/\.//g'
 }
 
-Get_Guest_Name () {
+Get_Guest_Name(){
 	VPN_NVRAM=""
 	
 	if echo "$1" | grep -q "wl0"; then
@@ -109,7 +109,7 @@ Get_Guest_Name () {
 	echo "$VPN_NVRAM"
 }
 
-Iface_Manage () {
+Iface_Manage(){
 	case $1 in
 		create)
 			ifconfig "$2" "$(eval echo '$'"$(Get_Iface_Var "$2")"_IPADDR | cut -f1-3 -d".").1" netmask 255.255.255.0 # Assign the .1 address to the interface
@@ -125,7 +125,7 @@ Iface_Manage () {
 	esac
 }
 
-Iface_BounceClients () {
+Iface_BounceClients(){
 	Print_Output "true" "Forcing YazFi Guest WiFi clients to reauthenticate" "$PASS"
 	
 	for IFACE in $IFACELIST; do
@@ -133,7 +133,7 @@ Iface_BounceClients () {
 	done
 }
 
-Auto_ServiceEvent () {
+Auto_ServiceEvent(){
 	case $1 in
 		create)
 			if [ -f /jffs/scripts/service-event ]; then
@@ -170,7 +170,7 @@ Auto_ServiceEvent () {
 	esac
 }
 
-Auto_Block_DHCP () {
+Auto_Block_DHCP(){
 	case $1 in
 		delete)
 			if [ -f /jffs/scripts/dnsmasq.postconf ]; then
@@ -184,7 +184,7 @@ Auto_Block_DHCP () {
 	esac
 }
 
-Auto_Startup () {
+Auto_Startup(){
 	case $1 in
 		create)
 			if [ -f /jffs/scripts/firewall-start ]; then
@@ -219,7 +219,7 @@ Auto_Startup () {
 }
 
 ### Code for these functions inspired by https://github.com/Adamm00/IPSet_ASUS - credit to @Adamm ###
-Check_Lock () {
+Check_Lock(){
 	if [ -f "/tmp/$YAZFI_NAME.lock" ]; then
 		ageoflock=$(($(date +%s) - $(date +%s -r /tmp/$YAZFI_NAME.lock)))
 		if [ "$ageoflock" -gt 120 ]; then
@@ -238,12 +238,12 @@ Check_Lock () {
 	fi
 }
 
-Clear_Lock () {
+Clear_Lock(){
 	rm -f "/tmp/$YAZFI_NAME.lock" 2>/dev/null
 	return 0
 }
 
-Update_Version () {
+Update_Version(){
 	if [ -z "$1" ]; then
 		localver=$(grep "YAZFI_VERSION=" /jffs/scripts/$YAZFI_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; Clear_Lock; exit 1; }
@@ -275,7 +275,7 @@ Update_Version () {
 }
 ############################################################################
 
-IP_Local() {
+IP_Local(){
 	if echo "$1" | grep -qE '(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)'; then
 		return 0
 	else
@@ -283,7 +283,7 @@ IP_Local() {
 	fi
 }
 
-Validate_IFACE () {
+Validate_IFACE(){
 	if ! ifconfig "$1" >/dev/null 2>&1; then
 		Print_Output "false" "$1 - Interface not enabled/configured in Web GUI (Guest Network menu)" "$ERR"
 		return 1
@@ -292,7 +292,7 @@ Validate_IFACE () {
 	fi
 }
 
-Validate_IP () {
+Validate_IP(){
 	if expr "$2" : '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$' >/dev/null; then
 		for i in 1 2 3 4; do
 			if [ "$(echo "$2" | cut -d. -f$i)" -gt 255 ]; then
@@ -317,7 +317,7 @@ Validate_IP () {
 	fi
 }
 
-Validate_Number () {
+Validate_Number(){
 	if [ "$2" -eq "$2" ] 2>/dev/null; then
 		return 0
 	else
@@ -327,7 +327,7 @@ Validate_Number () {
 	fi
 }
 
-Validate_DHCP () {
+Validate_DHCP(){
 	if ! Validate_Number "$1" "$2"; then
 		return 1
 	elif ! Validate_Number "$1" "$3"; then
@@ -342,7 +342,7 @@ Validate_DHCP () {
 	fi
 }
 
-Validate_VPNClientNo () {
+Validate_VPNClientNo(){
 	if ! Validate_Number "$1" "$2"; then
 		return 1
 	fi
@@ -355,7 +355,7 @@ Validate_VPNClientNo () {
 	fi
 }
 
-Validate_TrueFalse () {
+Validate_TrueFalse(){
 	case "$2" in
 		true|TRUE|false|FALSE)
 			return 0
@@ -367,7 +367,7 @@ Validate_TrueFalse () {
 	esac
 }
 
-Conf_Validate () {
+Conf_Validate(){
 	
 	CONF_VALIDATED="true"
 	NETWORKS_ENABLED="false"
@@ -536,7 +536,7 @@ Conf_Validate () {
 	fi
 }
 
-Conf_Download () {
+Conf_Download(){
 	Print_Output "false" "Downloading an example configuration file to $1"
 	sleep 1
 	mkdir -p "/jffs/configs/$YAZFI_NAME/"
@@ -549,7 +549,7 @@ Conf_Download () {
 	Clear_Lock
 }
 
-Conf_Exists () {
+Conf_Exists(){
 	if [ -f "$YAZFI_CONF" ]; then
 		dos2unix "$YAZFI_CONF"
 		chmod 0644 "$YAZFI_CONF"
@@ -567,7 +567,7 @@ Conf_Exists () {
 	fi
 }
 
-Firewall_Chains() {
+Firewall_Chains(){
 	FWRDSTART="$(iptables -nvL FORWARD --line | grep -E "ACCEPT     all.*state RELATED,ESTABLISHED" | tail -1 | awk '{print $1}')"
 	
 	case $1 in
@@ -641,7 +641,7 @@ Firewall_Chains() {
 	esac
 }
 
-Firewall_Rules () {
+Firewall_Rules(){
 	ACTIONS=""
 	IFACE="$2"
 	
@@ -760,7 +760,7 @@ Firewall_Rules () {
 	done
 }
 
-Firewall_NVRAM () {
+Firewall_NVRAM(){
 	case $1 in
 		create)
 			# shellcheck disable=SC2140
@@ -778,7 +778,7 @@ Firewall_NVRAM () {
 	esac
 }
 
-Routing_RPDB () {
+Routing_RPDB(){
 	case $1 in
 		create)
 			ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$3" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".1
@@ -801,7 +801,7 @@ Routing_RPDB () {
 	ip route flush cache
 }
 
-Routing_RPDB_LAN () {
+Routing_RPDB_LAN(){
 	case $1 in
 		create)
 			COUNTER=1
@@ -816,7 +816,7 @@ Routing_RPDB_LAN () {
 	esac
 }
 
-Routing_FWNAT () {
+Routing_FWNAT(){
 	case $1 in
 		create)
 			for ACTION in -D -I; do
@@ -845,7 +845,7 @@ Routing_FWNAT () {
 	esac
 }
 
-Routing_NVRAM () {
+Routing_NVRAM(){
 	case $1 in
 		initialise)
 			COUNTER=1
@@ -922,7 +922,7 @@ Routing_NVRAM () {
 	esac
 }
 
-DHCP_Conf_Block () {
+DHCP_Conf_Block(){
 	case $1 in
 		delete)
 			DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $DNSCONF)
@@ -934,7 +934,7 @@ DHCP_Conf_Block () {
 	esac
 }
 
-DHCP_Conf () {
+DHCP_Conf(){
 	case $1 in
 		initialise)
 			if [ -f $DNSCONF ]; then
@@ -995,7 +995,7 @@ DHCP_Conf () {
 	esac
 }
 
-Config_Networks () {
+Config_Networks(){
 	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
 	WIRELESSRESTART="false"
 	
@@ -1102,7 +1102,7 @@ Config_Networks () {
 	Print_Output "true" "YazFi $YAZFI_VERSION completed successfully" "$PASS"
 }
 
-Shortcut_YazFi() {
+Shortcut_YazFi(){
 	case $1 in
 		create)
 			if [ -d "/opt/bin" ] && [ ! -f "/opt/bin/$YAZFI_NAME" ] && [ -f "/jffs/scripts/$YAZFI_NAME" ]; then
@@ -1118,7 +1118,7 @@ Shortcut_YazFi() {
 	esac
 }
 
-PressEnter() {
+PressEnter(){
 	while true; do
 		printf "Press enter to continue..."
 		read -r "key"
@@ -1131,7 +1131,7 @@ PressEnter() {
 	return 0
 }
 
-ScriptHeader() {
+ScriptHeader(){
 	clear
 	printf "\\n"
 	printf "\\e[1m#####################################################\\e[0m\\n"
@@ -1151,7 +1151,7 @@ ScriptHeader() {
 	printf "\\n"
 }
 
-MainMenu() {
+MainMenu(){
 	Shortcut_YazFi create
 	printf "1.    Run %s now\\n" "$YAZFI_NAME"
 	printf "2.    Edit YazFi configuration\\n"
@@ -1242,7 +1242,7 @@ Menu_Install(){
 	fi
 	
 	Shortcut_YazFi create
-	Print_Output "true" "You can access YazFi's menu with /jffs/scripts/$YAZFI_NAME or simply with $YAZFI_NAME"
+	Print_Output "true" "You can access YazFi's menu via amtm (if installed) with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
 	PressEnter
 	Clear_Lock
 }
