@@ -218,7 +218,7 @@ Auto_Startup(){
 	esac
 }
 
-### Code for this functions courtesy of https://github.com/decoderman- credit to @thelonelycoder ###
+### Code for this function courtesy of https://github.com/decoderman- credit to @thelonelycoder ###
 Firmware_Version_Check(){
 	echo "$1" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }';
 }
@@ -1245,7 +1245,6 @@ Check_Requirements(){
 		CHECKSFAILED="true"
 	fi
 	
-	### Courtesy of TheLonelyCoder
 		if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 384.50)" ] && [ "$(Firmware_Version_Check "$(nvram get buildno)")" -ne "$(Firmware_Version_Check 374.43)" ]; then
 			Print_Output "true" "Older Merlin firmware detected - service-event requires 384.5 or later" "$WARN"
 			Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
@@ -1253,7 +1252,6 @@ Check_Requirements(){
 			Print_Output "true" "John's fork detected - service-event requires 374.43_32D6j9527 or later" "$WARN"
 			Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
 		fi
-	###
 	
 	if [ "$CHECKSFAILED" = "false" ]; then
 		return 0
