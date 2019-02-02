@@ -1104,10 +1104,19 @@ Config_Networks () {
 }
 
 Shortcut_YazFi() {
-	if [ -d "/opt/bin" ] && [ ! -f "/opt/bin/$YAZFI_NAME" ] && [ -f "/jffs/scripts/$YAZFI_NAME" ]; then
-		ln -s /jffs/scripts/$YAZFI_NAME /opt/bin
-		chmod 0755 /opt/bin/$YAZFI_NAME
-	fi
+	case $1 in
+		create)
+			if [ -d "/opt/bin" ] && [ ! -f "/opt/bin/$YAZFI_NAME" ] && [ -f "/jffs/scripts/$YAZFI_NAME" ]; then
+				ln -s /jffs/scripts/$YAZFI_NAME /opt/bin
+				chmod 0755 /opt/bin/$YAZFI_NAME
+			fi
+		;;
+		delete)
+			if [ -f "/opt/bin/$YAZFI_NAME" ]; then
+				rm -f /opt/bin/$YAZFI_NAME
+			fi
+		;;
+	esac
 }
 
 PressEnter() {
@@ -1144,7 +1153,7 @@ ScriptHeader() {
 }
 
 MainMenu() {
-	Shortcut_YazFi
+	Shortcut_YazFi create
 	printf "1.    Run %s now\\n" "$YAZFI_NAME"
 	printf "2.    Edit YazFi configuration\\n"
 	printf "3.    Check for updates\\n"
@@ -1233,7 +1242,7 @@ Menu_Install(){
 		Conf_Download $YAZFI_CONF".example"
 	fi
 	
-	Shortcut_YazFi
+	Shortcut_YazFi create
 	Print_Output "true" "You can access YazFi's menu with /jffs/scripts/$YAZFI_NAME or simply with $YAZFI_NAME"
 	PressEnter
 	Clear_Lock
@@ -1277,7 +1286,6 @@ Menu_Uninstall(){
 	Firewall_NVRAM deleteall "$IFACE" 2>/dev/null
 	Iface_Manage deleteall 2>/dev/null
 	DHCP_Conf deleteall 2>/dev/null
-	rm -f "/jffs/scripts/$YAZFI_NAME" 2>/dev/null
 	while true; do
 		printf "\\n\\e[1mDo you want to delete YazFi configuration file(s)? (y/n)\\e[0m\\n"
 		read -r "confirm"
@@ -1291,6 +1299,8 @@ Menu_Uninstall(){
 			;;
 		esac
 	done
+	Shortcut_YazFi delete
+	rm -f "/jffs/scripts/$YAZFI_NAME" 2>/dev/null
 	Clear_Lock
 }
 
