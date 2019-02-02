@@ -613,7 +613,7 @@ Firewall_Chains() {
 							iptables -D INPUT -j "$CHAIN"
 						;;
 						$FWRD)
-							iptables -D FORWARD "$(($FWRDSTART+1))"
+							iptables -D FORWARD "$((FWRDSTART+1))"
 						;;
 						$LGRJT)
 							iptables -D "$LGRJT" -j REJECT
@@ -1301,6 +1301,8 @@ Menu_Uninstall(){
 	Shortcut_YazFi delete
 	rm -f "/jffs/scripts/$YAZFI_NAME" 2>/dev/null
 	Clear_Lock
+	Print_Output "true" "Restarting firewall to complete uninstall" "$PASS"
+	service restart_firewall >/dev/null 2>&1
 }
 
 Menu_BounceClients(){
