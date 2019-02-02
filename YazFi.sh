@@ -218,7 +218,13 @@ Auto_Startup(){
 	esac
 }
 
-### Code for these functions inspired by https://github.com/Adamm00/IPSet_ASUS - credit to @Adamm ###
+### Code for this functions courtesy of https://github.com/decoderman- credit to @thelonelycoder ###
+Firmware_Version_Check(){
+	echo "$1" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }';
+}
+############################################################################
+
+### Code for these functions inspired by https://github.com/Adamm00 - credit to @Adamm ###
 Check_Lock(){
 	if [ -f "/tmp/$YAZFI_NAME.lock" ]; then
 		ageoflock=$(($(date +%s) - $(date +%s -r /tmp/$YAZFI_NAME.lock)))
@@ -1226,13 +1232,48 @@ MainMenu(){
 	MainMenu
 }
 
+Check_Requirements(){
+	CHECKSFAILED="false"
+	if ! modprobe xt_comment 2>/dev/null; then
+		Print_Output "true" "Router does not support xt_comment module for iptables. Is a newer firmware available?" "$ERR"
+		CHECKSFAILED="true"
+	fi
+	
+	if [ "$(nvram get jffs2_scripts)" != "1" ]; then
+		nvram set jffs2_scripts=1
+		Print_Output "true" "Custom JFFS Scripts enabled - please reboot to apply" "$ERR"
+		CHECKSFAILED="true"
+	fi
+	
+	### Courtesy of TheLonelyCoder
+		if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 384.50)" ] && [ "$(Firmware_Version_Check "$(nvram get buildno)")" -ne "$(Firmware_Version_Check 374.43)" ]; then
+			Print_Output "true" "Older Merlin firmware detected - service-event requires 384.5 or later" "$WARN"
+			Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
+		elif [ "$(Firmware_Version_Check "$(nvram get buildno)")" -eq "$(Firmware_Version_Check 374.43)" ]; then
+			Print_Output "true" "John's fork detected - service-event requires 374.43_32D6j9527 or later" "$WARN"
+			Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
+		fi
+	###
+	
+	if [ "$CHECKSFAILED" = "false" ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
 Menu_Install(){
 	Check_Lock
 	Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
 	sleep 1
-	#Print_Output "true" "Checking your router meets the requirements for $YAZFI_NAME"
-	#if ! modprobe xt_comment 2>/dev/null; then echo "not supported" ; else echo "supported" ; fi
-
+	
+	Print_Output "true" "Checking your router meets the requirements for $YAZFI_NAME"
+	
+	if ! Check_Requirements; then
+		Print_Output "true" "Requirements for $YAZFI_NAME not met, please see above for the reason(s)" "$CRIT"
+		Clear_Lock
+		exit 1
+	fi
 	
 	if ! Conf_Exists; then
 		Conf_Download "$YAZFI_CONF"
