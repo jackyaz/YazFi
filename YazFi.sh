@@ -78,7 +78,7 @@ VPN_IP_LIST_NEW_5=""
 ### End of VPN clientlist variables ###
 
 # $1 = print to syslog, $2 = message to print, $3 = log level
-Print_Output () {
+Print_Output(){
 	if [ "$1" = "true" ]; then
 		logger -t "$YAZFI_NAME" "$2"
 		printf "\\e[1m$3%s: $2\\e[0m\\n\\n" "$YAZFI_NAME"
@@ -87,15 +87,15 @@ Print_Output () {
 	fi
 }
 
-Escape_Sed () {
+Escape_Sed(){
 	sed -e 's/</\\</g;s/>/\\>/g;s/ /\\ /g'
 }
 
-Get_Iface_Var () {
+Get_Iface_Var(){
 	echo "$1" | sed -e 's/\.//g'
 }
 
-Get_Guest_Name () {
+Get_Guest_Name(){
 	VPN_NVRAM=""
 	
 	if echo "$1" | grep -q "wl0"; then
@@ -109,7 +109,7 @@ Get_Guest_Name () {
 	echo "$VPN_NVRAM"
 }
 
-Iface_Manage () {
+Iface_Manage(){
 	case $1 in
 		create)
 			ifconfig "$2" "$(eval echo '$'"$(Get_Iface_Var "$2")"_IPADDR | cut -f1-3 -d".").1" netmask 255.255.255.0 # Assign the .1 address to the interface
@@ -125,7 +125,7 @@ Iface_Manage () {
 	esac
 }
 
-Iface_BounceClients () {
+Iface_BounceClients(){
 	Print_Output "true" "Forcing YazFi Guest WiFi clients to reauthenticate" "$PASS"
 	
 	for IFACE in $IFACELIST; do
@@ -133,7 +133,7 @@ Iface_BounceClients () {
 	done
 }
 
-Auto_ServiceEvent () {
+Auto_ServiceEvent(){
 	case $1 in
 		create)
 			if [ -f /jffs/scripts/service-event ]; then
@@ -170,7 +170,7 @@ Auto_ServiceEvent () {
 	esac
 }
 
-Auto_Block_DHCP () {
+Auto_Block_DHCP(){
 	case $1 in
 		delete)
 			if [ -f /jffs/scripts/dnsmasq.postconf ]; then
@@ -184,7 +184,7 @@ Auto_Block_DHCP () {
 	esac
 }
 
-Auto_Startup () {
+Auto_Startup(){
 	case $1 in
 		create)
 			if [ -f /jffs/scripts/firewall-start ]; then
@@ -218,8 +218,14 @@ Auto_Startup () {
 	esac
 }
 
-### Code for these functions inspired by https://github.com/Adamm00/IPSet_ASUS - credit to @Adamm ###
-Check_Lock () {
+### Code for this function courtesy of https://github.com/decoderman- credit to @thelonelycoder ###
+Firmware_Version_Check(){
+	echo "$1" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }';
+}
+############################################################################
+
+### Code for these functions inspired by https://github.com/Adamm00 - credit to @Adamm ###
+Check_Lock(){
 	if [ -f "/tmp/$YAZFI_NAME.lock" ]; then
 		ageoflock=$(($(date +%s) - $(date +%s -r /tmp/$YAZFI_NAME.lock)))
 		if [ "$ageoflock" -gt 120 ]; then
@@ -238,12 +244,12 @@ Check_Lock () {
 	fi
 }
 
-Clear_Lock () {
+Clear_Lock(){
 	rm -f "/tmp/$YAZFI_NAME.lock" 2>/dev/null
 	return 0
 }
 
-Update_Version () {
+Update_Version(){
 	if [ -z "$1" ]; then
 		localver=$(grep "YAZFI_VERSION=" /jffs/scripts/$YAZFI_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; Clear_Lock; exit 1; }
@@ -275,7 +281,7 @@ Update_Version () {
 }
 ############################################################################
 
-IP_Local() {
+IP_Local(){
 	if echo "$1" | grep -qE '(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)'; then
 		return 0
 	else
@@ -283,7 +289,7 @@ IP_Local() {
 	fi
 }
 
-Validate_IFACE () {
+Validate_IFACE(){
 	if ! ifconfig "$1" >/dev/null 2>&1; then
 		Print_Output "false" "$1 - Interface not enabled/configured in Web GUI (Guest Network menu)" "$ERR"
 		return 1
@@ -292,7 +298,7 @@ Validate_IFACE () {
 	fi
 }
 
-Validate_IP () {
+Validate_IP(){
 	if expr "$2" : '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$' >/dev/null; then
 		for i in 1 2 3 4; do
 			if [ "$(echo "$2" | cut -d. -f$i)" -gt 255 ]; then
@@ -317,7 +323,7 @@ Validate_IP () {
 	fi
 }
 
-Validate_Number () {
+Validate_Number(){
 	if [ "$2" -eq "$2" ] 2>/dev/null; then
 		return 0
 	else
@@ -327,7 +333,7 @@ Validate_Number () {
 	fi
 }
 
-Validate_DHCP () {
+Validate_DHCP(){
 	if ! Validate_Number "$1" "$2"; then
 		return 1
 	elif ! Validate_Number "$1" "$3"; then
@@ -342,7 +348,7 @@ Validate_DHCP () {
 	fi
 }
 
-Validate_VPNClientNo () {
+Validate_VPNClientNo(){
 	if ! Validate_Number "$1" "$2"; then
 		return 1
 	fi
@@ -355,7 +361,7 @@ Validate_VPNClientNo () {
 	fi
 }
 
-Validate_TrueFalse () {
+Validate_TrueFalse(){
 	case "$2" in
 		true|TRUE|false|FALSE)
 			return 0
@@ -367,7 +373,7 @@ Validate_TrueFalse () {
 	esac
 }
 
-Conf_Validate () {
+Conf_Validate(){
 	
 	CONF_VALIDATED="true"
 	NETWORKS_ENABLED="false"
@@ -536,7 +542,7 @@ Conf_Validate () {
 	fi
 }
 
-Conf_Download () {
+Conf_Download(){
 	Print_Output "false" "Downloading an example configuration file to $1"
 	sleep 1
 	mkdir -p "/jffs/configs/$YAZFI_NAME/"
@@ -549,7 +555,7 @@ Conf_Download () {
 	Clear_Lock
 }
 
-Conf_Exists () {
+Conf_Exists(){
 	if [ -f "$YAZFI_CONF" ]; then
 		dos2unix "$YAZFI_CONF"
 		chmod 0644 "$YAZFI_CONF"
@@ -567,8 +573,8 @@ Conf_Exists () {
 	fi
 }
 
-Firewall_Chains() {
-	FWRDSTART="$(($(iptables -nvL FORWARD --line | grep -E "ACCEPT     all.*state RELATED,ESTABLISHED" | tail -1 | awk '{print $1}') + 1))"
+Firewall_Chains(){
+	FWRDSTART="$(iptables -nvL FORWARD --line | grep -E "ACCEPT     all.*state RELATED,ESTABLISHED" | tail -1 | awk '{print $1}')"
 	
 	case $1 in
 		create)
@@ -591,19 +597,19 @@ Firewall_Chains() {
 					esac
 				fi
 			done
-			### DNSFilter rules - credit to @RMerlin for the original implementation in Asuswrt ###
 			for CHAIN in $NATCHAINS; do
 				if ! iptables -t nat -n -L "$CHAIN" >/dev/null 2>&1; then
 					iptables -t nat -N "$CHAIN"
 					case $CHAIN in
 						$DNSFLTR)
+							### DNSFilter rules - credit to @RMerlin for the original implementation in Asuswrt ###
 							iptables -t nat -A PREROUTING -p udp -m udp --dport 53 -j "$CHAIN"
 							iptables -t nat -A PREROUTING -p tcp -m tcp --dport 53 -j "$CHAIN"
+							###
 						;;
 					esac
 				fi
 			done
-			###
 		;;
 		deleteall)
 			for CHAIN in $CHAINS; do
@@ -613,7 +619,7 @@ Firewall_Chains() {
 							iptables -D INPUT -j "$CHAIN"
 						;;
 						$FWRD)
-							iptables -D FORWARD "$FWRDSTART"
+							iptables -D FORWARD "$((FWRDSTART+1))"
 						;;
 						$LGRJT)
 							iptables -D "$LGRJT" -j REJECT
@@ -641,7 +647,7 @@ Firewall_Chains() {
 	esac
 }
 
-Firewall_Rules () {
+Firewall_Rules(){
 	ACTIONS=""
 	IFACE="$2"
 	
@@ -672,22 +678,20 @@ Firewall_Rules () {
 		### End of bridge rules ###
 		
 		### Start of IP firewall rules ###
-		iptables "$ACTION" "$FWRD" -i "$IFACE" -m state --state NEW -j ACCEPT
+		iptables "$ACTION" "$FWRD" -i "$IFACE" -j ACCEPT
 		
-		iptables "$ACTION" "$FWRD" -i "$IFACE" -o br0 -m state --state NEW -j "$LGRJT"
-		iptables "$ACTION" "$FWRD" -i br0 -o "$IFACE" -m state --state NEW -j "$LGRJT"
+		iptables "$ACTION" "$FWRD" -i "$IFACE" -o br0 -j "$LGRJT"
+		iptables "$ACTION" "$FWRD" -i br0 -o "$IFACE" -j "$LGRJT"
 		
 		for IFACE_GUEST in $IFACELIST; do
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE_GUEST")"_ENABLED)" = "true" ]; then
-				iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_GUEST" -m state --state NEW -j "$LGRJT"
+				iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_GUEST" -j "$LGRJT"
 			fi
 		done
 		
-		iptables "$ACTION" "$INPT" -i "$IFACE" -m state --state NEW -j "$LGRJT"
-		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -m state --state NEW -j ACCEPT
-		
+		iptables "$ACTION" "$INPT" -i "$IFACE" -j "$LGRJT"
+		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT
 		if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" || IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")"; then
-			modprobe xt_comment
 			RULES=$(iptables -nvL $FWRD --line-number | grep "$IFACE" | grep "dpt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES; do
 				iptables -D "$FWRD" "$RULENO"
@@ -696,33 +700,33 @@ Firewall_Rules () {
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
 				if ifconfig "br0:pixelserv-tls" | grep -q "inet addr:" >/dev/null 2>&1; then
 					IP_PXLSRV=$(ifconfig br0:pixelserv-tls | grep "inet addr:" | cut -d: -f2 | awk '{print $1}')
-					iptables "$ACTION" "$INPT" -i "$IFACE" -d "$IP_PXLSRV" -p tcp -m multiport --dports 80,443 -m state --state NEW -m comment --comment "PixelServ" -j ACCEPT
+					iptables "$ACTION" "$INPT" -i "$IFACE" -d "$IP_PXLSRV" -p tcp -m multiport --dports 80,443 -j ACCEPT
 				else
-					RULES=$(iptables -nvL $INPT --line-number | grep "$IFACE" | grep "PixelServ" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+					RULES=$(iptables -nvL $INPT --line-number | grep "$IFACE" | grep "multiport dports 80,443" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 					for RULENO in $RULES; do
 						iptables -D "$INPT" "$RULENO"
 					done
 				fi
 				
 				for PROTO in tcp udp; do
-					iptables "$ACTION" "$INPT" -i "$IFACE" -p "$PROTO" --dport 53 -m state --state NEW -j ACCEPT
+					iptables "$ACTION" "$INPT" -i "$IFACE" -p "$PROTO" --dport 53 -j ACCEPT
 				done
 			fi
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" ]; then
 				if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
 					for PROTO in tcp udp; do
-						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -m state --state NEW -m comment --comment "LAN_DNS" -j ACCEPT
+						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -j ACCEPT
 					done
 				fi
 				if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
 					for PROTO in tcp udp; do
-						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" -p "$PROTO" --dport 53 -m state --state NEW -m comment --comment "LAN_DNS" -j ACCEPT
+						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" -p "$PROTO" --dport 53 -j ACCEPT
 					done
 				fi
 			else
 				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
 					for PROTO in tcp udp; do
-						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -m state --state NEW -m comment --comment "LAN_DNS" -j ACCEPT
+						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -j ACCEPT
 					done
 				fi
 			fi
@@ -762,7 +766,25 @@ Firewall_Rules () {
 	done
 }
 
-Routing_RPDB () {
+Firewall_NVRAM(){
+	case $1 in
+		create)
+			# shellcheck disable=SC2140
+			nvram set "$2""_ap_isolate"="1"
+		;;
+		delete)
+			# shellcheck disable=SC2140
+			nvram set "$2""_ap_isolate"="0"
+		;;
+		deleteall)
+			for IFACE in $IFACELIST; do
+				Firewall_NVRAM delete "$IFACE" 2>/dev/null
+			done
+		;;
+	esac
+}
+
+Routing_RPDB(){
 	case $1 in
 		create)
 			ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$3" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".1
@@ -785,7 +807,7 @@ Routing_RPDB () {
 	ip route flush cache
 }
 
-Routing_RPDB_LAN () {
+Routing_RPDB_LAN(){
 	case $1 in
 		create)
 			COUNTER=1
@@ -800,14 +822,14 @@ Routing_RPDB_LAN () {
 	esac
 }
 
-Routing_FWNAT () {
+Routing_FWNAT(){
 	case $1 in
 		create)
 			for ACTION in -D -I; do
 				modprobe xt_comment
 				iptables -t nat "$ACTION" POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 -o tun1"$3" -m comment --comment "$(Get_Guest_Name "$2")" -j MASQUERADE
-				iptables "$ACTION" "$FWRD" -i "$2" -o tun1"$3" -m state --state NEW -j ACCEPT
-				iptables "$ACTION" "$FWRD" -i tun1"$3" -o "$2" -m state --state NEW -j ACCEPT
+				iptables "$ACTION" "$FWRD" -i "$2" -o tun1"$3" -j ACCEPT
+				iptables "$ACTION" "$FWRD" -i tun1"$3" -o "$2" -j ACCEPT
 			done
 		;;
 		delete)
@@ -829,7 +851,7 @@ Routing_FWNAT () {
 	esac
 }
 
-Routing_NVRAM () {
+Routing_NVRAM(){
 	case $1 in
 		initialise)
 			COUNTER=1
@@ -906,7 +928,7 @@ Routing_NVRAM () {
 	esac
 }
 
-DHCP_Conf_Block () {
+DHCP_Conf_Block(){
 	case $1 in
 		delete)
 			DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $DNSCONF)
@@ -918,7 +940,7 @@ DHCP_Conf_Block () {
 	esac
 }
 
-DHCP_Conf () {
+DHCP_Conf(){
 	case $1 in
 		initialise)
 			if [ -f $DNSCONF ]; then
@@ -979,8 +1001,9 @@ DHCP_Conf () {
 	esac
 }
 
-Config_Networks () {
+Config_Networks(){
 	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
+	WIRELESSRESTART="false"
 	
 	if ! Conf_Exists; then
 		Conf_Download $YAZFI_CONF
@@ -1009,6 +1032,11 @@ Config_Networks () {
 			Iface_Manage create "$IFACE" 2>/dev/null
 			
 			Firewall_Rules create "$IFACE" 2>/dev/null
+			
+			if [ "$(nvram get "$IFACE""_ap_isolate")" != "1" ]; then
+				Firewall_NVRAM create "$IFACE" 2>/dev/null
+				WIRELESSRESTART="true"
+			fi
 			
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_REDIRECTALLTOVPN")" = "true" ]; then
 				Print_Output "true" "$IFACE (SSID: $(nvram get "$IFACE""_ssid")) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
@@ -1040,6 +1068,9 @@ Config_Networks () {
 			#Remove firewall rules for guest interface
 			Firewall_Rules delete "$IFACE" 2>/dev/null
 			
+			#Reset guest interface ISOLATION
+			Firewall_NVRAM delete "$IFACE" 2>/dev/null
+			
 			#Remove guest interface
 			Iface_Manage delete "$IFACE" 2>/dev/null
 			
@@ -1054,7 +1085,6 @@ Config_Networks () {
 			
 			# Remove guest interface VPN NAT rules and interface access
 			Routing_FWNAT delete "$IFACE" 2>/dev/null
-			
 		fi
 	done
 	
@@ -1070,17 +1100,31 @@ Config_Networks () {
 		service restart_dnsmasq >/dev/null 2>&1
 	fi
 	
+	if [ "$WIRELESSRESTART" = "true" ]; then
+		Clear_Lock
+		service restart_wireless >/dev/null 2>&1
+	fi
+	
 	Print_Output "true" "YazFi $YAZFI_VERSION completed successfully" "$PASS"
 }
 
-Shortcut_YazFi() {
-	if [ -d "/opt/bin" ] && [ ! -f "/opt/bin/$YAZFI_NAME" ] && [ -f "/jffs/scripts/$YAZFI_NAME" ]; then
-		ln -s /jffs/scripts/$YAZFI_NAME /opt/bin
-		chmod 0755 /opt/bin/$YAZFI_NAME
-	fi
+Shortcut_YazFi(){
+	case $1 in
+		create)
+			if [ -d "/opt/bin" ] && [ ! -f "/opt/bin/$YAZFI_NAME" ] && [ -f "/jffs/scripts/$YAZFI_NAME" ]; then
+				ln -s /jffs/scripts/$YAZFI_NAME /opt/bin
+				chmod 0755 /opt/bin/$YAZFI_NAME
+			fi
+		;;
+		delete)
+			if [ -f "/opt/bin/$YAZFI_NAME" ]; then
+				rm -f /opt/bin/$YAZFI_NAME
+			fi
+		;;
+	esac
 }
 
-PressEnter() {
+PressEnter(){
 	while true; do
 		printf "Press enter to continue..."
 		read -r "key"
@@ -1093,7 +1137,7 @@ PressEnter() {
 	return 0
 }
 
-ScriptHeader() {
+ScriptHeader(){
 	clear
 	printf "\\n"
 	printf "\\e[1m#####################################################\\e[0m\\n"
@@ -1113,8 +1157,8 @@ ScriptHeader() {
 	printf "\\n"
 }
 
-MainMenu() {
-	Shortcut_YazFi
+MainMenu(){
+	Shortcut_YazFi create
 	printf "1.    Run %s now\\n" "$YAZFI_NAME"
 	printf "2.    Edit YazFi configuration\\n"
 	printf "3.    Check for updates\\n"
@@ -1188,10 +1232,46 @@ MainMenu() {
 	MainMenu
 }
 
+Check_Requirements(){
+	CHECKSFAILED="false"
+	if ! modprobe xt_comment 2>/dev/null; then
+		Print_Output "true" "Router does not support xt_comment module for iptables. Is a newer firmware available?" "$ERR"
+		CHECKSFAILED="true"
+	fi
+	
+	if [ "$(nvram get jffs2_scripts)" != "1" ]; then
+		nvram set jffs2_scripts=1
+		Print_Output "true" "Custom JFFS Scripts enabled - please reboot to apply" "$ERR"
+		CHECKSFAILED="true"
+	fi
+	
+		if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 384.50)" ] && [ "$(Firmware_Version_Check "$(nvram get buildno)")" -ne "$(Firmware_Version_Check 374.43)" ]; then
+			Print_Output "true" "Older Merlin firmware detected - service-event requires 384.5 or later" "$WARN"
+			Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
+		elif [ "$(Firmware_Version_Check "$(nvram get buildno)")" -eq "$(Firmware_Version_Check 374.43)" ]; then
+			Print_Output "true" "John's fork detected - service-event requires 374.43_32D6j9527 or later" "$WARN"
+			Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
+		fi
+	
+	if [ "$CHECKSFAILED" = "false" ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
 Menu_Install(){
 	Check_Lock
 	Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
 	sleep 1
+	
+	Print_Output "true" "Checking your router meets the requirements for $YAZFI_NAME"
+	
+	if ! Check_Requirements; then
+		Print_Output "true" "Requirements for $YAZFI_NAME not met, please see above for the reason(s)" "$CRIT"
+		Clear_Lock
+		exit 1
+	fi
 	
 	if ! Conf_Exists; then
 		Conf_Download "$YAZFI_CONF"
@@ -1200,8 +1280,8 @@ Menu_Install(){
 		Conf_Download $YAZFI_CONF".example"
 	fi
 	
-	Shortcut_YazFi
-	Print_Output "true" "You can access YazFi's menu with /jffs/scripts/$YAZFI_NAME or simply with $YAZFI_NAME"
+	Shortcut_YazFi create
+	Print_Output "true" "You can access YazFi's menu via amtm (if installed) with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
 	PressEnter
 	Clear_Lock
 }
@@ -1241,9 +1321,9 @@ Menu_Uninstall(){
 	Routing_FWNAT deleteall 2>/dev/null
 	Routing_RPDB deleteall 2>/dev/null
 	Firewall_Chains deleteall 2>/dev/null
+	Firewall_NVRAM deleteall "$IFACE" 2>/dev/null
 	Iface_Manage deleteall 2>/dev/null
 	DHCP_Conf deleteall 2>/dev/null
-	rm -f "/jffs/scripts/$YAZFI_NAME" 2>/dev/null
 	while true; do
 		printf "\\n\\e[1mDo you want to delete YazFi configuration file(s)? (y/n)\\e[0m\\n"
 		read -r "confirm"
@@ -1257,7 +1337,11 @@ Menu_Uninstall(){
 			;;
 		esac
 	done
+	Shortcut_YazFi delete
+	rm -f "/jffs/scripts/$YAZFI_NAME" 2>/dev/null
 	Clear_Lock
+	Print_Output "true" "Restarting firewall to complete uninstall" "$PASS"
+	service restart_firewall >/dev/null 2>&1
 }
 
 Menu_BounceClients(){
