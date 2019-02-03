@@ -27,7 +27,7 @@ readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_VERSION="v3.0.0"
-readonly YAZFI_BRANCH="testing"
+readonly YAZFI_BRANCH="develop"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
 
@@ -220,7 +220,7 @@ Auto_Startup(){
 
 ### Code for this function courtesy of https://github.com/decoderman- credit to @thelonelycoder ###
 Firmware_Version_Check(){
-	echo "$1" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }';
+	echo "$1" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'
 }
 ############################################################################
 
@@ -543,15 +543,13 @@ Conf_Validate(){
 }
 
 Conf_Download(){
-	Print_Output "false" "Downloading an example configuration file to $1"
-	sleep 1
 	mkdir -p "/jffs/configs/$YAZFI_NAME/"
 	/usr/sbin/curl -s --retry 3 "$YAZFI_REPO.config.example" -o "$1"
 	chmod 0644 "$1"
 	dos2unix "$1"
-	Print_Output "false" "Please edit $1 with your desired settings using option 2 from the YazFi menu."
+	Print_Output "false" "\\n\\nPlease edit $YAZFI_CONF with your desired settings using option 2 from the YazFi menu."
 	sleep 1
-	Print_Output "false" "Once done, run YazFi using option 1 from the YazFi menu."
+	Print_Output "false" "\\nWhen finished, run YazFi using option 1 from the YazFi menu."
 	Clear_Lock
 }
 
@@ -1245,7 +1243,7 @@ Check_Requirements(){
 		CHECKSFAILED="true"
 	fi
 	
-		if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 384.50)" ] && [ "$(Firmware_Version_Check "$(nvram get buildno)")" -ne "$(Firmware_Version_Check 374.43)" ]; then
+		if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 384.5)" ] && [ "$(Firmware_Version_Check "$(nvram get buildno)")" -ne "$(Firmware_Version_Check 374.43)" ]; then
 			Print_Output "true" "Older Merlin firmware detected - service-event requires 384.5 or later" "$WARN"
 			Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
 		elif [ "$(Firmware_Version_Check "$(nvram get buildno)")" -eq "$(Firmware_Version_Check 374.43)" ]; then
@@ -1276,7 +1274,7 @@ Menu_Install(){
 	if ! Conf_Exists; then
 		Conf_Download "$YAZFI_CONF"
 	else
-		Print_Output "false" "Existing $YAZFI_CONF found. This will be kept by $YAZFI_NAME. Downloading an example file for comparison (e.g. new settings)"
+		Print_Output "false" "Existing $YAZFI_CONF found. This will be kept by $YAZFI_NAME"
 		Conf_Download $YAZFI_CONF".example"
 	fi
 	
