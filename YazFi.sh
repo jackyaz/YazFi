@@ -547,9 +547,12 @@ Conf_Download(){
 	/usr/sbin/curl -s --retry 3 "$YAZFI_REPO.config.example" -o "$1"
 	chmod 0644 "$1"
 	dos2unix "$1"
-	Print_Output "false" "\\n\\nPlease edit $YAZFI_CONF with your desired settings using option 2 from the YazFi menu."
+	echo ""
+	echo ""
+	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings using option 2 from the YazFi menu."
 	sleep 1
-	Print_Output "false" "\\nWhen finished, run YazFi using option 1 from the YazFi menu."
+	echo ""
+	Print_Output "false" "nWhen finished, run YazFi using option 1 from the YazFi menu."
 	Clear_Lock
 }
 
@@ -1279,6 +1282,8 @@ Menu_Install(){
 	fi
 	
 	Shortcut_YazFi create
+	echo ""
+	echo ""
 	Print_Output "true" "You can access YazFi's menu via amtm (if installed) with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
 	PressEnter
 	Clear_Lock
