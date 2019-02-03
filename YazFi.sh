@@ -543,15 +543,13 @@ Conf_Validate(){
 }
 
 Conf_Download(){
-	Print_Output "false" "Downloading an example configuration file to $1"
-	sleep 1
 	mkdir -p "/jffs/configs/$YAZFI_NAME/"
 	/usr/sbin/curl -s --retry 3 "$YAZFI_REPO.config.example" -o "$1"
 	chmod 0644 "$1"
 	dos2unix "$1"
-	Print_Output "false" "Please edit $1 with your desired settings using option 2 from the YazFi menu."
+	Print_Output "false" "\\n\\nPlease edit $YAZFI_CONF with your desired settings using option 2 from the YazFi menu."
 	sleep 1
-	Print_Output "false" "Once done, run YazFi using option 1 from the YazFi menu."
+	Print_Output "false" "\\nWhen finished, run YazFi using option 1 from the YazFi menu."
 	Clear_Lock
 }
 
@@ -1276,7 +1274,7 @@ Menu_Install(){
 	if ! Conf_Exists; then
 		Conf_Download "$YAZFI_CONF"
 	else
-		Print_Output "false" "Existing $YAZFI_CONF found. This will be kept by $YAZFI_NAME. Downloading an example file for comparison (e.g. new settings)"
+		Print_Output "false" "Existing $YAZFI_CONF found. This will be kept by $YAZFI_NAME"
 		Conf_Download $YAZFI_CONF".example"
 	fi
 	
