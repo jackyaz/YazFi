@@ -956,7 +956,7 @@ DHCP_Conf(){
 				# shellcheck disable=SC1003
 				sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"$BEGIN"'||||'"$CONFSTRING"'||||'"$END" $TMPCONF
 			else
-				printf "\\n\\n%s\\n%s\\n%s\\n" "$BEGIN" "$CONFSTRING" "$END" >> $TMPCONF
+				printf "\\n%s\\n%s\\n%s\\n" "$BEGIN" "$CONFSTRING" "$END" >> $TMPCONF
 			fi
 		;;
 		delete)
