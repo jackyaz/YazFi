@@ -146,7 +146,6 @@ Auto_ServiceEvent(){
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					echo "" >> /jffs/scripts/service-event
 					# shellcheck disable=SC2016
 					echo "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
 				fi
@@ -196,7 +195,6 @@ Auto_Startup(){
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					echo "" >> /jffs/scripts/firewall-start
 					echo "/jffs/scripts/$YAZFI_NAME runnow"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 				fi
 			else
