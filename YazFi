@@ -20,3 +20,4 @@ Check_Lock
 chmod 0755 "/jffs/scripts/$YAZFI_NAME"
 Clear_Lock
 /jffs/scripts/$YAZFI_NAME runnow &
+exit 0
