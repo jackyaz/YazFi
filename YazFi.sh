@@ -1160,7 +1160,7 @@ ScriptHeader(){
 
 MainMenu(){
 	Shortcut_YazFi create
-	printf "1.    Run %s now\\n" "$YAZFI_NAME"
+	printf "1.    Apply %s settings\\n" "$YAZFI_NAME"
 	printf "2.    Edit YazFi configuration\\n"
 	printf "3.    Check for updates\\n"
 	printf "4.    Show connected clients using %s\\n" "$YAZFI_NAME"
@@ -1291,7 +1291,30 @@ Menu_Install(){
 
 Menu_Edit(){
 	Check_Lock
-	nano $YAZFI_CONF
+	texteditor=""
+	while true; do
+		printf "\\n\\e[1mA choice of text editors is available:\\e[0m\\n"
+		printf "1.    nano (recommended for beginners)\\n"
+		printf "2.    vi\\n"
+		printf "\\n\\e[1mWhich editor would you like to use?\\e[0m\\n"
+		read -r "editor"
+		case "$editor" in
+			1)
+				texteditor="nano"
+				break;
+			;;
+			2)
+				texteditor="vi"
+				break;
+			;;
+			*)
+				printf "\\nInvalid option, continuing using nano\\n\\n"
+				texteditor="nano"
+				break
+			;;
+		esac
+	done
+	$texteditor $YAZFI_CONF
 	Clear_Lock
 }
 
