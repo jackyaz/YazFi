@@ -1163,7 +1163,7 @@ MainMenu(){
 	printf "3.    Check for updates\\n"
 	printf "4.    Show connected clients using %s\\n" "$YAZFI_NAME"
 	printf "5.    Uninstall YazFi\\n"
-	printf "6.    Exit YazFi\\n"
+	printf "e.    Exit YazFi\\n"
 	printf "\\n"
 	printf "\\e[1m#####################################################\\e[0m\\n"
 	printf "\\n"
@@ -1216,7 +1216,7 @@ MainMenu(){
 					esac
 				done
 			;;
-			6)
+			e)
 				ScriptHeader
 				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n\\n\\n" "$YAZFI_NAME"
 				exit 0
