@@ -5,6 +5,18 @@ readonly YAZFI_VERSION="v3.0.0"
 readonly YAZFI_BRANCH="testing"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 
-/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
+Check_Lock(){
+	echo "$$" > "/tmp/$YAZFI_NAME.lock"
+	return 0
+}
+
+Clear_Lock(){
+	rm -f "/tmp/$YAZFI_NAME.lock" 2>/dev/null
+	return 0
+}
+
+Check_Lock
+/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME"
 chmod 0755 "/jffs/scripts/$YAZFI_NAME"
-service restart_firewall >/dev/null 2>&1
+Clear_Lock
+/jffs/scripts/$YAZFI_NAME runnow &
