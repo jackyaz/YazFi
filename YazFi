@@ -1078,6 +1078,7 @@ Config_Networks () {
 
 	if [ "$WIRELESSRESTART" = "true" ]; then
 		Clear_Lock
+		nvram commit
 		service restart_wireless >/dev/null 2>&1
 	fi
 
