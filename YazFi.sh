@@ -550,7 +550,7 @@ Conf_Download(){
 	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings using option 2 from the YazFi menu."
 	sleep 1
 	echo ""
-	Print_Output "false" "nWhen finished, run YazFi using option 1 from the YazFi menu."
+	Print_Output "false" "When finished, run YazFi using option 1 from the YazFi menu."
 	Clear_Lock
 }
 
