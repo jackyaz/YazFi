@@ -129,7 +129,7 @@ Iface_BounceClients(){
 	Print_Output "true" "Forcing YazFi Guest WiFi clients to reauthenticate" "$PASS"
 	
 	for IFACE in $IFACELIST; do
-		wl -i "$IFACE" deauthenticate  >/dev/null 2>&1
+		wl -i "$IFACE" deauthenticate >/dev/null 2>&1
 	done
 }
 
@@ -288,7 +288,7 @@ IP_Local(){
 }
 
 Validate_IFACE(){
-	if ! ifconfig "$1" >/dev/null 2>&1; then
+	if [ "$(nvram get "$IFACE""_bss_enabled")" -eq 0 ]; then
 		Print_Output "false" "$1 - Interface not enabled/configured in Web GUI (Guest Network menu)" "$ERR"
 		return 1
 	else
@@ -1101,6 +1101,7 @@ Config_Networks(){
 	
 	if [ "$WIRELESSRESTART" = "true" ]; then
 		Clear_Lock
+		nvram commit
 		service restart_wireless >/dev/null 2>&1
 	fi
 	
