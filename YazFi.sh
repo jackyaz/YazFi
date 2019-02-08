@@ -1239,19 +1239,24 @@ Check_Requirements(){
 		CHECKSFAILED="true"
 	fi
 	
-	if [ "$(nvram get jffs2_scripts)" != "1" ]; then
+	if [ "$(nvram get jffs2_scripts)" -ne 1 ]; then
 		nvram set jffs2_scripts=1
 		Print_Output "true" "Custom JFFS Scripts enabled - please reboot to apply" "$ERR"
 		CHECKSFAILED="true"
 	fi
 	
-		if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 384.5)" ] && [ "$(Firmware_Version_Check "$(nvram get buildno)")" -ne "$(Firmware_Version_Check 374.43)" ]; then
-			Print_Output "true" "Older Merlin firmware detected - service-event requires 384.5 or later" "$WARN"
-			Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
-		elif [ "$(Firmware_Version_Check "$(nvram get buildno)")" -eq "$(Firmware_Version_Check 374.43)" ]; then
-			Print_Output "true" "John's fork detected - service-event requires 374.43_32D6j9527 or later" "$WARN"
-			Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
-		fi
+	if [ "$(nvram get wl0_radio)" -eq 0 ] && [ "$(nvram get wl1_radio)" -eq 0 ] && [ "$(nvram get wl_radio)" -eq 0 ]; then
+		Print_Output "true" "No wireless radios are enabled!" "$ERR"
+		CHECKSFAILED="true"
+	fi
+	
+	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 384.5)" ] && [ "$(Firmware_Version_Check "$(nvram get buildno)")" -ne "$(Firmware_Version_Check 374.43)" ]; then
+		Print_Output "true" "Older Merlin firmware detected - service-event requires 384.5 or later" "$WARN"
+		Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
+	elif [ "$(Firmware_Version_Check "$(nvram get buildno)")" -eq "$(Firmware_Version_Check 374.43)" ]; then
+		Print_Output "true" "John's fork detected - service-event requires 374.43_32D6j9527 or later" "$WARN"
+		Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
+	fi
 	
 	if [ "$CHECKSFAILED" = "false" ]; then
 		return 0
