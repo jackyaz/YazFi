@@ -1234,6 +1234,12 @@ MainMenu(){
 
 Check_Requirements(){
 	CHECKSFAILED="false"
+	
+	if [ "$(nvram get sw_mode)" -ne 1 ]; then
+		Print_Output "true" "Device is not running in router mode - non-router modes are not supported" "$ERR"
+		CHECKSFAILED="true"
+	fi
+	
 	if ! modprobe xt_comment 2>/dev/null; then
 		Print_Output "true" "Router does not support xt_comment module for iptables. Is a newer firmware available?" "$ERR"
 		CHECKSFAILED="true"
