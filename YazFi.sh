@@ -129,7 +129,7 @@ Iface_BounceClients(){
 	Print_Output "true" "Forcing YazFi Guest WiFi clients to reauthenticate" "$PASS"
 	
 	for IFACE in $IFACELIST; do
-		wl -i "$IFACE" deauthenticate  >/dev/null 2>&1
+		wl -i "$IFACE" deauthenticate >/dev/null 2>&1
 	done
 }
 
@@ -146,7 +146,6 @@ Auto_ServiceEvent(){
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					echo "" >> /jffs/scripts/service-event
 					# shellcheck disable=SC2016
 					echo "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
 				fi
@@ -196,7 +195,6 @@ Auto_Startup(){
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					echo "" >> /jffs/scripts/firewall-start
 					echo "/jffs/scripts/$YAZFI_NAME runnow"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 				fi
 			else
@@ -290,7 +288,7 @@ IP_Local(){
 }
 
 Validate_IFACE(){
-	if ! ifconfig "$1" >/dev/null 2>&1; then
+	if [ "$(nvram get "$IFACE""_bss_enabled")" -eq 0 ]; then
 		Print_Output "false" "$1 - Interface not enabled/configured in Web GUI (Guest Network menu)" "$ERR"
 		return 1
 	else
@@ -552,7 +550,7 @@ Conf_Download(){
 	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings using option 2 from the YazFi menu."
 	sleep 1
 	echo ""
-	Print_Output "false" "nWhen finished, run YazFi using option 1 from the YazFi menu."
+	Print_Output "false" "When finished, run YazFi using option 1 from the YazFi menu."
 	Clear_Lock
 }
 
@@ -958,7 +956,7 @@ DHCP_Conf(){
 				# shellcheck disable=SC1003
 				sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"$BEGIN"'||||'"$CONFSTRING"'||||'"$END" $TMPCONF
 			else
-				printf "\\n\\n%s\\n%s\\n%s\\n" "$BEGIN" "$CONFSTRING" "$END" >> $TMPCONF
+				printf "\\n%s\\n%s\\n%s\\n" "$BEGIN" "$CONFSTRING" "$END" >> $TMPCONF
 			fi
 		;;
 		delete)
@@ -1103,6 +1101,7 @@ Config_Networks(){
 	
 	if [ "$WIRELESSRESTART" = "true" ]; then
 		Clear_Lock
+		nvram commit
 		service restart_wireless >/dev/null 2>&1
 	fi
 	
@@ -1160,12 +1159,12 @@ ScriptHeader(){
 
 MainMenu(){
 	Shortcut_YazFi create
-	printf "1.    Run %s now\\n" "$YAZFI_NAME"
+	printf "1.    Apply %s settings\\n" "$YAZFI_NAME"
 	printf "2.    Edit YazFi configuration\\n"
 	printf "3.    Check for updates\\n"
 	printf "4.    Show connected clients using %s\\n" "$YAZFI_NAME"
 	printf "5.    Uninstall YazFi\\n"
-	printf "6.    Exit YazFi\\n"
+	printf "e.    Exit YazFi\\n"
 	printf "\\n"
 	printf "\\e[1m#####################################################\\e[0m\\n"
 	printf "\\n"
@@ -1218,7 +1217,7 @@ MainMenu(){
 					esac
 				done
 			;;
-			6)
+			e)
 				ScriptHeader
 				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n\\n\\n" "$YAZFI_NAME"
 				exit 0
@@ -1235,24 +1234,35 @@ MainMenu(){
 
 Check_Requirements(){
 	CHECKSFAILED="false"
+	
+	if [ "$(nvram get sw_mode)" -ne 1 ]; then
+		Print_Output "true" "Device is not running in router mode - non-router modes are not supported" "$ERR"
+		CHECKSFAILED="true"
+	fi
+	
 	if ! modprobe xt_comment 2>/dev/null; then
 		Print_Output "true" "Router does not support xt_comment module for iptables. Is a newer firmware available?" "$ERR"
 		CHECKSFAILED="true"
 	fi
 	
-	if [ "$(nvram get jffs2_scripts)" != "1" ]; then
+	if [ "$(nvram get jffs2_scripts)" -ne 1 ]; then
 		nvram set jffs2_scripts=1
-		Print_Output "true" "Custom JFFS Scripts enabled - please reboot to apply" "$ERR"
+		nvram commit
+		Print_Output "true" "Custom JFFS Scripts enabled" "$WARN"
+	fi
+	
+	if [ "$(nvram get wl0_radio)" -eq 0 ] && [ "$(nvram get wl1_radio)" -eq 0 ] && [ "$(nvram get wl_radio)" -eq 0 ]; then
+		Print_Output "true" "No wireless radios are enabled!" "$ERR"
 		CHECKSFAILED="true"
 	fi
 	
-		if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 384.5)" ] && [ "$(Firmware_Version_Check "$(nvram get buildno)")" -ne "$(Firmware_Version_Check 374.43)" ]; then
-			Print_Output "true" "Older Merlin firmware detected - service-event requires 384.5 or later" "$WARN"
-			Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
-		elif [ "$(Firmware_Version_Check "$(nvram get buildno)")" -eq "$(Firmware_Version_Check 374.43)" ]; then
-			Print_Output "true" "John's fork detected - service-event requires 374.43_32D6j9527 or later" "$WARN"
-			Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
-		fi
+	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 384.5)" ] && [ "$(Firmware_Version_Check "$(nvram get buildno)")" -ne "$(Firmware_Version_Check 374.43)" ]; then
+		Print_Output "true" "Older Merlin firmware detected - service-event requires 384.5 or later" "$WARN"
+		Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
+	elif [ "$(Firmware_Version_Check "$(nvram get buildno)")" -eq "$(Firmware_Version_Check 374.43)" ]; then
+		Print_Output "true" "John's fork detected - service-event requires 374.43_32D6j9527 or later" "$WARN"
+		Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
+	fi
 	
 	if [ "$CHECKSFAILED" = "false" ]; then
 		return 0
@@ -1291,7 +1301,30 @@ Menu_Install(){
 
 Menu_Edit(){
 	Check_Lock
-	nano $YAZFI_CONF
+	texteditor=""
+	while true; do
+		printf "\\n\\e[1mA choice of text editors is available:\\e[0m\\n"
+		printf "1.    nano (recommended for beginners)\\n"
+		printf "2.    vi\\n"
+		printf "\\n\\e[1mWhich editor would you like to use?\\e[0m\\n"
+		read -r "editor"
+		case "$editor" in
+			1)
+				texteditor="nano"
+				break;
+			;;
+			2)
+				texteditor="vi"
+				break;
+			;;
+			*)
+				printf "\\nInvalid option, continuing using nano\\n\\n"
+				texteditor="nano"
+				break
+			;;
+		esac
+	done
+	$texteditor $YAZFI_CONF
 	Clear_Lock
 }
 
