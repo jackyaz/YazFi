@@ -15,7 +15,7 @@ Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not l
 
 YazFi is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0) (GPL 3.0).
 
-![Menu UI](https://puu.sh/CD8sh/1e9bf58218.png)
+![Menu UI](https://puu.sh/CJyNj/1688fe09c3.png)
 
 ## Donations
 Love the script and want to support future development? Any and all donations gratefully received!
@@ -31,6 +31,7 @@ All modes supported by [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/about). Mod
 *   RT-AC86U
 *   RT-AC87U (2.4GHz guests only)
 *   RT-AC88U
+*   RT-AC3100
 *   RT-AC3200
 *   RT-AC5300
 
