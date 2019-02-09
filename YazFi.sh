@@ -1247,8 +1247,8 @@ Check_Requirements(){
 	
 	if [ "$(nvram get jffs2_scripts)" -ne 1 ]; then
 		nvram set jffs2_scripts=1
-		Print_Output "true" "Custom JFFS Scripts enabled - please reboot to apply" "$ERR"
-		CHECKSFAILED="true"
+		nvram commit
+		Print_Output "true" "Custom JFFS Scripts enabled" "$WARN"
 	fi
 	
 	if [ "$(nvram get wl0_radio)" -eq 0 ] && [ "$(nvram get wl1_radio)" -eq 0 ] && [ "$(nvram get wl_radio)" -eq 0 ]; then
