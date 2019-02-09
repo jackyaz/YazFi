@@ -22,6 +22,7 @@ Clear_Lock(){
 Check_Lock
 /usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME"
 chmod 0755 "/jffs/scripts/$YAZFI_NAME"
+sleep 5
 Clear_Lock
-#/jffs/scripts/$YAZFI_NAME runnow &
+/jffs/scripts/$YAZFI_NAME runnow &
 exit 0
