@@ -513,6 +513,14 @@ Conf_Validate(){
 					fi
 				fi
 				
+				# Validate _CLIENTISOLATION
+				if [ -z "$(eval echo '$'"$IFACETMP""_CLIENTISOLATION")" ]; then
+					sed -i -e "s/""$IFACETMP""_CLIENTISOLATION=/""$IFACETMP""_CLIENTISOLATION=true/" "$YAZFI_CONF"
+					Print_Output "false" "$IFACETMP""_CLIENTISOLATION is blank, setting to true" "$WARN"
+				elif ! Validate_TrueFalse "$IFACETMP""_CLIENTISOLATION" "$(eval echo '$'"$IFACETMP""_CLIENTISOLATION")"; then
+					IFACE_PASS="false"
+				fi
+				
 				# Print success message
 				if [ "$IFACE_PASS" = "true" ]; then
 					Print_Output "false" "$IFACE passed validation" "$PASS"
@@ -1032,11 +1040,6 @@ Config_Networks(){
 			
 			Firewall_Rules create "$IFACE" 2>/dev/null
 			
-			if [ "$(nvram get "$IFACE""_ap_isolate")" != "1" ]; then
-				Firewall_NVRAM create "$IFACE" 2>/dev/null
-				WIRELESSRESTART="true"
-			fi
-			
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_REDIRECTALLTOVPN")" = "true" ]; then
 				Print_Output "true" "$IFACE (SSID: $(nvram get "$IFACE""_ssid")) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
 				
@@ -1058,6 +1061,22 @@ Config_Networks(){
 				Routing_NVRAM delete "$IFACE" 2>/dev/null
 			fi
 			
+			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_CLIENTISOLATION")" = "true" ]; then
+				ISOBEFORE="$(nvram get "$IFACE""_ap_isolate")"
+				Firewall_NVRAM create "$IFACE" 2>/dev/null
+				ISOAFTER="$(nvram get "$IFACE""_ap_isolate")"
+				if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
+					WIRELESSRESTART="true"
+				fi
+			else
+				ISOBEFORE="$(nvram get "$IFACE""_ap_isolate")"
+				Firewall_NVRAM delete "$IFACE" 2>/dev/null
+				ISOAFTER="$(nvram get "$IFACE""_ap_isolate")"
+				if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
+					WIRELESSRESTART="true"
+				fi
+			fi
+			
 			#Routing_RPDB_LAN create "$IFACE" 2>/dev/null
 			
 			DHCP_Conf create "$IFACE" 2>/dev/null
@@ -1068,7 +1087,12 @@ Config_Networks(){
 			Firewall_Rules delete "$IFACE" 2>/dev/null
 			
 			#Reset guest interface ISOLATION
+			ISOBEFORE="$(nvram get "$IFACE""_ap_isolate")"
 			Firewall_NVRAM delete "$IFACE" 2>/dev/null
+			ISOAFTER="$(nvram get "$IFACE""_ap_isolate")"
+			if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
+				WIRELESSRESTART="true"
+			fi
 			
 			#Remove guest interface
 			Iface_Manage delete "$IFACE" 2>/dev/null
@@ -1100,8 +1124,8 @@ Config_Networks(){
 	fi
 	
 	if [ "$WIRELESSRESTART" = "true" ]; then
-		Clear_Lock
 		nvram commit
+		Clear_Lock
 		service restart_wireless >/dev/null 2>&1
 	fi
 	
@@ -1320,6 +1344,7 @@ Menu_Edit(){
 			*)
 				printf "\\nInvalid option, continuing using nano\\n\\n"
 				texteditor="nano"
+				sleep 2
 				break
 			;;
 		esac
