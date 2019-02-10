@@ -1344,6 +1344,7 @@ Menu_Edit(){
 			*)
 				printf "\\nInvalid option, continuing using nano\\n\\n"
 				texteditor="nano"
+				sleep 2
 				break
 			;;
 		esac
