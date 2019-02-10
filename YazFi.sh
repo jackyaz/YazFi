@@ -1040,11 +1040,6 @@ Config_Networks(){
 			
 			Firewall_Rules create "$IFACE" 2>/dev/null
 			
-			if [ "$(nvram get "$IFACE""_ap_isolate")" != "1" ]; then
-				Firewall_NVRAM create "$IFACE" 2>/dev/null
-				WIRELESSRESTART="true"
-			fi
-			
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_REDIRECTALLTOVPN")" = "true" ]; then
 				Print_Output "true" "$IFACE (SSID: $(nvram get "$IFACE""_ssid")) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
 				
