@@ -27,7 +27,7 @@ readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_VERSION="v3.0.0"
-readonly YAZFI_BRANCH="master"
+readonly YAZFI_BRANCH="develop"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
 
