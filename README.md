@@ -1,113 +1,115 @@
 # YazFi - enhanced AsusWRT-Merlin Guest WiFi Networks
-
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/a2cf9bdec17b4b6f9b6e113f802be694)](https://app.codacy.com/app/jackyaz/YazFi?utm_source=github.com&utm_medium=referral&utm_content=jackyaz/YazFi&utm_campaign=Badge_Grade_Dashboard)
+[![Build Status](https://travis-ci.com/jackyaz/YazFi.svg?branch=master)](https://travis-ci.com/jackyaz/YazFi)
 
-## v2.3.10
+## v3.0.0
 ## About
-
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
 
-*  Dedicated VPN WiFi networks
-*  Separate subnets for enhanced organisation of devices
-*  Restrict guests to only contact router for DHCP, DNS and NTP
-*  Allow guest networks to make use of pixelserv-tls (if installed)
-*  Allow guests to use a local DNS server
-*  Extend DNS Filter to guest networks
+*   Dedicated VPN WiFi networks
+*   Separate subnets for enhanced organisation of devices
+*   Restrict guests to only contact router for DHCP, DNS and NTP
+*   Allow guest networks to make use of pixelserv-tls (if installed)
+*   Allow guests to use a local DNS server
+*   Extend DNS Filter to guest networks
+
+YazFi is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0) (GPL 3.0).
+
+![Menu UI](https://puu.sh/CJyNj/1688fe09c3.png)
+
+## Donations
+Love the script and want to support future development? Any and all donations gratefully received!
+
+[**PayPal donation**](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=JFQLSCWJJUGZ6)
 
 ## Supported Models
+### Models
+All modes supported by [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/about). Models confirmed to work are below:
+*   RT-AC56U
+*   RT-AC66U
+*   RT-AC68U
+*   RT-AC86U
+*   RT-AC87U (2.4GHz guests only)
+*   RT-AC88U
+*   RT-AC3100
+*   RT-AC3200
+*   RT-AC5300
 
-All models running Asuswrt-Merlin 384.5/john9527's fork 374.43_32D6j9527 and later, and have the Guest Network feature should be supported by this script. That being said, I will maintain a list of confirmed supported models as per user reports.
-*  RT-AC56U
-*  RT-AC66U
-*  RT-AC68U
-*  RT-AC86U
-*  RT-AC87U (2.4GHz guests only)
-*  RT-AC88U
-*  RT-AC3200
-*  RT-AC5300
+### Firmware versions
+You must be running firmware no older than:
+*   [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/) 384.5
+*   [john9527 fork](https://www.snbforums.com/threads/fork-asuswrt-merlin-374-43-lts-releases-v37ea.18914/) 374.43_32D6j9527
 
 ## Installation
-
 Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:
 
 ```sh
-/usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi" -o "/jffs/scripts/YazFi" && chmod 0755 /jffs/scripts/YazFi && /jffs/scripts/YazFi install
+/usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.sh" -o "/jffs/scripts/YazFi" && chmod 0755 /jffs/scripts/YazFi && /jffs/scripts/YazFi install
 ```
 
-Please then follow instructions shown in the SSH client/terminal session. For ease of reference, a sample configuration file is available here: [Sample Config file](https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.config.sample)
+Please then follow instructions shown on-screen. An explanation of the settings is provided in the [FAQs](#explanation-of-yazfi-settings)
 
-### I haven't used scripts before on AsusWRT-Merlin, what do I do?
+## Usage
+To launch the YazFi menu after installation, use:
+```sh
+YazFi
+```
 
+If you do not have Entware installed, you will need to use the full path:
+```sh
+/jffs/scripts/YazFi
+```
+
+## Updating
+Launch YazFi and select option 3
+
+## Help
+Please post about any issues and problems here: [YazFi on SNBForums](https://www.snbforums.com/threads/yazfi-enhanced-asuswrt-merlin-guest-wifi-networks.45924/)
+
+## FAQs
+### I haven't used scripts before on AsusWRT-Merlin
 If this is the first time you are using scripts, don't panic! In your router's WebUI, go to the Administration area of the left menu, and then the System tab. Set Enable JFFS custom scripts and configs to Yes.
 
 Further reading about scripts is available here: [AsusWRT-Merlin User-scripts](https://github.com/RMerl/asuswrt-merlin/wiki/User-scripts)
 
 ![WebUI enable scripts](https://puu.sh/A3wnG/00a43283ed.png)
 
-## Updating
-
-Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:
-
-```sh
-/jffs/scripts/YazFi update
-```
-
-To force a re-install of the current version, use the following command instead (requires YazFi 2.3.7 or later):
-
-```sh
-/jffs/scripts/YazFi forceupdate
-```
-
-## Help
-
-Please post about any issues and problems here: [YazFi on SNBForums](https://www.snbforums.com/threads/yazfi-enhanced-asuswrt-merlin-guest-wifi-networks.45924/)
-
-## FAQs
-
-What do each of the settings mean?
-
-### wl01_ENABLED
+### Explanation of YazFi settings
+#### wl01_ENABLED
 Enable YazFi for this Guest Network
 
-### wl01_IPADDR
+#### wl01_IPADDR
 IP address/subnet to use for Guest Network
 
-### wl01_DHCPSTART
+#### wl01_DHCPSTART
 Start of DHCP pool (2-253)
 
-### wl01_DHCPEND
+#### wl01_DHCPEND
 End of DHCP pool (3-254)
 
-### wl01_DNS1
+#### wl01_DNS1
 IP address for primary DNS resolver
 
-### wl01_DNS2
+#### wl01_DNS2
 IP address for secondary DNS resolver
 
-### wl01_FORCEDNS
+#### wl01_FORCEDNS
 Should Guest Network DNS requests be forced/redirected to DNS1? (true/false)
 N.B. This setting is ignored if sending to VPN, and VPN Client's DNS configuration is Exclusive
 
-### wl01_REDIRECTALLTOVPN
+#### wl01_REDIRECTALLTOVPN
 Should Guest Network traffic be sent via VPN? (true/false)
 
-### wl01_VPNCLIENTNUMBER
+#### wl01_VPNCLIENTNUMBER
 The number of the VPN Client to send traffic through (1-5)
 
-### wl01_LANACCESS
+#### wl01_LANACCESS
 Not implemented
 
-### wl01_CLIENTISOLATION
+#### wl01_CLIENTISOLATION
 Not implemented
 
 ## Known Issues/Limitations
-
 The script overrides the "Access Intranet" WebUI setting (except for DNS). If you want guests to be able to access other Intranet resources, do not include the guest network in YazFi.
 
 ![Access Intranet settings](https://puu.sh/zYWp9/a5541ed706.png)
-
-## Donations
-
-Love the script and want to support future development? Any and all donations gratefully received!
-
-[**PayPal donation**](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=JFQLSCWJJUGZ6)
