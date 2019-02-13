@@ -76,7 +76,7 @@ Further reading about scripts is available here: [AsusWRT-Merlin User-scripts](h
 
 ### Explanation of YazFi settings
 #### wl01_ENABLED
-Enable YazFi for this Guest Network
+Enable YazFi for this Guest Network (true/false)
 
 #### wl01_IPADDR
 IP address/subnet to use for Guest Network
@@ -107,7 +107,7 @@ The number of the VPN Client to send traffic through (1-5)
 Not implemented
 
 #### wl01_CLIENTISOLATION
-Not implemented
+Should Guest Network radio prevent clients from talking to each other? (true/false)
 
 ## Known Issues/Limitations
 The script overrides the "Access Intranet" WebUI setting (except for DNS). If you want guests to be able to access other Intranet resources, do not include the guest network in YazFi.

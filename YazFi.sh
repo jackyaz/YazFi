@@ -1174,7 +1174,7 @@ ScriptHeader(){
 	printf "\\e[1m######        |_| \__,_|/___||_|     |_|       ######\\e[0m\\n"
 	printf "\\e[1m######                                         ######\\e[0m\\n"
 	printf "\\e[1m######                 %s                  ######\\e[0m\\n" "$YAZFI_VERSION"
-	printf "\\e[1m######                RC 2                     ######\\e[0m\\n"
+	printf "\\e[1m######                                         ######\\e[0m\\n"
 	printf "\\e[1m######    https://github.com/jackyaz/YazFi/    ######\\e[0m\\n"
 	printf "\\e[1m######                                         ######\\e[0m\\n"
 	printf "\\e[1m#####################################################\\e[0m\\n"
