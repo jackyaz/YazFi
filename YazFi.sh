@@ -26,7 +26,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v3.0.0"
+readonly YAZFI_VERSION="v3.0.1"
 readonly YAZFI_BRANCH="master"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -1326,10 +1326,12 @@ Menu_Install(){
 Menu_Edit(){
 	Check_Lock
 	texteditor=""
+	exitmenu="false"
 	while true; do
 		printf "\\n\\e[1mA choice of text editors is available:\\e[0m\\n"
 		printf "1.    nano (recommended for beginners)\\n"
 		printf "2.    vi\\n"
+		printf "e.    Exit to main menu\\n"
 		printf "\\n\\e[1mWhich editor would you like to use?\\e[0m\\n"
 		read -r "editor"
 		case "$editor" in
@@ -1341,6 +1343,10 @@ Menu_Edit(){
 				texteditor="vi"
 				break;
 			;;
+			e)
+				exitmenu="true"
+				break;
+			;;
 			*)
 				printf "\\nInvalid option, continuing using nano\\n\\n"
 				texteditor="nano"
@@ -1349,7 +1355,11 @@ Menu_Edit(){
 			;;
 		esac
 	done
-	$texteditor $YAZFI_CONF
+	
+	if [ "$exitmenu" != "true" ]; then
+		$texteditor $YAZFI_CONF
+	fi
+	
 	Clear_Lock
 }
 
