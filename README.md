@@ -2,7 +2,7 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/a2cf9bdec17b4b6f9b6e113f802be694)](https://app.codacy.com/app/jackyaz/YazFi?utm_source=github.com&utm_medium=referral&utm_content=jackyaz/YazFi&utm_campaign=Badge_Grade_Dashboard)
 [![Build Status](https://travis-ci.com/jackyaz/YazFi.svg?branch=master)](https://travis-ci.com/jackyaz/YazFi)
 
-## v3.0.1
+## v3.0.2
 ## About
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
 
@@ -34,6 +34,7 @@ All modes supported by [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/about). Mod
 *   RT-AC3100
 *   RT-AC3200
 *   RT-AC5300
+*   RT-AX88U (clientisolation=false may be required)
 
 ### Firmware versions
 You must be running firmware no older than:
