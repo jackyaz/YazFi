@@ -282,6 +282,8 @@ Update_Version(){
 IP_Local(){
 	if echo "$1" | grep -qE '(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)'; then
 		return 0
+	elif [ "$1" = "127.0.0.1" ]; then
+		return 0
 	else
 		return 1
 	fi
@@ -709,12 +711,17 @@ Firewall_Rules(){
 		iptables "$ACTION" "$INPT" -i "$IFACE" -j "$LGRJT"
 		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT
 		if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" || IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")"; then
+			RULES=$(iptables -nvL $INPT --line-number | grep "$IFACE" | grep "dpt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			for RULENO in $RULES; do
+				iptables -D "$INPT" "$RULENO"
+			done
+			
 			RULES=$(iptables -nvL $FWRD --line-number | grep "$IFACE" | grep "dpt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES; do
 				iptables -D "$FWRD" "$RULENO"
 			done
 			
-			if IP_Router "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" || IP_Router "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")"; then
+			if IP_Router "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" "$IFACE" || IP_Router "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" "$IFACE"; then
 				if ifconfig "br0:pixelserv-tls" | grep -q "inet addr:" >/dev/null 2>&1; then
 					IP_PXLSRV=$(ifconfig br0:pixelserv-tls | grep "inet addr:" | cut -d: -f2 | awk '{print $1}')
 					iptables "$ACTION" "$INPT" -i "$IFACE" -d "$IP_PXLSRV" -p tcp -m multiport --dports 80,443 -j ACCEPT
@@ -730,18 +737,18 @@ Firewall_Rules(){
 				done
 			fi
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" ]; then
-				if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" ]; then
+				if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" && ! IP_Router "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" "$IFACE"; then
 					for PROTO in tcp udp; do
 						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -j ACCEPT
 					done
 				fi
-				if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" ]; then
+				if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" && ! IP_Router "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" "$IFACE"; then
 					for PROTO in tcp udp; do
 						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" -p "$PROTO" --dport 53 -j ACCEPT
 					done
 				fi
 			else
-				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" ]; then
+				if ! IP_Router "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" "$IFACE"; then
 					for PROTO in tcp udp; do
 						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -j ACCEPT
 					done
