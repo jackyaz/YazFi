@@ -1261,14 +1261,7 @@ MainMenu(){
 			;;
 			d)
 				ScriptHeader
-				printf "\\n\\e[1mGenerating %s diagnostics...\\e[0m\\n\\n" "$YAZFI_NAME"
-				DIAGPATH="/tmp/""$YAZFI_NAME""Diag"
-				mkdir -p "$DIAGPATH"
-				iptables-save > "$DIAGPATH""/iptables.txt"
-				cp "$YAZFI_CONF" "$DIAGPATH""/""$YAZFI_NAME"".conf"
-				ebtables -L > "$DIAGPATH""/ebtables.txt"
-				echo "" >> "$DIAGPATH""/ebtables.txt"
-				ebtables -t broute -L >> "$DIAGPATH""/ebtables.txt"
+				Menu_Diagnostics
 				PressEnter
 				break
 			;;
@@ -1489,6 +1482,27 @@ Menu_Status(){
 	Print_Output "false" "Query complete, please see above for results" "$PASS"
 	Clear_Lock
 	#######################################################################################################
+}
+
+Menu_Diagnostics(){
+	printf "\\n\\e[1mGenerating %s diagnostics...\\e[0m\\n\\n" "$YAZFI_NAME"
+	DIAGPATH="/tmp/""$YAZFI_NAME""Diag"
+	mkdir -p "$DIAGPATH"
+	
+	iptables-save > "$DIAGPATH""/iptables.txt"
+	
+	ebtables -L > "$DIAGPATH""/ebtables.txt"
+	echo "" >> "$DIAGPATH""/ebtables.txt"
+	ebtables -t broute -L >> "$DIAGPATH""/ebtables.txt"
+	
+	cp "$YAZFI_CONF" "$DIAGPATH""/""$YAZFI_NAME"".conf"
+	cp "$DNSCONF" "$DIAGPATH""/dnsmasq.conf.add"
+	cp "/jffs/scripts/firewall-start" "$DIAGPATH""/firewall-start"
+	cp "/jffs/scripts/service-event" "$DIAGPATH""/service-event"
+
+	tar -czf "/tmp/$YAZFI_NAME.tar.gz" -C "$DIAGPATH" .
+	rm -rf "$DIAGPATH" 2>/dev/null
+	Print_Output "true" "Diagnostics saved to /tmp/$YAZFI_NAME.tar.gz" "$PASS"
 }
 
 if [ -z "$1" ]; then
