@@ -1184,10 +1184,11 @@ ScriptHeader(){
 MainMenu(){
 	Shortcut_YazFi create
 	printf "1.    Apply %s settings\\n" "$YAZFI_NAME"
-	printf "2.    Edit YazFi configuration\\n"
+	printf "2.    Edit %s configuration\\n" "$YAZFI_NAME"
 	printf "3.    Check for updates\\n"
 	printf "4.    Show connected clients using %s\\n" "$YAZFI_NAME"
-	printf "5.    Uninstall YazFi\\n"
+	printf "5.    Uninstall %s\\n" "$YAZFI_NAME"
+	printf "d.    Generate %s diagnostics\\n" "$YAZFI_NAME"
 	printf "e.    Exit YazFi\\n"
 	printf "\\n"
 	printf "\\e[1m#####################################################\\e[0m\\n"
@@ -1240,6 +1241,19 @@ MainMenu(){
 						;;
 					esac
 				done
+			;;
+			d)
+				ScriptHeader
+				printf "\\n\\e[1mGenerating %s diagnostics...\\e[0m\\n\\n" "$YAZFI_NAME"
+				DIAGPATH="/tmp/""$YAZFI_NAME""Diag"
+				mkdir -p "$DIAGPATH"
+				iptables-save > "$DIAGPATH""/iptables.txt"
+				cp "$YAZFI_CONF" "$DIAGPATH""/""$YAZFI_NAME"".conf"
+				ebtables -L > "$DIAGPATH""/ebtables.txt"
+				echo "" >> "$DIAGPATH""/ebtables.txt"
+				ebtables -t broute -L >> "$DIAGPATH""/ebtables.txt"
+				PressEnter
+				break
 			;;
 			e)
 				ScriptHeader
