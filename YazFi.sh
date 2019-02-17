@@ -26,8 +26,8 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v3.0.1"
-readonly YAZFI_BRANCH="master"
+readonly YAZFI_VERSION="v3.0.2"
+readonly YAZFI_BRANCH="develop"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
 
@@ -112,7 +112,7 @@ Get_Guest_Name(){
 Iface_Manage(){
 	case $1 in
 		create)
-			ifconfig "$2" "$(eval echo '$'"$(Get_Iface_Var "$2")"_IPADDR | cut -f1-3 -d".").1" netmask 255.255.255.0 # Assign the .1 address to the interface
+			ifconfig "$2" "$(eval echo '$'"$(Get_Iface_Var "$2")"_IPADDR | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" netmask 255.255.255.0
 		;;
 		delete)
 			ifconfig "$2" 0.0.0.0
@@ -282,6 +282,18 @@ Update_Version(){
 IP_Local(){
 	if echo "$1" | grep -qE '(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)'; then
 		return 0
+	elif [ "$1" = "127.0.0.1" ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+IP_Router(){
+	if [ "$1" = "$(nvram get lan_ipaddr)" ] || [ "$1" = "127.0.0.1" ]; then
+		return 0
+	elif [ "$1" = "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").""$(nvram get lan_ipaddr | cut -f4 -d".")" ]; then
+		return 0
 	else
 		return 1
 	fi
@@ -409,7 +421,7 @@ Conf_Validate(){
 					IPADDRTMP="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+1))"
 					
 					COUNTER=1
-					until [ "$(grep -o "$IPADDRTMP".0 $YAZFI_CONF | wc -l)" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMP".1 | wc -l )" -eq 0 ]; do
+					until [ "$(grep -o "$IPADDRTMP".0 $YAZFI_CONF | wc -l)" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMP"."$(nvram get lan_ipaddr | cut -f4 -d".")" | wc -l )" -eq 0 ]; do
 						IPADDRTMP="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+COUNTER))"
 						COUNTER=$((COUNTER + 1))
 					done
@@ -428,7 +440,7 @@ Conf_Validate(){
 						Print_Output "false" "$IFACETMP""_IPADDR setting last octet to 0" "$WARN"
 					fi
 					
-					if [ "$(grep -o "$IPADDRTMP".0 $YAZFI_CONF | wc -l )" -gt 1 ] || [ "$(ifconfig -a | grep -o "$IPADDRTMP".1 | wc -l )" -gt 1 ]; then
+					if [ "$(grep -o "$IPADDRTMP".0 $YAZFI_CONF | wc -l )" -gt 1 ] || [ "$(ifconfig -a | grep -o "$IPADDRTMP"."$(nvram get lan_ipaddr | cut -f4 -d".")" | wc -l )" -gt 1 ]; then
 						Print_Output "false" "$IFACETMP""_IPADDR ($(eval echo '$'"$IFACETMP""_IPADDR")) has been used for another interface already" "$ERR"
 						IFACE_PASS="false"
 					fi
@@ -454,11 +466,11 @@ Conf_Validate(){
 				# Validate _DNS1
 				if [ -z "$(eval echo '$'"$IFACETMP""_DNS1")" ]; then
 					if [ ! -z "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
-						sed -i -e "s/""$IFACETMP""_DNS1=/""$IFACETMP""_DNS1=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").1/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_DNS1 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").1" "$WARN"
+						sed -i -e "s/""$IFACETMP""_DNS1=/""$IFACETMP""_DNS1=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_DNS1 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
 					else
-						sed -i -e "s/""$IFACETMP""_DNS1=/""$IFACETMP""_DNS1=$IPADDRTMP.1/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_DNS1 is blank, setting to $IPADDRTMP.1" "$WARN"
+						sed -i -e "s/""$IFACETMP""_DNS1=/""$IFACETMP""_DNS1=$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_DNS1 is blank, setting to $IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
 					fi
 				elif ! Validate_IP "$IFACETMP""_DNS1" "$(eval echo '$'"$IFACETMP""_DNS1")" "DNS"; then
 					IFACE_PASS="false"
@@ -467,11 +479,11 @@ Conf_Validate(){
 				# Validate _DNS2
 				if [ -z "$(eval echo '$'"$IFACETMP""_DNS2")" ]; then
 					if [ ! -z "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
-						sed -i -e "s/""$IFACETMP""_DNS2=/""$IFACETMP""_DNS2=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").1/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_DNS2 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").1" "$WARN"
+						sed -i -e "s/""$IFACETMP""_DNS2=/""$IFACETMP""_DNS2=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_DNS2 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
 					else
-						sed -i -e "s/""$IFACETMP""_DNS2=/""$IFACETMP""_DNS2=$IPADDRTMP.1/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_DNS2 is blank, setting to $IPADDRTMP.1" "$WARN"
+						sed -i -e "s/""$IFACETMP""_DNS2=/""$IFACETMP""_DNS2=$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_DNS2 is blank, setting to $IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
 					fi
 				elif ! Validate_IP "$IFACETMP""_DNS2" "$(eval echo '$'"$IFACETMP""_DNS2")" "DNS"; then
 					IFACE_PASS="false"
@@ -699,12 +711,17 @@ Firewall_Rules(){
 		iptables "$ACTION" "$INPT" -i "$IFACE" -j "$LGRJT"
 		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT
 		if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" || IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")"; then
+			RULES=$(iptables -nvL $INPT --line-number | grep "$IFACE" | grep "dpt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			for RULENO in $RULES; do
+				iptables -D "$INPT" "$RULENO"
+			done
+			
 			RULES=$(iptables -nvL $FWRD --line-number | grep "$IFACE" | grep "dpt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES; do
 				iptables -D "$FWRD" "$RULENO"
 			done
 			
-			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" = "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
+			if IP_Router "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" "$IFACE" || IP_Router "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" "$IFACE"; then
 				if ifconfig "br0:pixelserv-tls" | grep -q "inet addr:" >/dev/null 2>&1; then
 					IP_PXLSRV=$(ifconfig br0:pixelserv-tls | grep "inet addr:" | cut -d: -f2 | awk '{print $1}')
 					iptables "$ACTION" "$INPT" -i "$IFACE" -d "$IP_PXLSRV" -p tcp -m multiport --dports 80,443 -j ACCEPT
@@ -720,18 +737,18 @@ Firewall_Rules(){
 				done
 			fi
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" ]; then
-				if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
+				if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" && ! IP_Router "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" "$IFACE"; then
 					for PROTO in tcp udp; do
 						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -j ACCEPT
 					done
 				fi
-				if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
+				if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" && ! IP_Router "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" "$IFACE"; then
 					for PROTO in tcp udp; do
 						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")" -p "$PROTO" --dport 53 -j ACCEPT
 					done
 				fi
 			else
-				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" != "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_IPADDR" | cut -f1-3 -d".").1" ]; then
+				if ! IP_Router "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" "$IFACE"; then
 					for PROTO in tcp udp; do
 						iptables "$ACTION" "$FWRD" -i "$IFACE" -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" -p "$PROTO" --dport 53 -j ACCEPT
 					done
@@ -794,8 +811,8 @@ Firewall_NVRAM(){
 Routing_RPDB(){
 	case $1 in
 		create)
-			ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$3" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".1
-			ip route add "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$3" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".1
+			ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$3" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")"."$(nvram get lan_ipaddr | cut -f4 -d".")"
+			ip route add "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$3" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")"."$(nvram get lan_ipaddr | cut -f4 -d".")"
 		;;
 		delete)
 			COUNTER=1
@@ -820,8 +837,8 @@ Routing_RPDB_LAN(){
 			COUNTER=1
 			until [ $COUNTER -gt 5 ]; do
 				if ifconfig "tun1$COUNTER" >/dev/null 2>&1; then
-					ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".1
-					ip route add "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".1
+					ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")"."$(nvram get lan_ipaddr | cut -f4 -d".")"
+					ip route add "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")"."$(nvram get lan_ipaddr | cut -f4 -d".")"
 				fi
 				COUNTER=$((COUNTER+1))
 			done
@@ -957,7 +974,7 @@ DHCP_Conf(){
 			fi
 		;;
 		create)
-			CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").1||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")"
+			CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")"
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
@@ -1184,10 +1201,11 @@ ScriptHeader(){
 MainMenu(){
 	Shortcut_YazFi create
 	printf "1.    Apply %s settings\\n" "$YAZFI_NAME"
-	printf "2.    Edit YazFi configuration\\n"
+	printf "2.    Edit %s configuration\\n" "$YAZFI_NAME"
 	printf "3.    Check for updates\\n"
 	printf "4.    Show connected clients using %s\\n" "$YAZFI_NAME"
-	printf "5.    Uninstall YazFi\\n"
+	printf "5.    Uninstall %s\\n" "$YAZFI_NAME"
+	printf "d.    Generate %s diagnostics\\n" "$YAZFI_NAME"
 	printf "e.    Exit YazFi\\n"
 	printf "\\n"
 	printf "\\e[1m#####################################################\\e[0m\\n"
@@ -1240,6 +1258,12 @@ MainMenu(){
 						;;
 					esac
 				done
+			;;
+			d)
+				ScriptHeader
+				Menu_Diagnostics
+				PressEnter
+				break
 			;;
 			e)
 				ScriptHeader
@@ -1458,6 +1482,33 @@ Menu_Status(){
 	Print_Output "false" "Query complete, please see above for results" "$PASS"
 	Clear_Lock
 	#######################################################################################################
+}
+
+Menu_Diagnostics(){
+	printf "\\n\\e[1mGenerating %s diagnostics...\\e[0m\\n\\n" "$YAZFI_NAME"
+	DIAGPATH="/tmp/""$YAZFI_NAME""Diag"
+	mkdir -p "$DIAGPATH"
+	
+	iptables-save > "$DIAGPATH""/iptables.txt"
+	
+	ebtables -L > "$DIAGPATH""/ebtables.txt"
+	echo "" >> "$DIAGPATH""/ebtables.txt"
+	ebtables -t broute -L >> "$DIAGPATH""/ebtables.txt"
+	
+	cp "$YAZFI_CONF" "$DIAGPATH""/""$YAZFI_NAME"".conf"
+	cp "$DNSCONF" "$DIAGPATH""/dnsmasq.conf.add"
+	cp "/jffs/scripts/firewall-start" "$DIAGPATH""/firewall-start"
+	cp "/jffs/scripts/service-event" "$DIAGPATH""/service-event"
+	
+	SEC=$(< /dev/urandom tr -cd 'a-z0-9' | head -c 32)
+	tar -czf "/tmp/$YAZFI_NAME.tar.gz" -C "$DIAGPATH" .
+	/usr/sbin/openssl enc -aes-256-cbc -k "$SEC" -e -in "/tmp/$YAZFI_NAME.tar.gz" -out "/tmp/YazFi.tar.gz.enc"
+	
+	Print_Output "true" "Diagnostics saved to /tmp/$YAZFI_NAME.tar.gz.enc with passphrase $SEC" "$PASS"
+	
+	rm -f "/tmp/$YAZFI_NAME.tar.gz" 2>/dev/null
+	rm -rf "$DIAGPATH" 2>/dev/null 2>/dev/null
+	SEC=""
 }
 
 if [ -z "$1" ]; then
