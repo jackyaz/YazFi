@@ -1499,10 +1499,16 @@ Menu_Diagnostics(){
 	cp "$DNSCONF" "$DIAGPATH""/dnsmasq.conf.add"
 	cp "/jffs/scripts/firewall-start" "$DIAGPATH""/firewall-start"
 	cp "/jffs/scripts/service-event" "$DIAGPATH""/service-event"
-
+	
+	SEC=$(cat /dev/urandom | tr -cd 'a-z0-9' | head -c 32)
 	tar -czf "/tmp/$YAZFI_NAME.tar.gz" -C "$DIAGPATH" .
-	rm -rf "$DIAGPATH" 2>/dev/null
-	Print_Output "true" "Diagnostics saved to /tmp/$YAZFI_NAME.tar.gz" "$PASS"
+	/usr/sbin/openssl enc -aes-256-cbc -k "$SEC" -e -in "/tmp/$YAZFI_NAME.tar.gz" -out "/tmp/YazFi.tar.gz.enc"
+	
+	Print_Output "true" "Diagnostics saved to /tmp/$YAZFI_NAME.tar.gz.enc with passphrase $SEC" "$PASS"
+	
+	rm -f "/tmp/$YAZFI_NAME.tar.gz" 2>/dev/null
+	rm -rf "$DIAGPATH" 2>/dev/null 2>/dev/null
+	SEC=""
 }
 
 if [ -z "$1" ]; then
