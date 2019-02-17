@@ -15,7 +15,7 @@ Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not l
 
 YazFi is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0) (GPL 3.0).
 
-![Menu UI](https://puu.sh/CJyNj/1688fe09c3.png)
+![Menu UI](https://puu.sh/CNwF7/a095903835.png)
 
 ## Donations
 Love the script and want to support future development? Any and all donations gratefully received!
