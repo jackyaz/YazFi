@@ -1500,7 +1500,7 @@ Menu_Diagnostics(){
 	cp "/jffs/scripts/firewall-start" "$DIAGPATH""/firewall-start"
 	cp "/jffs/scripts/service-event" "$DIAGPATH""/service-event"
 	
-	SEC=$(cat /dev/urandom | tr -cd 'a-z0-9' | head -c 32)
+	SEC=$(< /dev/urandom tr -cd 'a-z0-9' | head -c 32)
 	tar -czf "/tmp/$YAZFI_NAME.tar.gz" -C "$DIAGPATH" .
 	/usr/sbin/openssl enc -aes-256-cbc -k "$SEC" -e -in "/tmp/$YAZFI_NAME.tar.gz" -out "/tmp/YazFi.tar.gz.enc"
 	
