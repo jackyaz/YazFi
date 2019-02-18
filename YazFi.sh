@@ -1361,7 +1361,7 @@ Menu_Edit(){
 		read -r "editor"
 		case "$editor" in
 			1)
-				texteditor="nano"
+				texteditor="nano -K"
 				break;
 			;;
 			2)
@@ -1374,7 +1374,7 @@ Menu_Edit(){
 			;;
 			*)
 				printf "\\nInvalid option, continuing using nano\\n\\n"
-				texteditor="nano"
+				texteditor="nano -K"
 				sleep 2
 				break
 			;;
