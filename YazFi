@@ -1,8 +1,8 @@
 #!/bin/sh
 
 readonly YAZFI_NAME="YazFi"
-readonly YAZFI_VERSION="v3.0.4"
-readonly YAZFI_BRANCH="master"
+readonly YAZFI_VERSION="v3.0.5"
+readonly YAZFI_BRANCH="develop"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 
 Check_Lock(){
