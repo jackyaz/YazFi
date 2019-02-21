@@ -1086,14 +1086,14 @@ Config_Networks(){
 				ISOBEFORE="$(nvram get "$IFACE""_ap_isolate")"
 				Firewall_NVRAM create "$IFACE" 2>/dev/null
 				ISOAFTER="$(nvram get "$IFACE""_ap_isolate")"
-				if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
+				if [ $ISOBEFORE -ne $ISOAFTER ]; then
 					WIRELESSRESTART="true"
 				fi
 			else
 				ISOBEFORE="$(nvram get "$IFACE""_ap_isolate")"
 				Firewall_NVRAM delete "$IFACE" 2>/dev/null
 				ISOAFTER="$(nvram get "$IFACE""_ap_isolate")"
-				if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
+				if [ $ISOBEFORE -ne $ISOAFTER ]; then
 					WIRELESSRESTART="true"
 				fi
 			fi
@@ -1111,7 +1111,7 @@ Config_Networks(){
 			ISOBEFORE="$(nvram get "$IFACE""_ap_isolate")"
 			Firewall_NVRAM delete "$IFACE" 2>/dev/null
 			ISOAFTER="$(nvram get "$IFACE""_ap_isolate")"
-			if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
+			if [ $ISOBEFORE -ne $ISOAFTER ]; then
 				WIRELESSRESTART="true"
 			fi
 			
