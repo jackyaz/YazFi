@@ -338,7 +338,9 @@ Validate_Number(){
 		return 0
 	else
 		formatted="$(echo "$1" | sed -e 's/|/ /g')"
-		Print_Output "false" "$formatted - $2 is not a number" "$ERR"
+		if [ -z "$3" ]; then
+			Print_Output "false" "$formatted - $2 is not a number" "$ERR"
+		fi
 		return 1
 	fi
 }
@@ -1084,15 +1086,19 @@ Config_Networks(){
 			
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_CLIENTISOLATION")" = "true" ]; then
 				ISOBEFORE="$(nvram get "$IFACE""_ap_isolate")"
+				if ! Validate_Number "" "$ISOBEFORE" "silent"; then ISOBEFORE=0; fi
 				Firewall_NVRAM create "$IFACE" 2>/dev/null
 				ISOAFTER="$(nvram get "$IFACE""_ap_isolate")"
+				if ! Validate_Number "" "$ISOAFTER" "silent"; then ISOAFTER=0; fi
 				if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
 					WIRELESSRESTART="true"
 				fi
 			else
 				ISOBEFORE="$(nvram get "$IFACE""_ap_isolate")"
+				if ! Validate_Number "" "$ISOBEFORE" "silent"; then ISOBEFORE=0; fi
 				Firewall_NVRAM delete "$IFACE" 2>/dev/null
 				ISOAFTER="$(nvram get "$IFACE""_ap_isolate")"
+				if ! Validate_Number "" "$ISOAFTER" "silent"; then ISOAFTER=0; fi
 				if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
 					WIRELESSRESTART="true"
 				fi
@@ -1109,8 +1115,10 @@ Config_Networks(){
 			
 			#Reset guest interface ISOLATION
 			ISOBEFORE="$(nvram get "$IFACE""_ap_isolate")"
+			if ! Validate_Number "" "$ISOBEFORE" "silent"; then ISOBEFORE=0; fi
 			Firewall_NVRAM delete "$IFACE" 2>/dev/null
 			ISOAFTER="$(nvram get "$IFACE""_ap_isolate")"
+			if ! Validate_Number "" "$ISOAFTER" "silent"; then ISOAFTER=0; fi
 			if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
 				WIRELESSRESTART="true"
 			fi
