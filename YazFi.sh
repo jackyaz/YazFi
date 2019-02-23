@@ -1506,7 +1506,6 @@ Menu_Status(){
 }
 
 Menu_Diagnostics(){
-	printf "\\n\\e[1mGenerating %s diagnostics...\\e[0m\\n\\n" "$YAZFI_NAME"
 	printf "\\n\\e[1mThis will collect the following. Files are encrypted with a unique random passphrase.\\e[0m\\n"
 	printf "\\n\\e[1m - iptables rules\\e[0m"
 	printf "\\n\\e[1m - ebtables rules\\e[0m"
@@ -1522,8 +1521,7 @@ Menu_Diagnostics(){
 				break
 			;;
 			n|N)
-				printf "\\n\\e[1mUser declined, returning to menu\\e[0m\\n"
-				sleep 1
+				printf "\\n\\e[1mUser declined, returning to menu\\e[0m\\n\\n"
 				return 1
 			;;
 			*)
@@ -1531,6 +1529,8 @@ Menu_Diagnostics(){
 			;;
 		esac
 	done
+	
+	printf "\\n\\n\\e[1mGenerating %s diagnostics...\\e[0m\\n\\n" "$YAZFI_NAME"
 	
 	DIAGPATH="/tmp/""$YAZFI_NAME""Diag"
 	mkdir -p "$DIAGPATH"
