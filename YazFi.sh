@@ -1480,6 +1480,14 @@ Menu_Status(){
 					GUEST_MACADDR="${GUEST_MAC#* }"
 					GUEST_ARPINFO="$(arp -a | grep "$IFACE" | grep -i "$GUEST_MACADDR")"
 					GUEST_HOST="$(echo "$GUEST_ARPINFO" | awk '{print $1}' | cut -f1 -d ".")"
+					if [ "$GUEST_HOST" = "?" ]; then
+						GUEST_HOST=$(grep "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
+					fi
+					
+					if [ "$GUEST_HOST" = "?" ] || [ "$(echo "$GUEST_HOST" | wc -m)" -le 1 ]; then
+						GUEST_HOST="Unknown"
+					fi
+					
 					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
 					printf "%-20s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
 				done
