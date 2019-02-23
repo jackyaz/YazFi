@@ -613,7 +613,7 @@ Firewall_Chains(){
 							iptables -I "$LGRJT" -j REJECT
 							
 							# Optional rule to log all rejected packets to syslog
-							#iptables -I $LGRJT -m state --state NEW -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
+							#iptables -I $LGRJT -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
 						;;
 					esac
 				fi
