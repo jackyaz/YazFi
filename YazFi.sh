@@ -980,11 +980,14 @@ DHCP_Conf(){
 			fi
 		;;
 		create)
+			#ENABLED_WINS="$(nvram get smbd_wins)"
+			#ENABLED_SAMBA="$(nvram get enable_samba)"
+			#if ! Validate_Number "" "$ENABLED_SAMBA" "silent"; then ENABLED_SAMBA=0; fi
+			#if ! Validate_Number "" "$ENABLED_WINS" "silent"; then ENABLED_WINS=0; fi
 			CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")"
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
-				# shellcheck disable=SC1003
 				sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"$BEGIN"'||||'"$CONFSTRING"'||||'"$END" $TMPCONF
 			else
 				printf "\\n%s\\n%s\\n%s\\n" "$BEGIN" "$CONFSTRING" "$END" >> $TMPCONF
@@ -992,24 +995,18 @@ DHCP_Conf(){
 		;;
 		delete)
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
+			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
-				if [ "$BLOCKDHCP" = "true" ]; then
-					sed -i -e '/'"$BEGIN"'/,+6d' $TMPCONF
-				else
-					sed -i -e '/'"$BEGIN"'/,+5d' $TMPCONF
-				fi
+				sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"" $TMPCONF
 			fi
 		;;
 		deleteall)
 			DHCP_Conf initialise 2>/dev/null
 			for IFACE in $IFACELIST; do
 				BEGIN="### Start of script-generated configuration for interface $IFACE ###"
-				if grep -q "### Start of script-generated configuration for interface $IFACE ###" $TMPCONF; then
-					if [ "$BLOCKDHCP" = "true" ]; then
-						sed -i -e '/'"$BEGIN"'/,+6d' $TMPCONF
-					else
-						sed -i -e '/'"$BEGIN"'/,+5d' $TMPCONF
-					fi
+				END="### End of script-generated configuration for interface $2 ###"
+				if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
+					sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"" $TMPCONF
 				fi
 			done
 			
