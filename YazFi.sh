@@ -988,6 +988,7 @@ DHCP_Conf(){
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
+				# shellcheck disable=SC1003
 				sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"$BEGIN"'||||'"$CONFSTRING"'||||'"$END" $TMPCONF
 			else
 				printf "\\n%s\\n%s\\n%s\\n" "$BEGIN" "$CONFSTRING" "$END" >> $TMPCONF
@@ -997,6 +998,7 @@ DHCP_Conf(){
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
+				# shellcheck disable=SC1003
 				sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"" $TMPCONF
 			fi
 		;;
@@ -1006,6 +1008,7 @@ DHCP_Conf(){
 				BEGIN="### Start of script-generated configuration for interface $IFACE ###"
 				END="### End of script-generated configuration for interface $2 ###"
 				if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
+					# shellcheck disable=SC1003
 					sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"" $TMPCONF
 				fi
 			done
@@ -1481,7 +1484,7 @@ Menu_Status(){
 						GUEST_HOST=$(grep "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
 					fi
 					
-					if [ "$GUEST_HOST" = "?" ] || [ "$(echo "$GUEST_HOST" | wc -m)" -le 1 ]; then
+					if [ "$GUEST_HOST" = "?" ] || [ "${#GUEST_HOST}" -le 1 ]; then
 						GUEST_HOST="Unknown"
 					fi
 					
