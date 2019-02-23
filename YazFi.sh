@@ -1499,13 +1499,31 @@ Menu_Status(){
 
 Menu_Diagnostics(){
 	printf "\\n\\e[1mGenerating %s diagnostics...\\e[0m\\n\\n" "$YAZFI_NAME"
-	printf "\\n\\e[1mThis will collect the following\\e[0m\\n\\n"
+	printf "\\n\\e[1mThis will collect the following. Files are encrypted with a unique random passphrase.\\e[0m\\n"
 	printf "\\n\\e[1m - iptables rules\\e[0m"
 	printf "\\n\\e[1m - ebtables rules\\e[0m"
 	printf "\\n\\e[1m - %s\\e[0m" "$YAZFI_CONF"
 	printf "\\n\\e[1m - %s\\e[0m" "$DNSCONF"
 	printf "\\n\\e[1m - /jffs/scripts/firewall-start\\e[0m"
 	printf "\\n\\e[1m - /jffs/scripts/service-event\\e[0m\\n\\n"
+	while true; do
+		printf "\\n\\e[1mDo you want to continue? (y/n)\\e[0m\\n"
+		read -r "confirm"
+		case "$confirm" in
+			y|Y)
+				break
+			;;
+			n|N)
+				printf "\\n\\e[1mUser declined, returning to menu\\e[0m\\n"
+				sleep 1
+				return 1
+			;;
+			*)
+				printf "\\nPlease choose a valid option (y/n)\\n\\n"
+			;;
+		esac
+	done
+	
 	DIAGPATH="/tmp/""$YAZFI_NAME""Diag"
 	mkdir -p "$DIAGPATH"
 	
