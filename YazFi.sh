@@ -1340,6 +1340,7 @@ Menu_Install(){
 	
 	if ! Check_Requirements; then
 		Print_Output "true" "Requirements for $YAZFI_NAME not met, please see above for the reason(s)" "$CRIT"
+		PressEnter
 		Clear_Lock
 		exit 1
 	fi
