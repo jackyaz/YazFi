@@ -26,7 +26,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v3.0.4"
+readonly YAZFI_VERSION="v3.1.0"
 readonly YAZFI_BRANCH="master"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -338,7 +338,9 @@ Validate_Number(){
 		return 0
 	else
 		formatted="$(echo "$1" | sed -e 's/|/ /g')"
-		Print_Output "false" "$formatted - $2 is not a number" "$ERR"
+		if [ -z "$3" ]; then
+			Print_Output "false" "$formatted - $2 is not a number" "$ERR"
+		fi
 		return 1
 	fi
 }
@@ -525,6 +527,14 @@ Conf_Validate(){
 					fi
 				fi
 				
+				# Validate _LANACCESS
+				if [ -z "$(eval echo '$'"$IFACETMP""_LANACCESS")" ]; then
+					sed -i -e "s/""$IFACETMP""_LANACCESS=/""$IFACETMP""_LANACCESS=false/" "$YAZFI_CONF"
+					Print_Output "false" "$IFACETMP""_LANACCESS is blank, setting to false" "$WARN"
+				elif ! Validate_TrueFalse "$IFACETMP""_LANACCESS" "$(eval echo '$'"$IFACETMP""_LANACCESS")"; then
+					IFACE_PASS="false"
+				fi
+				
 				# Validate _CLIENTISOLATION
 				if [ -z "$(eval echo '$'"$IFACETMP""_CLIENTISOLATION")" ]; then
 					sed -i -e "s/""$IFACETMP""_CLIENTISOLATION=/""$IFACETMP""_CLIENTISOLATION=true/" "$YAZFI_CONF"
@@ -611,7 +621,7 @@ Firewall_Chains(){
 							iptables -I "$LGRJT" -j REJECT
 							
 							# Optional rule to log all rejected packets to syslog
-							#iptables -I $LGRJT -m state --state NEW -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
+							#iptables -I $LGRJT -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
 						;;
 					esac
 				fi
@@ -669,6 +679,13 @@ Firewall_Chains(){
 Firewall_Rules(){
 	ACTIONS=""
 	IFACE="$2"
+	IFACE_WAN=""
+	
+	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
+		IFACE_WAN="ppp0"
+	else
+		IFACE_WAN="$(nvram get wan0_ifname)"
+	fi
 	
 	case $1 in
 		create)
@@ -697,19 +714,32 @@ Firewall_Rules(){
 		### End of bridge rules ###
 		
 		### Start of IP firewall rules ###
+		
 		iptables "$ACTION" "$FWRD" -i "$IFACE" -j ACCEPT
 		
-		iptables "$ACTION" "$FWRD" -i "$IFACE" -o br0 -j "$LGRJT"
-		iptables "$ACTION" "$FWRD" -i br0 -o "$IFACE" -j "$LGRJT"
-		
-		for IFACE_GUEST in $IFACELIST; do
-			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE_GUEST")"_ENABLED)" = "true" ]; then
-				iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_GUEST" -j "$LGRJT"
-			fi
-		done
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_LANACCESS")" = "false" ]; then
+			iptables "$ACTION" "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT"
+			iptables "$ACTION" "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -j "$LGRJT"
+		else
+			iptables -D "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT"
+			iptables -D "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -j "$LGRJT"
+		fi
 		
 		iptables "$ACTION" "$INPT" -i "$IFACE" -j "$LGRJT"
+		iptables "$ACTION" "$INPT" -i "$IFACE" -p icmp -j ACCEPT
 		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT
+		
+		ENABLED_WINS="$(nvram get smbd_wins)"
+		ENABLED_SAMBA="$(nvram get enable_samba)"
+		if ! Validate_Number "" "$ENABLED_SAMBA" "silent"; then ENABLED_SAMBA=0; fi
+		if ! Validate_Number "" "$ENABLED_WINS" "silent"; then ENABLED_WINS=0; fi
+		
+		if [ "$ENABLED_WINS" -eq 1 ] && [ "$ENABLED_SAMBA" -eq 1 ]; then
+			iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 137,138 -j ACCEPT
+		else
+			iptables -D "$INPT" -i "$IFACE" -p udp -m multiport --dports 137,138 -j ACCEPT
+		fi
+		
 		if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" || IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")"; then
 			RULES=$(iptables -nvL $INPT --line-number | grep "$IFACE" | grep "pt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES; do
@@ -978,7 +1008,17 @@ DHCP_Conf(){
 			fi
 		;;
 		create)
-			CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")"
+			CONFSTRING=""
+			ENABLED_WINS="$(nvram get smbd_wins)"
+			ENABLED_SAMBA="$(nvram get enable_samba)"
+			if ! Validate_Number "" "$ENABLED_SAMBA" "silent"; then ENABLED_SAMBA=0; fi
+			if ! Validate_Number "" "$ENABLED_WINS" "silent"; then ENABLED_WINS=0; fi
+			
+			if [ "$ENABLED_WINS" -eq 1 ] && [ "$ENABLED_SAMBA" -eq 1 ]; then
+				CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")||||dhcp-option=$2,44,$(nvram get lan_ipaddr)"
+			else
+				CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")"
+			fi
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
@@ -990,24 +1030,20 @@ DHCP_Conf(){
 		;;
 		delete)
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
+			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
-				if [ "$BLOCKDHCP" = "true" ]; then
-					sed -i -e '/'"$BEGIN"'/,+6d' $TMPCONF
-				else
-					sed -i -e '/'"$BEGIN"'/,+5d' $TMPCONF
-				fi
+				# shellcheck disable=SC1003
+				sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"" $TMPCONF
 			fi
 		;;
 		deleteall)
 			DHCP_Conf initialise 2>/dev/null
 			for IFACE in $IFACELIST; do
 				BEGIN="### Start of script-generated configuration for interface $IFACE ###"
-				if grep -q "### Start of script-generated configuration for interface $IFACE ###" $TMPCONF; then
-					if [ "$BLOCKDHCP" = "true" ]; then
-						sed -i -e '/'"$BEGIN"'/,+6d' $TMPCONF
-					else
-						sed -i -e '/'"$BEGIN"'/,+5d' $TMPCONF
-					fi
+				END="### End of script-generated configuration for interface $2 ###"
+				if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
+					# shellcheck disable=SC1003
+					sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"" $TMPCONF
 				fi
 			done
 			
@@ -1084,15 +1120,19 @@ Config_Networks(){
 			
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_CLIENTISOLATION")" = "true" ]; then
 				ISOBEFORE="$(nvram get "$IFACE""_ap_isolate")"
+				if ! Validate_Number "" "$ISOBEFORE" "silent"; then ISOBEFORE=0; fi
 				Firewall_NVRAM create "$IFACE" 2>/dev/null
 				ISOAFTER="$(nvram get "$IFACE""_ap_isolate")"
+				if ! Validate_Number "" "$ISOAFTER" "silent"; then ISOAFTER=0; fi
 				if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
 					WIRELESSRESTART="true"
 				fi
 			else
 				ISOBEFORE="$(nvram get "$IFACE""_ap_isolate")"
+				if ! Validate_Number "" "$ISOBEFORE" "silent"; then ISOBEFORE=0; fi
 				Firewall_NVRAM delete "$IFACE" 2>/dev/null
 				ISOAFTER="$(nvram get "$IFACE""_ap_isolate")"
+				if ! Validate_Number "" "$ISOAFTER" "silent"; then ISOAFTER=0; fi
 				if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
 					WIRELESSRESTART="true"
 				fi
@@ -1109,8 +1149,10 @@ Config_Networks(){
 			
 			#Reset guest interface ISOLATION
 			ISOBEFORE="$(nvram get "$IFACE""_ap_isolate")"
+			if ! Validate_Number "" "$ISOBEFORE" "silent"; then ISOBEFORE=0; fi
 			Firewall_NVRAM delete "$IFACE" 2>/dev/null
 			ISOAFTER="$(nvram get "$IFACE""_ap_isolate")"
+			if ! Validate_Number "" "$ISOAFTER" "silent"; then ISOAFTER=0; fi
 			if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
 				WIRELESSRESTART="true"
 			fi
@@ -1332,6 +1374,7 @@ Menu_Install(){
 	
 	if ! Check_Requirements; then
 		Print_Output "true" "Requirements for $YAZFI_NAME not met, please see above for the reason(s)" "$CRIT"
+		PressEnter
 		Clear_Lock
 		exit 1
 	fi
@@ -1471,6 +1514,14 @@ Menu_Status(){
 					GUEST_MACADDR="${GUEST_MAC#* }"
 					GUEST_ARPINFO="$(arp -a | grep "$IFACE" | grep -i "$GUEST_MACADDR")"
 					GUEST_HOST="$(echo "$GUEST_ARPINFO" | awk '{print $1}' | cut -f1 -d ".")"
+					if [ "$GUEST_HOST" = "?" ]; then
+						GUEST_HOST=$(grep "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
+					fi
+					
+					if [ "$GUEST_HOST" = "?" ] || [ "${#GUEST_HOST}" -le 1 ]; then
+						GUEST_HOST="Unknown"
+					fi
+					
 					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
 					printf "%-20s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
 				done
@@ -1489,7 +1540,32 @@ Menu_Status(){
 }
 
 Menu_Diagnostics(){
-	printf "\\n\\e[1mGenerating %s diagnostics...\\e[0m\\n\\n" "$YAZFI_NAME"
+	printf "\\n\\e[1mThis will collect the following. Files are encrypted with a unique random passphrase.\\e[0m\\n"
+	printf "\\n\\e[1m - iptables rules\\e[0m"
+	printf "\\n\\e[1m - ebtables rules\\e[0m"
+	printf "\\n\\e[1m - %s\\e[0m" "$YAZFI_CONF"
+	printf "\\n\\e[1m - %s\\e[0m" "$DNSCONF"
+	printf "\\n\\e[1m - /jffs/scripts/firewall-start\\e[0m"
+	printf "\\n\\e[1m - /jffs/scripts/service-event\\e[0m\\n\\n"
+	while true; do
+		printf "\\n\\e[1mDo you want to continue? (y/n)\\e[0m\\n"
+		read -r "confirm"
+		case "$confirm" in
+			y|Y)
+				break
+			;;
+			n|N)
+				printf "\\n\\e[1mUser declined, returning to menu\\e[0m\\n\\n"
+				return 1
+			;;
+			*)
+				printf "\\nPlease choose a valid option (y/n)\\n\\n"
+			;;
+		esac
+	done
+	
+	printf "\\n\\n\\e[1mGenerating %s diagnostics...\\e[0m\\n\\n" "$YAZFI_NAME"
+	
 	DIAGPATH="/tmp/""$YAZFI_NAME""Diag"
 	mkdir -p "$DIAGPATH"
 	

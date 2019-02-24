@@ -2,13 +2,14 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/a2cf9bdec17b4b6f9b6e113f802be694)](https://app.codacy.com/app/jackyaz/YazFi?utm_source=github.com&utm_medium=referral&utm_content=jackyaz/YazFi&utm_campaign=Badge_Grade_Dashboard)
 [![Build Status](https://travis-ci.com/jackyaz/YazFi.svg?branch=master)](https://travis-ci.com/jackyaz/YazFi)
 
-## v3.0.4
+## v3.1.0
+### Updated on 2019-02-24
 ## About
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
 
 *   Dedicated VPN WiFi networks
-*   Separate subnets for enhanced organisation of devices
-*   Restrict guests to only contact router for DHCP, DNS and NTP
+*   Separate subnets for organisation of devices
+*   Restrict guests to only contact router for ICMP, DHCP, DNS, NTP and NetBIOS
 *   Allow guest networks to make use of pixelserv-tls (if installed)
 *   Allow guests to use a local DNS server
 *   Extend DNS Filter to guest networks
@@ -105,12 +106,7 @@ Should Guest Network traffic be sent via VPN? (true/false)
 The number of the VPN Client to send traffic through (1-5)
 
 #### wl01_LANACCESS
-Not implemented
+Should Guest Network traffic have unrestricted access to the LAN? (true/false)
 
 #### wl01_CLIENTISOLATION
 Should Guest Network radio prevent clients from talking to each other? (true/false)
-
-## Known Issues/Limitations
-The script overrides the "Access Intranet" WebUI setting (except for DNS). If you want guests to be able to access other Intranet resources, do not include the guest network in YazFi.
-
-![Access Intranet settings](https://puu.sh/zYWp9/a5541ed706.png)
