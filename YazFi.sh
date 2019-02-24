@@ -27,7 +27,7 @@ readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_VERSION="v3.1.0"
-readonly YAZFI_BRANCH="develop"
+readonly YAZFI_BRANCH="master"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
 
@@ -718,10 +718,10 @@ Firewall_Rules(){
 		iptables "$ACTION" "$FWRD" -i "$IFACE" -j ACCEPT
 		
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_LANACCESS")" = "false" ]; then
-			iptables "$ACTION" "$FWRD" -i br0 -o "$IFACE" -j "$LGRJT"
+			iptables "$ACTION" "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT"
 			iptables "$ACTION" "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -j "$LGRJT"
 		else
-			iptables -D "$FWRD" -i br0 -o "$IFACE" -j "$LGRJT"
+			iptables -D "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT"
 			iptables -D "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -j "$LGRJT"
 		fi
 		
