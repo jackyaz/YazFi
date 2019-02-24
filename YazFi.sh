@@ -40,13 +40,14 @@ readonly PASS="\\e[32m"
 
 ### Start of router environment variables ###
 readonly LAN="$(nvram get lan_ipaddr)"
-readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
+[ -z "$(nvram get odmpid)" ] && ROUTER_MODEL=$(nvram get productid) || ROUTER_MODEL=$(nvram get odmpid)
+#readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
+readonly IFACELIST="$(echo "$(nvram get wl0_vifnames) $(nvram get wl1_vifnames) $(nvram get wl2_vifnames)" | awk '{$1=$1;print}')"
 ### End of router environment variables ###
 
 ### Start of path variables ###
 readonly DNSCONF="/jffs/configs/dnsmasq.conf.add"
 readonly TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
-readonly YAZFI_BLOCKDHCPFILE="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.blockdhcp"
 ### End of path variables ###
 
 ### Start of firewall variables ###
@@ -1196,7 +1197,7 @@ ScriptHeader(){
 	printf "\\e[1m######        | || (_| | / / | |     | |       ######\\e[0m\\n"
 	printf "\\e[1m######        |_| \__,_|/___||_|     |_|       ######\\e[0m\\n"
 	printf "\\e[1m######                                         ######\\e[0m\\n"
-	printf "\\e[1m######                 %s                  ######\\e[0m\\n" "$YAZFI_VERSION"
+	printf "\\e[1m######           %s on %-9s           ######\\e[0m\\n" "$YAZFI_VERSION" "$ROUTER_MODEL"
 	printf "\\e[1m######                                         ######\\e[0m\\n"
 	printf "\\e[1m######    https://github.com/jackyaz/YazFi/    ######\\e[0m\\n"
 	printf "\\e[1m######                                         ######\\e[0m\\n"
