@@ -679,6 +679,13 @@ Firewall_Chains(){
 Firewall_Rules(){
 	ACTIONS=""
 	IFACE="$2"
+	IFACE_WAN=""
+	
+	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
+		IFACE_WAN="ppp0"
+	else
+		IFACE_WAN="$(nvram get wan0_ifname)"
+	fi
 	
 	case $1 in
 		create)
@@ -711,23 +718,11 @@ Firewall_Rules(){
 		iptables "$ACTION" "$FWRD" -i "$IFACE" -j ACCEPT
 		
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_LANACCESS")" = "false" ]; then
-			iptables "$ACTION" "$FWRD" -i "$IFACE" -o br0 -j "$LGRJT"
 			iptables "$ACTION" "$FWRD" -i br0 -o "$IFACE" -j "$LGRJT"
-			
-			for IFACE_GUEST in $IFACELIST; do
-				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE_GUEST")"_ENABLED)" = "true" ] && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE_GUEST")""_LANACCESS")" = "false" ]; then
-					iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_GUEST" -j "$LGRJT"
-				fi
-			done
+			iptables "$ACTION" "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -j "$LGRJT"
 		else
-			iptables -D "$FWRD" -i "$IFACE" -o br0 -j "$LGRJT"
 			iptables -D "$FWRD" -i br0 -o "$IFACE" -j "$LGRJT"
-			
-			for IFACE_GUEST in $IFACELIST; do
-				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE_GUEST")"_ENABLED)" = "true" ] && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE_GUEST")""_LANACCESS")" = "true" ]; then
-					iptables -D "$FWRD" -i "$IFACE" -o "$IFACE_GUEST" -j "$LGRJT"
-				fi
-			done
+			iptables -D "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -j "$LGRJT"
 		fi
 		
 		iptables "$ACTION" "$INPT" -i "$IFACE" -j "$LGRJT"
