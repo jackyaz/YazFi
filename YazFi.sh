@@ -711,7 +711,20 @@ Firewall_Rules(){
 		done
 		
 		iptables "$ACTION" "$INPT" -i "$IFACE" -j "$LGRJT"
+		iptables "$ACTION" "$INPT" -i "$IFACE" -p icmp -j ACCEPT
 		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT
+		
+		ENABLED_WINS="$(nvram get smbd_wins)"
+		ENABLED_SAMBA="$(nvram get enable_samba)"
+		if ! Validate_Number "" "$ENABLED_SAMBA" "silent"; then ENABLED_SAMBA=0; fi
+		if ! Validate_Number "" "$ENABLED_WINS" "silent"; then ENABLED_WINS=0; fi
+		
+		if [ "$ENABLED_WINS" -eq 1 ] && [ "$ENABLED_SAMBA" -eq 1 ]; then
+			iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 137,138 -j ACCEPT
+		else
+			iptables -D "$INPT" -i "$IFACE" -p udp -m multiport --dports 137,138 -j ACCEPT
+		fi
+		
 		if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")" || IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS2")"; then
 			RULES=$(iptables -nvL $INPT --line-number | grep "$IFACE" | grep "pt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES; do
@@ -980,11 +993,17 @@ DHCP_Conf(){
 			fi
 		;;
 		create)
-			#ENABLED_WINS="$(nvram get smbd_wins)"
-			#ENABLED_SAMBA="$(nvram get enable_samba)"
-			#if ! Validate_Number "" "$ENABLED_SAMBA" "silent"; then ENABLED_SAMBA=0; fi
-			#if ! Validate_Number "" "$ENABLED_WINS" "silent"; then ENABLED_WINS=0; fi
-			CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")"
+			CONFSTRING=""
+			ENABLED_WINS="$(nvram get smbd_wins)"
+			ENABLED_SAMBA="$(nvram get enable_samba)"
+			if ! Validate_Number "" "$ENABLED_SAMBA" "silent"; then ENABLED_SAMBA=0; fi
+			if ! Validate_Number "" "$ENABLED_WINS" "silent"; then ENABLED_WINS=0; fi
+			
+			if [ "$ENABLED_WINS" -eq 1 ] && [ "$ENABLED_SAMBA" -eq 1 ]; then
+				CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")||||dhcp-option=$2,44,$(nvram get lan_ipaddr)"
+			else
+				CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")"
+			fi
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
