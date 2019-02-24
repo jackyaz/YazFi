@@ -527,6 +527,14 @@ Conf_Validate(){
 					fi
 				fi
 				
+				# Validate _LANACCESS
+				if [ -z "$(eval echo '$'"$IFACETMP""_LANACCESS")" ]; then
+					sed -i -e "s/""$IFACETMP""_LANACCESS=/""$IFACETMP""_LANACCESS=false/" "$YAZFI_CONF"
+					Print_Output "false" "$IFACETMP""_LANACCESS is blank, setting to false" "$WARN"
+				elif ! Validate_TrueFalse "$IFACETMP""_LANACCESS" "$(eval echo '$'"$IFACETMP""_LANACCESS")"; then
+					IFACE_PASS="false"
+				fi
+				
 				# Validate _CLIENTISOLATION
 				if [ -z "$(eval echo '$'"$IFACETMP""_CLIENTISOLATION")" ]; then
 					sed -i -e "s/""$IFACETMP""_CLIENTISOLATION=/""$IFACETMP""_CLIENTISOLATION=true/" "$YAZFI_CONF"
@@ -699,16 +707,28 @@ Firewall_Rules(){
 		### End of bridge rules ###
 		
 		### Start of IP firewall rules ###
+		
 		iptables "$ACTION" "$FWRD" -i "$IFACE" -j ACCEPT
 		
-		iptables "$ACTION" "$FWRD" -i "$IFACE" -o br0 -j "$LGRJT"
-		iptables "$ACTION" "$FWRD" -i br0 -o "$IFACE" -j "$LGRJT"
-		
-		for IFACE_GUEST in $IFACELIST; do
-			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE_GUEST")"_ENABLED)" = "true" ]; then
-				iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_GUEST" -j "$LGRJT"
-			fi
-		done
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_LANACCESS")" = "false" ]; then
+			iptables "$ACTION" "$FWRD" -i "$IFACE" -o br0 -j "$LGRJT"
+			iptables "$ACTION" "$FWRD" -i br0 -o "$IFACE" -j "$LGRJT"
+			
+			for IFACE_GUEST in $IFACELIST; do
+				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE_GUEST")"_ENABLED)" = "true" ] && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE_GUEST")""_LANACCESS")" = "false" ]; then
+					iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_GUEST" -j "$LGRJT"
+				fi
+			done
+		else
+			iptables -D "$FWRD" -i "$IFACE" -o br0 -j "$LGRJT"
+			iptables -D "$FWRD" -i br0 -o "$IFACE" -j "$LGRJT"
+			
+			for IFACE_GUEST in $IFACELIST; do
+				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE_GUEST")"_ENABLED)" = "true" ] && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE_GUEST")""_LANACCESS")" = "true" ]; then
+					iptables -D "$FWRD" -i "$IFACE" -o "$IFACE_GUEST" -j "$LGRJT"
+				fi
+			done
+		fi
 		
 		iptables "$ACTION" "$INPT" -i "$IFACE" -j "$LGRJT"
 		iptables "$ACTION" "$INPT" -i "$IFACE" -p icmp -j ACCEPT
