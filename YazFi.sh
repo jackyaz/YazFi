@@ -1456,7 +1456,6 @@ Menu_BounceClients(){
 Menu_Status(){
 	### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
 	Check_Lock
-	sleep 1
 	. "$YAZFI_CONF"
 	
 	Print_Output "false" "Querying router for connected WiFi clients..." "$PASS"
