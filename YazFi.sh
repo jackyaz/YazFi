@@ -56,12 +56,6 @@ readonly LGRJT="$YAZFI_NAME""REJECT"
 readonly DNSFLTR="$YAZFI_NAME""DNSFILTER"
 readonly CHAINS="$INPT $FWRD $LGRJT"
 readonly NATCHAINS="$DNSFLTR"
-BLOCKDHCP=""
-if [ -f "$YAZFI_BLOCKDHCPFILE" ]; then
-	BLOCKDHCP="true"
-else
-	BLOCKDHCP="false"
-fi
 ### End of firewall variables ###
 
 ### Start of VPN clientlist variables ###
@@ -163,20 +157,6 @@ Auto_ServiceEvent(){
 				
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/service-event
-				fi
-			fi
-		;;
-	esac
-}
-
-Auto_Block_DHCP(){
-	case $1 in
-		delete)
-			if [ -f /jffs/scripts/dnsmasq.postconf ]; then
-				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/dnsmasq.postconf)
-				
-				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
-					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/dnsmasq.postconf
 				fi
 			fi
 		;;
@@ -986,18 +966,6 @@ Routing_NVRAM(){
 	esac
 }
 
-DHCP_Conf_Block(){
-	case $1 in
-		delete)
-			DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $DNSCONF)
-			
-			if [ "$DHCPBLOCK_BR0" -gt 0 ]; then
-				sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' $DNSCONF
-			fi
-		;;
-	esac
-}
-
 DHCP_Conf(){
 	case $1 in
 		initialise)
@@ -1177,14 +1145,6 @@ Config_Networks(){
 	Routing_NVRAM save 2>/dev/null
 	
 	DHCP_Conf save 2>/dev/null
-	
-	#Clean DHCP blocking
-	if [ "$BLOCKDHCP" = "true" ]; then
-		Auto_Block_DHCP delete 2>/dev/null
-		DHCP_Conf_Block delete 2>/dev/null
-		rm -f "$YAZFI_BLOCKDHCPFILE" 2>/dev/null
-		service restart_dnsmasq >/dev/null 2>&1
-	fi
 	
 	if [ "$WIRELESSRESTART" = "true" ]; then
 		nvram commit
