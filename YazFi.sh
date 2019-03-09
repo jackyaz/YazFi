@@ -41,7 +41,7 @@ readonly PASS="\\e[32m"
 ### Start of router environment variables ###
 readonly LAN="$(nvram get lan_ipaddr)"
 [ -z "$(nvram get odmpid)" ] && ROUTER_MODEL=$(nvram get productid) || ROUTER_MODEL=$(nvram get odmpid)
-#readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
+readonly IFACELIST_FULL="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
 readonly IFACELIST="$(echo "$(nvram get wl0_vifnames) $(nvram get wl1_vifnames) $(nvram get wl2_vifnames)" | awk '{$1=$1;print}')"
 ### End of router environment variables ###
 
@@ -393,28 +393,29 @@ Conf_Validate(){
 	CONF_VALIDATED="true"
 	NETWORKS_ENABLED="false"
 	
-	for IFACE in $IFACELIST; do
+	for IFACE in $IFACELIST_FULL; do
 		IFACETMP="$(Get_Iface_Var "$IFACE")"
 		IPADDRTMP=""
 		ENABLEDTMP=""
 		REDIRECTTMP=""
 		IFACE_PASS="true"
 		
-		if ! Validate_Exists_IFACE "$IFACETMP"; then
+		# Validate _ENABLED
+		if [ -z "$(eval echo '$'"$IFACETMP""_ENABLED")" ]; then
+			ENABLEDTMP="false"
+			sed -i -e "s/""$IFACETMP""_ENABLED=/""$IFACETMP""_ENABLED=false/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMP""_ENABLED is blank, setting to false" "$WARN"
+		elif ! Validate_TrueFalse "$IFACETMP""_ENABLED" "$(eval echo '$'"$IFACETMP""_ENABLED")"; then
+			ENABLEDTMP="false"
 			IFACE_PASS="false"
 		else
-			# Validate _ENABLED
-			if [ -z "$(eval echo '$'"$IFACETMP""_ENABLED")" ]; then
-				ENABLEDTMP="false"
-				sed -i -e "s/""$IFACETMP""_ENABLED=/""$IFACETMP""_ENABLED=false/" "$YAZFI_CONF"
-				Print_Output "false" "$IFACETMP""_ENABLED is blank, setting to false" "$WARN"
-			elif ! Validate_TrueFalse "$IFACETMP""_ENABLED" "$(eval echo '$'"$IFACETMP""_ENABLED")"; then
-				ENABLEDTMP="false"
-				IFACE_PASS="false"
-			else
-				ENABLEDTMP="$(eval echo '$'"$IFACETMP""_ENABLED")"
-			fi
-			
+			ENABLEDTMP="$(eval echo '$'"$IFACETMP""_ENABLED")"
+		fi
+		
+		if ! Validate_Exists_IFACE "$IFACE" "silent" && [ "$ENABLEDTMP" = "true" ]; then
+			IFACE_PASS="false"
+			Print_Output "false" "$IFACE - Interface not supported on this router" "$ERR"
+		else
 			if [ "$ENABLEDTMP" = "true" ]; then
 				NETWORKS_ENABLED="true"
 				# Validate interface is enabled in GUI
