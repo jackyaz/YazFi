@@ -1558,7 +1558,7 @@ Menu_Status(){
 	. "$YAZFI_CONF"
 	
 		ScriptHeader
-		printf "\\e[1m%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" "$PASS"
+		printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
 	
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
@@ -1587,14 +1587,14 @@ Menu_Status(){
 				done
 				unset IFS
 			else
-				printf "\\e[1m%sNo clients connected\\e[0m\\n\\n" "$WARN"
+				printf "\\e[1m$WARN%sNo clients connected\\e[0m\\n\\n" ""
 			fi
 		fi
 	done
 	
 	printf "%75s\\n\\n" "" |tr " " "-"
 	
-	printf "\\e[1m%sQuery complete, please see above for results\\e[0m\\n\\n" "$PASS"
+	printf "\\e[1m$PASS%sQuery complete, please see above for results\\e[0m\\n\\n" ""
 	Clear_Lock
 	#######################################################################################################
 }
