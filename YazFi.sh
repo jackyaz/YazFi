@@ -231,7 +231,7 @@ Clear_Lock(){
 Update_Version(){
 	if [ -z "$1" ]; then
 		localver=$(grep "YAZFI_VERSION=" /jffs/scripts/$YAZFI_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; Clear_Lock; exit 1; }
+		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; return 1; }
 		serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 		if [ "$localver" != "$serverver" ]; then
 			Print_Output "true" "New version of $YAZFI_NAME available - updating to $serverver" "$PASS"
@@ -1064,12 +1064,12 @@ Config_Networks(){
 	if ! Conf_Exists; then
 		Conf_Download $YAZFI_CONF
 		Clear_Lock
-		exit 1
+		return 1
 	fi
 	
 	if ! Conf_Validate; then
 		Clear_Lock
-		exit 1
+		return 1
 	fi
 	
 	. $YAZFI_CONF
