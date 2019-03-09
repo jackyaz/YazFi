@@ -1388,7 +1388,6 @@ Menu_Install(){
 }
 
 Menu_Edit(){
-	Check_Lock
 	texteditor=""
 	exitmenu="false"
 	
@@ -1420,10 +1419,10 @@ Menu_Edit(){
 	done
 	
 	if [ "$exitmenu" != "true" ]; then
+		Check_Lock
 		$texteditor $YAZFI_CONF
+		Clear_Lock
 	fi
-	
-	Clear_Lock
 }
 
 Menu_RunNow(){
@@ -1551,8 +1550,6 @@ Menu_GuestConfig(){
 		if [ "$exitmenu" != "true" ]; then
 			: # need to print editing menu for ssid etc.
 		fi
-		
-		Clear_Lock
 }
 
 Menu_Status(){
