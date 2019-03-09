@@ -568,7 +568,6 @@ Conf_Validate(){
 		if [ "$CONF_VALIDATED" = "true" ]; then
 			return 0
 		else
-			Clear_Lock
 			return 1
 		fi
 	else
@@ -1063,10 +1062,12 @@ Config_Networks(){
 	
 	if ! Conf_Exists; then
 		Conf_Download $YAZFI_CONF
+		Clear_Lock
 		exit 1
 	fi
 	
 	if ! Conf_Validate; then
+		Clear_Lock
 		exit 1
 	fi
 	
