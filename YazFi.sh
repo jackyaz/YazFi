@@ -1232,14 +1232,14 @@ ScriptHeader(){
 
 MainMenu(){
 	Shortcut_YazFi create
-	printf "1.    Apply %s settings\\n" "$YAZFI_NAME"
-	printf "2.    Edit %s configuration\\n" "$YAZFI_NAME"
-	printf "3.    Edit Guest Network configuration (SSID + passphrase)\\n"
-	printf "4.    Check for updates\\n"
-	printf "5.    Show connected clients using %s\\n" "$YAZFI_NAME"
-	printf "6.    Uninstall %s\\n" "$YAZFI_NAME"
-	printf "d.    Generate %s diagnostics\\n" "$YAZFI_NAME"
-	printf "e.    Exit YazFi\\n"
+	printf "1.    Apply %s settings\\n\\n" "$YAZFI_NAME"
+	printf "2.    Show connected clients using %s\\n\\n" "$YAZFI_NAME"
+	printf "3.    Edit %s config\\n" "$YAZFI_NAME"
+	printf "4.    Edit Guest Network config (SSID + passphrase)\\n\\n"
+	printf "u.    Check for updates\\n"
+	printf "d.    Generate %s diagnostics\\n\\n" "$YAZFI_NAME"
+	printf "e.    Exit YazFi\\n\\n"
+	printf "z.    Uninstall %s\\n" "$YAZFI_NAME"
 	printf "\\n"
 	printf "\\e[1m#####################################################\\e[0m\\n"
 	printf "\\n"
@@ -1256,34 +1256,45 @@ MainMenu(){
 			;;
 			2)
 				printf "\\n"
-				Menu_Edit
-				break
-			;;
-			3)
-				printf "\\n"
 				Menu_Status
 				PressEnter
 				break
 			;;
+			3)
+				printf "\\n"
+				Menu_Edit
+				break
+			;;
 			4)
+				printf "\\n"
+				Menu_GuestConfig
+				PressEnter
+				break
+			;;
+			u)
 				printf "\\n"
 				Menu_Update
 				PressEnter
 				break
 			;;
-			4f)
+			uf)
 				printf "\\n"
 				Menu_ForceUpdate
 				PressEnter
 				break
 			;;
-			5)
-				printf "\\n"
-				Menu_Status
+			d)
+				ScriptHeader
+				Menu_Diagnostics
 				PressEnter
 				break
 			;;
-			6)
+			e)
+				ScriptHeader
+				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n\\n\\n" "$YAZFI_NAME"
+				exit 0
+			;;
+			z)
 				while true; do
 					printf "\\n\\e[1mAre you sure you want to uninstall YazFi? (y/n)\\e[0m\\n"
 					read -r "confirm"
@@ -1297,17 +1308,6 @@ MainMenu(){
 						;;
 					esac
 				done
-			;;
-			d)
-				ScriptHeader
-				Menu_Diagnostics
-				PressEnter
-				break
-			;;
-			e)
-				ScriptHeader
-				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n\\n\\n" "$YAZFI_NAME"
-				exit 0
 			;;
 			*)
 				printf "\\nPlease choose a valid option\\n\\n"
@@ -1485,12 +1485,11 @@ Menu_BounceClients(){
 }
 
 Menu_GuestConfig(){
-	Check_Lock
 	exitmenu=""
 	selectediface=""
 	
 	printf "\\n\\e[1mPlease select a Guest Network:\\e[0m\\n"
-	printf "\\n\\e[1m N.B. Your router may not support all of them\\e[0m\\n"
+	printf "\\n\\e[1mN.B. Your router may not support all of them\\e[0m\\n"
 	printf "1.    2.4GHz Guest 1\\n"
 	printf "2.    2.4GHz Guest 2\\n"
 	printf "3.    2.4GHz Guest 3\\n"
@@ -1561,7 +1560,8 @@ Menu_Status(){
 	Check_Lock
 	. "$YAZFI_CONF"
 	
-	Print_Output "false" "Querying router for connected WiFi clients..." "$PASS"
+		ScriptHeader
+		printf "\\e[1m""$PASS""Querying router for connected WiFi clients...\\e[0m\\n\\n"
 	
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
@@ -1590,14 +1590,14 @@ Menu_Status(){
 				done
 				unset IFS
 			else
-				printf "\\e[1m\\e[33mNo clients connected\\e[0m\\n\\n"
+				printf "\\e[1m""$WARN""No clients connected\\e[0m\\n\\n"
 			fi
 		fi
 	done
 	
 	printf "%75s\\n\\n" "" |tr " " "-"
 	
-	Print_Output "false" "Query complete, please see above for results" "$PASS"
+	printf "\\e[1m""$PASS""Query complete, please see above for results\\e[0m\\n\\n"
 	Clear_Lock
 	#######################################################################################################
 }
