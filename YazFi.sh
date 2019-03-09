@@ -1540,7 +1540,7 @@ Menu_GuestConfig(){
 			;;
 			esac
 			
-			if ! Validate_Exists_IFACE "$selectediface" "silent"; then
+			if ! Validate_Exists_IFACE "$selectediface" "silent" && [ ! -z "$selectediface" ]; then
 				printf "\\nSelected guest not supported on your router, please choose a different option\\n\\n"
 			else
 				break
