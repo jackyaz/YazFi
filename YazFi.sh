@@ -1202,7 +1202,7 @@ PressEnter(){
 		read -r "key"
 		case "$key" in
 			*)
-				break;
+				break
 			;;
 		esac
 	done
@@ -1383,31 +1383,30 @@ Menu_Edit(){
 	Check_Lock
 	texteditor=""
 	exitmenu="false"
+	
+	printf "\\n\\e[1mA choice of text editors is available:\\e[0m\\n"
+	printf "1.    nano (recommended for beginners)\\n"
+	printf "2.    vi\\n"
+	printf "e.    Exit to main menu\\n"
+	
 	while true; do
-		printf "\\n\\e[1mA choice of text editors is available:\\e[0m\\n"
-		printf "1.    nano (recommended for beginners)\\n"
-		printf "2.    vi\\n"
-		printf "e.    Exit to main menu\\n"
-		printf "\\n\\e[1mWhich editor would you like to use?\\e[0m\\n"
+		printf "\\n\\e[1mChoose an option:\\e[0m    "
 		read -r "editor"
 		case "$editor" in
 			1)
 				texteditor="nano -K"
-				break;
+				break
 			;;
 			2)
 				texteditor="vi"
-				break;
+				break
 			;;
 			e)
 				exitmenu="true"
-				break;
+				break
 			;;
 			*)
-				printf "\\nInvalid option, continuing using nano\\n\\n"
-				texteditor="nano -K"
-				sleep 2
-				break
+				printf "\\nPlease choose a valid option\\n\\n"
 			;;
 		esac
 	done
