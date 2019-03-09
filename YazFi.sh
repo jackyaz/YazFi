@@ -1233,9 +1233,10 @@ MainMenu(){
 	Shortcut_YazFi create
 	printf "1.    Apply %s settings\\n" "$YAZFI_NAME"
 	printf "2.    Edit %s configuration\\n" "$YAZFI_NAME"
-	printf "3.    Check for updates\\n"
-	printf "4.    Show connected clients using %s\\n" "$YAZFI_NAME"
-	printf "5.    Uninstall %s\\n" "$YAZFI_NAME"
+	printf "3.    Edit Guest Network configuration (SSID + passphrase)\\n"
+	printf "4.    Check for updates\\n"
+	printf "5.    Show connected clients using %s\\n" "$YAZFI_NAME"
+	printf "6.    Uninstall %s\\n" "$YAZFI_NAME"
 	printf "d.    Generate %s diagnostics\\n" "$YAZFI_NAME"
 	printf "e.    Exit YazFi\\n"
 	printf "\\n"
@@ -1259,23 +1260,29 @@ MainMenu(){
 			;;
 			3)
 				printf "\\n"
-				Menu_Update
-				PressEnter
-				break
-			;;
-			3f)
-				printf "\\n"
-				Menu_ForceUpdate
+				Menu_Status
 				PressEnter
 				break
 			;;
 			4)
 				printf "\\n"
-				Menu_Status
+				Menu_Update
+				PressEnter
+				break
+			;;
+			4f)
+				printf "\\n"
+				Menu_ForceUpdate
 				PressEnter
 				break
 			;;
 			5)
+				printf "\\n"
+				Menu_Status
+				PressEnter
+				break
+			;;
+			6)
 				while true; do
 					printf "\\n\\e[1mAre you sure you want to uninstall YazFi? (y/n)\\e[0m\\n"
 					read -r "confirm"
@@ -1474,6 +1481,78 @@ Menu_BounceClients(){
 	Check_Lock
 	Iface_BounceClients
 	Clear_Lock
+}
+
+Menu_GuestConfig(){
+	Check_Lock
+	exitmenu=""
+	selectediface=""
+	
+	printf "\\n\\e[1mPlease select a Guest Network:\\e[0m\\n"
+	printf "\\n\\e[1m N.B. Your router may not support all of them\\e[0m\\n"
+	printf "1.    2.4GHz Guest 1\\n"
+	printf "2.    2.4GHz Guest 2\\n"
+	printf "3.    2.4GHz Guest 3\\n"
+	printf "4.    5GHz-1 Guest 1\\n"
+	printf "5.    5GHz-1 Guest 2\\n"
+	printf "6.    5GHz-1 Guest 3\\n"
+	printf "7.    5GHz-2 Guest 1\\n"
+	printf "8.    5GHz-2 Guest 2\\n"
+	printf "9.    5GHz-2 Guest 3\\n"
+	printf "e.    Exit to main menu\\n"
+	
+	while true; do
+		printf "\\n\\e[1mChoose an option:\\e[0m    "
+		read -r "selectedguest"
+		case "$selectedguest" in
+			1)
+				selectediface="wl0.1"
+			;;
+			2)
+				selectediface="wl0.2"
+			;;
+			3)
+				selectediface="wl0.3"
+			;;
+			4)
+				selectediface="wl1.1"
+			;;
+			5)
+				selectediface="wl1.2"
+			;;
+			6)
+				selectediface="wl1.3"
+			;;
+			7)
+				selectediface="wl2.1"
+			;;
+			8)
+				selectediface="wl2.2"
+			;;
+			9)
+				selectediface="wl2.3"
+			;;
+			e)
+				exitmenu="true"
+				break
+			;;
+			*)
+				printf "\\nPlease choose a valid option\\n\\n"
+			;;
+			esac
+			
+			if ! Validate_Exists_IFACE "$selectediface" "silent"; then
+				printf "\\nSelected guest not supported on your router, please choose a different option\\n\\n"
+			else
+				break
+			fi
+		done
+		
+		if [ "$exitmenu" != "true" ]; then
+			: # need to print editing menu for ssid etc.
+		fi
+		
+		Clear_Lock
 }
 
 Menu_Status(){
