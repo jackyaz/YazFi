@@ -1630,7 +1630,7 @@ Menu_GuestConfig(){
 									done
 									
 									if [ -n "$validpasslength" ]; then
-										newpassphrase="$(Generate_Random_String $validpasslength)"
+										newpassphrase="$(Generate_Random_String "$validpasslength")"
 										newpassphraseclean="$(echo "$newpassphrase" | sed 's/[^a-zA-Z0-9]//g')"
 										
 										Set_WiFi_Passphrase "$selectediface" "$newpassphraseclean"
