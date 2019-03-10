@@ -82,6 +82,20 @@ Print_Output(){
 	fi
 }
 
+Generate_Random_String(){
+	PASSLENGTH=16
+	if Validate_Number "" "$1" "silent"; then
+		if [ $1 -le 32 ] && [ $1 -ge 8 ]; then
+			PASSLENGTH=$1
+		else
+			printf "\\e[1mNumber is not between 8 and 32, using default of 16 characters\\e[0m\\n"
+		fi
+	else
+		printf "\\e[1mInvalid number provided, using default of 16 characters\\e[0m\\n"
+	fi
+	echo "$(< /dev/urandom tr -cd 'A-Za-z0-9' | head -c $PASSLENGTH)"
+}
+
 Escape_Sed(){
 	sed -e 's/</\\</g;s/>/\\>/g;s/ /\\ /g'
 }
