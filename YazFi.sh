@@ -1505,20 +1505,20 @@ Menu_GuestConfig(){
 	exitmenu=""
 	selectediface=""
 	
-	printf "\\n\\e[1mPlease select a Guest Network:\\e[0m\\n"
-	printf "\\n\\e[1mN.B. Your router may not support all of them\\e[0m\\n"
-	printf "1.    2.4GHz Guest 1\\n"
-	printf "2.    2.4GHz Guest 2\\n"
-	printf "3.    2.4GHz Guest 3\\n"
-	printf "4.    5GHz-1 Guest 1\\n"
-	printf "5.    5GHz-1 Guest 2\\n"
-	printf "6.    5GHz-1 Guest 3\\n"
-	printf "7.    5GHz-2 Guest 1\\n"
-	printf "8.    5GHz-2 Guest 2\\n"
-	printf "9.    5GHz-2 Guest 3\\n"
-	printf "e.    Exit to main menu\\n"
+	ScriptHeader
+	
+	printf "\\n\\e[1mPlease select a Guest Network:\\e[0m\\n\\n"
+	COUNTER=1
+	for IFACE_MENU in $IFACELIST; do
+		if [ $((COUNTER % 4)) -eq 0 ]; then printf "\\n"; fi
+		printf "%s.    %s\\n" "$COUNTER" "$(Get_Guest_Name "$IFACE_MENU")"
+		COUNTER=$((COUNTER + 1))
+	done
+	
+	printf "\\ne.    Go back\\n"
 	
 	while true; do
+		selectediface=""
 		printf "\\n\\e[1mChoose an option:\\e[0m    "
 		read -r "selectedguest"
 		case "$selectedguest" in
@@ -1558,15 +1558,66 @@ Menu_GuestConfig(){
 			;;
 			esac
 			
-			if ! Validate_Exists_IFACE "$selectediface" "silent" && [ ! -z "$selectediface" ]; then
-				printf "\\nSelected guest not supported on your router, please choose a different option\\n\\n"
-			else
-				break
+			if [ -n "$selectediface" ]; then
+				if ! Validate_Exists_IFACE "$selectediface" "silent"; then
+					printf "\\nSelected guest (""$selectediface"") not supported on your router, please choose a different option\\n"
+				else
+					break
+				fi
 			fi
 		done
 		
 		if [ "$exitmenu" != "true" ]; then
-			: # need to print editing menu for ssid etc.
+			ScriptHeader
+			
+			exitsubmenu=""
+			
+			while true; do
+				printf "\\n\\e[1mAvailable options:\\e[0m\\n"
+				printf "1.    Set SSID (current: %s)\\n" "$(nvram get "$selectediface""_ssid")"
+				printf "2.    Set passphrase (current: %s)\\n" "$(nvram get "$selectediface""_wpa_psk")"
+				printf "e.    Exit to main menu\\n"
+				printf "\\n\\e[1mChoose an option:\\e[0m    "
+				read -r "guestoption"
+				case "$guestoption" in
+					1)
+						printf "\\n\\e[1mPlease enter your new SSID:\\e[0m    "
+						read -r "newssid"
+						newssidclean="$newssid"
+						if ! Validate_String "$newssid"; then
+							newssidclean="$(echo "$newssid" | sed 's/[^a-zA-Z0-9]//g')"
+						fi
+						# shellcheck disable=SC2140
+						nvram set "$selectediface""_ssid"="$newssidclean"
+						nvram commit
+					;;
+					2)
+						printf "\\n\\e[1mPlease enter your new passphrase:\\e[0m    "
+						read -r "newpassphrase"
+						newpassphraseclean="$newpassphrase"
+						if ! Validate_String "$newpassphrase"; then
+							newpassphraseclean="$(echo "$newpassphrase" | sed 's/[^a-zA-Z0-9]//g')"
+						fi
+						
+						# shellcheck disable=SC2140
+						nvram set "$selectediface""_wpa_psk"="$newpassphraseclean"
+						# shellcheck disable=SC2140
+						nvram set "$selectediface""_auth_mode_x"="psk2"
+						# shellcheck disable=SC2140
+						nvram set "$selectediface""_akm"="psk2"
+						nvram commit
+					;;
+					e)
+						exitsubmenu="true"
+						break
+					;;
+					*)
+						printf "\\nPlease choose a valid option\\n\\n"
+					;;
+				esac
+			done
+			
+			Menu_GuestConfig
 		fi
 }
 
