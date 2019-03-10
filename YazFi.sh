@@ -1523,7 +1523,7 @@ Menu_GuestConfig(){
 	COUNTER=1
 	for IFACE_MENU in $IFACELIST; do
 		if [ $((COUNTER % 4)) -eq 0 ]; then printf "\\n"; fi
-		printf "%s.    %s\\n" "$COUNTER" "$(Get_Guest_Name "$IFACE_MENU")"
+		printf "%s.    %s (SSID: %s)\\n" "$COUNTER" "$(Get_Guest_Name "$IFACE_MENU")" "$(nvram get "$IFACE_MENU""_ssid")"
 		COUNTER=$((COUNTER + 1))
 	done
 	
@@ -1533,33 +1533,10 @@ Menu_GuestConfig(){
 		selectediface=""
 		printf "\\n\\e[1mChoose an option:\\e[0m    "
 		read -r "selectedguest"
+		
 		case "$selectedguest" in
-			1)
-				selectediface="wl0.1"
-			;;
-			2)
-				selectediface="wl0.2"
-			;;
-			3)
-				selectediface="wl0.3"
-			;;
-			4)
-				selectediface="wl1.1"
-			;;
-			5)
-				selectediface="wl1.2"
-			;;
-			6)
-				selectediface="wl1.3"
-			;;
-			7)
-				selectediface="wl2.1"
-			;;
-			8)
-				selectediface="wl2.2"
-			;;
-			9)
-				selectediface="wl2.3"
+			1|2|3|4|5|6|7|8|9)
+				selectediface="$(echo "$IFACELIST" | awk '{print $'$selectedguest'}')"
 			;;
 			e)
 				exitmenu="true"
@@ -1568,110 +1545,111 @@ Menu_GuestConfig(){
 			*)
 				printf "\\nPlease choose a valid option\\n\\n"
 			;;
-			esac
+		esac
 			
-			if [ -n "$selectediface" ]; then
-				if ! Validate_Exists_IFACE "$selectediface" "silent"; then
-					printf "\\nSelected guest (%s) not supported on your router, please choose a different option\\n" "$selectediface"
-				else
-					break
-				fi
+		if [ -n "$selectediface" ]; then
+			if ! Validate_Exists_IFACE "$selectediface" "silent"; then
+				printf "\\nSelected guest (%s) not supported on your router, please choose a different option\\n" "$selectediface"
+			else
+				break
 			fi
-		done
+		fi
+	done
 		
-		if [ "$exitmenu" != "true" ]; then
-			ScriptHeader
-			
-			while true; do
-				printf "\\n\\e[1mAvailable options:\\e[0m\\n\\n"
-				printf "1.    Set SSID (current: %s)\\n" "$(nvram get "$selectediface""_ssid")"
-				printf "2.    Set passphrase (current: %s)\\n" "$(nvram get "$selectediface""_wpa_psk")"
-				printf "\\ne.    Go back\\n"
-				printf "\\n\\e[1mChoose an option:\\e[0m    "
-				read -r "guestoption"
-				case "$guestoption" in
-					1)
-						printf "\\n\\e[1mPlease enter your new SSID:\\e[0m    "
-						read -r "newssid"
-						newssidclean="$newssid"
-						if ! Validate_String "$newssid"; then
-							newssidclean="$(echo "$newssid" | sed 's/[^a-zA-Z0-9]//g')"
-						fi
-						# shellcheck disable=SC2140
-						nvram set "$selectediface""_ssid"="$newssidclean"
-						nvram commit
-					;;
-					2)
-						while true; do
-							printf "\\n\\e[1mAvailable options:\\e[0m\\n\\n"
-							printf "1.    Generate random passphrase\\n"
-							printf "2.    Manually set passphrase\\n"
-							printf "\\ne.    Go back\\n"
-							printf "\\n\\e[1mChoose an option:\\e[0m    "
-							read -r "passoption"
-							case "$passoption" in
-								1)
-									validpasslength=""
-									while true; do
-										printf "\\n\\e[1mHow many characters? (8-32)\\e[0m    "
-										read -r "passlength"
-										if Validate_Number "" "$passlength" "silent"; then
-											if [ "$passlength" -le 32 ] && [ "$passlength" -ge 8 ]; then
-												validpasslength="$passlength"
-												break
-											else
-												printf "\\nPlease choose a number between 8 and 32\\n\\n"
-											fi
-										elif [ "$passlength" = "e" ]; then
+	if [ "$exitmenu" != "true" ]; then
+		ScriptHeader
+		
+		while true; do
+			printf "\\n\\e[1m    %s (%s)\\e[0m\\n\\n" "$(Get_Guest_Name "$IFACE_MENU")" "$selectediface"
+			printf "\\e[1mAvailable options:\\e[0m\\n\\n"
+			printf "1.    Set SSID (current: %s)\\n" "$(nvram get "$selectediface""_ssid")"
+			printf "2.    Set passphrase (current: %s)\\n" "$(nvram get "$selectediface""_wpa_psk")"
+			printf "\\ne.    Go back\\n"
+			printf "\\n\\e[1mChoose an option:\\e[0m    "
+			read -r "guestoption"
+			case "$guestoption" in
+				1)
+					printf "\\n\\e[1mPlease enter your new SSID:\\e[0m    "
+					read -r "newssid"
+					newssidclean="$newssid"
+					if ! Validate_String "$newssid"; then
+						newssidclean="$(echo "$newssid" | sed 's/[^a-zA-Z0-9]//g')"
+					fi
+					# shellcheck disable=SC2140
+					nvram set "$selectediface""_ssid"="$newssidclean"
+					nvram commit
+				;;
+				2)
+					while true; do
+						printf "\\n\\e[1mAvailable options:\\e[0m\\n\\n"
+						printf "1.    Generate random passphrase\\n"
+						printf "2.    Manually set passphrase\\n"
+						printf "\\ne.    Go back\\n"
+						printf "\\n\\e[1mChoose an option:\\e[0m    "
+						read -r "passoption"
+						case "$passoption" in
+							1)
+								validpasslength=""
+								while true; do
+									printf "\\n\\e[1mHow many characters? (8-32)\\e[0m    "
+									read -r "passlength"
+									if Validate_Number "" "$passlength" "silent"; then
+										if [ "$passlength" -le 32 ] && [ "$passlength" -ge 8 ]; then
+											validpasslength="$passlength"
 											break
 										else
-											printf "\\nPlease choose a valid number\\n\\n"
+											printf "\\nPlease choose a number between 8 and 32\\n\\n"
 										fi
-									done
-									
-									if [ -n "$validpasslength" ]; then
-										newpassphrase="$(Generate_Random_String "$validpasslength")"
-										newpassphraseclean="$(echo "$newpassphrase" | sed 's/[^a-zA-Z0-9]//g')"
-										
-										Set_WiFi_Passphrase "$selectediface" "$newpassphraseclean"
-										ScriptHeader
+									elif [ "$passlength" = "e" ]; then
 										break
+									else
+										printf "\\nPlease choose a valid number\\n\\n"
 									fi
-								;;
-								2)
-									printf "\\n\\e[1mPlease enter your new passphrase:\\e[0m    "
-									read -r "newpassphrase"
-									newpassphraseclean="$newpassphrase"
-									if ! Validate_String "$newpassphrase"; then
-										newpassphraseclean="$(echo "$newpassphrase" | sed 's/[^a-zA-Z0-9]//g')"
-									fi
+								done
+								
+								if [ -n "$validpasslength" ]; then
+									newpassphrase="$(Generate_Random_String "$validpasslength")"
+									newpassphraseclean="$(echo "$newpassphrase" | sed 's/[^a-zA-Z0-9]//g')"
 									
 									Set_WiFi_Passphrase "$selectediface" "$newpassphraseclean"
 									ScriptHeader
 									break
-								;;
-								e)
-									ScriptHeader
-									break
-								;;
-								*)
-									printf "\\nPlease choose a valid option\\n\\n"
-								;;
-							esac
-						done
-					;;
-					e)
-						ScriptHeader
-						break
-					;;
-					*)
-						printf "\\nPlease choose a valid option\\n\\n"
-					;;
-				esac
-			done
-			
-			Menu_GuestConfig
-		fi
+								fi
+							;;
+							2)
+								printf "\\n\\e[1mPlease enter your new passphrase:\\e[0m    "
+								read -r "newpassphrase"
+								newpassphraseclean="$newpassphrase"
+								if ! Validate_String "$newpassphrase"; then
+									newpassphraseclean="$(echo "$newpassphrase" | sed 's/[^a-zA-Z0-9]//g')"
+								fi
+								
+								Set_WiFi_Passphrase "$selectediface" "$newpassphraseclean"
+								ScriptHeader
+								break
+							;;
+							e)
+								ScriptHeader
+								break
+							;;
+							*)
+								printf "\\nPlease choose a valid option\\n\\n"
+							;;
+						esac
+					done
+				;;
+				e)
+					ScriptHeader
+					break
+				;;
+				*)
+					printf "\\nPlease choose a valid option\\n\\n"
+				;;
+			esac
+		done
+		
+		Menu_GuestConfig
+	fi
 }
 
 Menu_Status(){
