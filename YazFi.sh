@@ -105,17 +105,13 @@ Get_Iface_Var(){
 }
 
 Get_Guest_Name(){
-	VPN_NVRAM=""
-	
 	if echo "$1" | grep -q "wl0"; then
-		VPN_NVRAM="2.4GHz Guest $(echo "$1" | cut -f2 -d".")"
+		echo "2.4GHz Guest $(echo "$1" | cut -f2 -d".")"
 	elif echo "$1" | grep -q "wl1"; then
-		VPN_NVRAM="5GHz1 Guest $(echo "$1" | cut -f2 -d".")"
+		echo "5GHz1 Guest $(echo "$1" | cut -f2 -d".")"
 	else
-		VPN_NVRAM="5GHz2 Guest $(echo "$1" | cut -f2 -d".")"
+		echo "5GHz2 Guest $(echo "$1" | cut -f2 -d".")"
 	fi
-	
-	echo "$VPN_NVRAM"
 }
 
 Iface_Manage(){
@@ -1291,7 +1287,6 @@ MainMenu(){
 			4)
 				printf "\\n"
 				Menu_GuestConfig
-				PressEnter
 				break
 			;;
 			u)
@@ -1417,7 +1412,7 @@ Menu_Edit(){
 	printf "\\n\\e[1mA choice of text editors is available:\\e[0m\\n"
 	printf "1.    nano (recommended for beginners)\\n"
 	printf "2.    vi\\n"
-	printf "e.    Exit to main menu\\n"
+	printf "\\ne.    Exit to main menu\\n"
 	
 	while true; do
 		printf "\\n\\e[1mChoose an option:\\e[0m    "
@@ -1653,7 +1648,7 @@ Menu_Diagnostics(){
 	mkdir -p "$DIAGPATH"
 	
 	iptables-save > "$DIAGPATH""/iptables.txt"
-	
+		
 	ebtables -L > "$DIAGPATH""/ebtables.txt"
 	echo "" >> "$DIAGPATH""/ebtables.txt"
 	ebtables -t broute -L >> "$DIAGPATH""/ebtables.txt"
