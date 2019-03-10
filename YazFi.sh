@@ -115,6 +115,17 @@ Get_Guest_Name(){
 	fi
 }
 
+Set_WiFi_Passphrase(){
+	# shellcheck disable=SC2140
+	nvram set "$1""_wpa_psk"="$2"
+	# shellcheck disable=SC2140
+	nvram set "$1""_auth_mode_x"="psk2"
+	# shellcheck disable=SC2140
+	nvram set "$1""_akm"="psk2"
+	nvram commit
+}
+
+
 Iface_Manage(){
 	case $1 in
 		create)
@@ -1571,13 +1582,11 @@ Menu_GuestConfig(){
 		if [ "$exitmenu" != "true" ]; then
 			ScriptHeader
 			
-			exitsubmenu=""
-			
 			while true; do
-				printf "\\n\\e[1mAvailable options:\\e[0m\\n"
+				printf "\\n\\e[1mAvailable options:\\e[0m\\n\\n"
 				printf "1.    Set SSID (current: %s)\\n" "$(nvram get "$selectediface""_ssid")"
 				printf "2.    Set passphrase (current: %s)\\n" "$(nvram get "$selectediface""_wpa_psk")"
-				printf "e.    Exit to main menu\\n"
+				printf "\\ne.    Go back\\n"
 				printf "\\n\\e[1mChoose an option:\\e[0m    "
 				read -r "guestoption"
 				case "$guestoption" in
@@ -1593,23 +1602,66 @@ Menu_GuestConfig(){
 						nvram commit
 					;;
 					2)
-						printf "\\n\\e[1mPlease enter your new passphrase:\\e[0m    "
-						read -r "newpassphrase"
-						newpassphraseclean="$newpassphrase"
-						if ! Validate_String "$newpassphrase"; then
-							newpassphraseclean="$(echo "$newpassphrase" | sed 's/[^a-zA-Z0-9]//g')"
-						fi
-						
-						# shellcheck disable=SC2140
-						nvram set "$selectediface""_wpa_psk"="$newpassphraseclean"
-						# shellcheck disable=SC2140
-						nvram set "$selectediface""_auth_mode_x"="psk2"
-						# shellcheck disable=SC2140
-						nvram set "$selectediface""_akm"="psk2"
-						nvram commit
+						while true; do
+							printf "\\n\\e[1mAvailable options:\\e[0m\\n\\n"
+							printf "1.    Generate random passphrase\\n"
+							printf "2.    Manually set passphrase\\n"
+							printf "\\ne.    Go back\\n"
+							printf "\\n\\e[1mChoose an option:\\e[0m    "
+							read -r "passoption"
+							case "$passoption" in
+								1)
+									validpasslength=""
+									while true; do
+										printf "\\n\\e[1mHow many characters? (8-32)\\e[0m    "
+										read -r "passlength"
+										if Validate_Number "" "$passlength" "silent"; then
+											if [ "$passlength" -le 32 ] && [ "$passlength" -ge 8 ]; then
+												validpasslength="$passlength"
+												break
+											else
+												printf "\\nPlease choose a number between 8 and 32\\n\\n"
+											fi
+										elif [ "$passlength" = "e" ]; then
+											break
+										else
+											printf "\\nPlease choose a valid number\\n\\n"
+										fi
+									done
+									
+									if [ -n "$validpasslength" ]; then
+										newpassphrase="$(Generate_Random_String $validpasslength)"
+										newpassphraseclean="$(echo "$newpassphrase" | sed 's/[^a-zA-Z0-9]//g')"
+										
+										Set_WiFi_Passphrase "$selectediface" "$newpassphraseclean"
+										ScriptHeader
+										break
+									fi
+								;;
+								2)
+									printf "\\n\\e[1mPlease enter your new passphrase:\\e[0m    "
+									read -r "newpassphrase"
+									newpassphraseclean="$newpassphrase"
+									if ! Validate_String "$newpassphrase"; then
+										newpassphraseclean="$(echo "$newpassphrase" | sed 's/[^a-zA-Z0-9]//g')"
+									fi
+									
+									Set_WiFi_Passphrase "$selectediface" "$newpassphraseclean"
+									ScriptHeader
+									break
+								;;
+								e)
+									ScriptHeader
+									break
+								;;
+								*)
+									printf "\\nPlease choose a valid option\\n\\n"
+								;;
+							esac
+						done
 					;;
 					e)
-						exitsubmenu="true"
+						ScriptHeader
 						break
 					;;
 					*)
@@ -1710,7 +1762,7 @@ Menu_Diagnostics(){
 	cp "/jffs/scripts/firewall-start" "$DIAGPATH""/firewall-start"
 	cp "/jffs/scripts/service-event" "$DIAGPATH""/service-event"
 	
-	SEC=$(Generate_Random_String 32)
+	SEC="$(Generate_Random_String 32)"
 	tar -czf "/tmp/$YAZFI_NAME.tar.gz" -C "$DIAGPATH" .
 	/usr/sbin/openssl enc -aes-256-cbc -k "$SEC" -e -in "/tmp/$YAZFI_NAME.tar.gz" -out "/tmp/YazFi.tar.gz.enc"
 	
