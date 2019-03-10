@@ -388,6 +388,15 @@ Validate_TrueFalse(){
 	esac
 }
 
+Validate_String(){
+		if expr "$1" : '[a-zA-Z0-9][a-zA-Z0-9]*$' >/dev/null; then
+			return 0
+		else
+			Print_Output "false" "String contains non-alphanumeric characters, these will be removed" "$ERR"
+			return 1
+		fi
+}
+
 Conf_Validate(){
 	
 	CONF_VALIDATED="true"
