@@ -143,7 +143,7 @@ Iface_Manage(){
 }
 
 Iface_BounceClients(){
-	Print_Output "true" "Forcing YazFi Guest WiFi clients to reauthenticate" "$PASS"
+	Print_Output "true" "Forcing $YAZFI_NAME Guest WiFi clients to reauthenticate" "$PASS"
 	
 	for IFACE in $IFACELIST; do
 		wl -i "$IFACE" deauthenticate >/dev/null 2>&1
@@ -257,7 +257,7 @@ Update_Version(){
 		serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 		if [ "$localver" != "$serverver" ]; then
 			Print_Output "true" "New version of $YAZFI_NAME available - updating to $serverver" "$PASS"
-			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
+			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
 			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
 			Clear_Lock
 			service restart_firewall >/dev/null 2>&1
@@ -272,7 +272,7 @@ Update_Version(){
 		force)
 			serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 			Print_Output "true" "Downloading latest version ($serverver) of $YAZFI_NAME" "$PASS"
-			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
+			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
 			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
 			Clear_Lock
 			service restart_firewall >/dev/null 2>&1
@@ -603,7 +603,7 @@ Conf_Validate(){
 			return 1
 		fi
 	else
-		Print_Output "true" "No YazFi guests are enabled in the configuration file!" "$CRIT"
+		Print_Output "true" "No $YAZFI_NAME guests are enabled in the configuration file!" "$CRIT"
 		return 1
 	fi
 }
@@ -615,10 +615,10 @@ Conf_Download(){
 	dos2unix "$1"
 	echo ""
 	echo ""
-	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings using option 2 from the YazFi menu."
+	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings using option 2 from the $YAZFI_NAME menu."
 	sleep 1
 	echo ""
-	Print_Output "false" "When finished, run YazFi using option 1 from the YazFi menu."
+	Print_Output "false" "When finished, run $YAZFI_NAME using option 1 from the $YAZFI_NAME menu."
 	Clear_Lock
 }
 
@@ -1089,7 +1089,7 @@ DHCP_Conf(){
 }
 
 Config_Networks(){
-	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
+	Print_Output "true" "$YAZFI_NAME $YAZFI_VERSION starting up"
 	WIRELESSRESTART="false"
 	
 	if ! Conf_Exists; then
@@ -1209,7 +1209,7 @@ Config_Networks(){
 		service restart_wireless >/dev/null 2>&1
 	fi
 	
-	Print_Output "true" "YazFi $YAZFI_VERSION completed successfully" "$PASS"
+	Print_Output "true" "$YAZFI_NAME $YAZFI_VERSION completed successfully" "$PASS"
 }
 
 Shortcut_YazFi(){
@@ -1269,7 +1269,7 @@ MainMenu(){
 	printf "4.    Edit Guest Network config (SSID + passphrase)\\n\\n"
 	printf "u.    Check for updates\\n"
 	printf "d.    Generate %s diagnostics\\n\\n" "$YAZFI_NAME"
-	printf "e.    Exit YazFi\\n\\n"
+	printf "e.    Exit %s\\n\\n" "$YAZFI_NAME"
 	printf "z.    Uninstall %s\\n" "$YAZFI_NAME"
 	printf "\\n"
 	printf "\\e[1m#####################################################\\e[0m\\n"
@@ -1326,7 +1326,7 @@ MainMenu(){
 			;;
 			z)
 				while true; do
-					printf "\\n\\e[1mAre you sure you want to uninstall YazFi? (y/n)\\e[0m\\n"
+					printf "\\n\\e[1mAre you sure you want to uninstall %s? (y/n)\\e[0m\\n" "$YAZFI_NAME"
 					read -r "confirm"
 					case "$confirm" in
 						y|Y)
@@ -1390,7 +1390,7 @@ Check_Requirements(){
 
 Menu_Install(){
 	Check_Lock
-	Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
+	Print_Output "true" "Welcome to $YAZFI_NAME $YAZFI_VERSION, a script by JackYaz"
 	sleep 1
 	
 	Print_Output "true" "Checking your router meets the requirements for $YAZFI_NAME"
@@ -1412,7 +1412,7 @@ Menu_Install(){
 	Shortcut_YazFi create
 	echo ""
 	echo ""
-	Print_Output "true" "You can access YazFi's menu via amtm (if installed) with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
+	Print_Output "true" "You can access $YAZFI_NAME's menu via amtm (if installed) with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
 	PressEnter
 	Clear_Lock
 }
@@ -1477,7 +1477,7 @@ Menu_ForceUpdate(){
 
 Menu_Uninstall(){
 	Check_Lock
-	Print_Output "true" "Removing YazFi..." "$PASS"
+	Print_Output "true" "Removing $YAZFI_NAME..." "$PASS"
 	Auto_Startup delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
 	Routing_NVRAM deleteall 2>/dev/null
@@ -1488,7 +1488,7 @@ Menu_Uninstall(){
 	Iface_Manage deleteall 2>/dev/null
 	DHCP_Conf deleteall 2>/dev/null
 	while true; do
-		printf "\\n\\e[1mDo you want to delete YazFi configuration file(s)? (y/n)\\e[0m\\n"
+		printf "\\n\\e[1mDo you want to delete %s configuration file(s)? (y/n)\\e[0m\\n" "$YAZFI_NAME"
 		read -r "confirm"
 		case "$confirm" in
 			y|Y)
@@ -1742,7 +1742,7 @@ Menu_Diagnostics(){
 	
 	SEC="$(Generate_Random_String 32)"
 	tar -czf "/tmp/$YAZFI_NAME.tar.gz" -C "$DIAGPATH" .
-	/usr/sbin/openssl enc -aes-256-cbc -k "$SEC" -e -in "/tmp/$YAZFI_NAME.tar.gz" -out "/tmp/YazFi.tar.gz.enc"
+	/usr/sbin/openssl enc -aes-256-cbc -k "$SEC" -e -in "/tmp/$YAZFI_NAME.tar.gz" -out "/tmp/$YAZFI_NAME.tar.gz.enc"
 	
 	Print_Output "true" "Diagnostics saved to /tmp/$YAZFI_NAME.tar.gz.enc with passphrase $SEC" "$PASS"
 	
@@ -1787,7 +1787,7 @@ case "$1" in
 			Menu_BounceClients
 		elif [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
 			Check_Lock
-			Print_Output "true" "Wireless restarted - sleeping 30s before running YazFi" "$PASS"
+			Print_Output "true" "Wireless restarted - sleeping 30s before running $YAZFI_NAME" "$PASS"
 			sleep 30
 			Config_Networks
 			Iface_BounceClients
