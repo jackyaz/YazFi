@@ -125,7 +125,6 @@ Set_WiFi_Passphrase(){
 	nvram commit
 }
 
-
 Iface_Manage(){
 	case $1 in
 		create)

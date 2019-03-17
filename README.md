@@ -63,7 +63,7 @@ If you do not have Entware installed, you will need to use the full path:
 ```
 
 ## Updating
-Launch YazFi and select option 3
+Launch YazFi and select option u
 
 ## Help
 Please post about any issues and problems here: [YazFi on SNBForums](https://www.snbforums.com/threads/yazfi-enhanced-asuswrt-merlin-guest-wifi-networks.45924/)
