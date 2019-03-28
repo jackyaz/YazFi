@@ -1555,7 +1555,13 @@ Menu_GuestConfig(){
 			if ! Validate_Exists_IFACE "$selectediface" "silent"; then
 				printf "\\nSelected guest (%s) not supported on your router, please choose a different option\\n" "$selectediface"
 			else
-				break
+				selectediface_TEST="$(nvram get "$selectediface""_bss_enabled")"
+				if ! Validate_Number "" "$selectediface_TEST" "silent"; then selectediface_TEST=0; fi
+				if [ "$selectediface_TEST" -eq 1 ]; then
+					break
+				else
+					printf "\\nSelected guest (%s) not enabled on your router, please choose a different option\\n" "$selectediface"
+				fi
 			fi
 		fi
 	done
