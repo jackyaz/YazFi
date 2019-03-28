@@ -1079,7 +1079,6 @@ DHCP_Conf(){
 				service restart_dnsmasq >/dev/null 2>&1
 				Print_Output "true" "DHCP configuration updated"
 				sleep 2
-				Iface_BounceClients 2>/dev/null
 			fi
 			
 			rm -f $TMPCONF
@@ -1207,6 +1206,8 @@ Config_Networks(){
 		Clear_Lock
 		service restart_wireless >/dev/null 2>&1
 	fi
+	
+	Iface_BounceClients 2>/dev/null
 	
 	Print_Output "true" "$YAZFI_NAME $YAZFI_VERSION completed successfully" "$PASS"
 }
@@ -1522,7 +1523,11 @@ Menu_GuestConfig(){
 	COUNTER=1
 	for IFACE_MENU in $IFACELIST; do
 		if [ $((COUNTER % 4)) -eq 0 ]; then printf "\\n"; fi
-		printf "%s.    %s (SSID: %s)\\n" "$COUNTER" "$(Get_Guest_Name "$IFACE_MENU")" "$(nvram get "$IFACE_MENU""_ssid")"
+		IFACE_MENU_TEST="$(nvram get "$IFACE_MENU""_bss_enabled")"
+		if ! Validate_Number "" "$IFACE_MENU_TEST" "silent"; then IFACE_MENU_TEST=0; fi
+		if [ "$IFACE_MENU_TEST" -eq 1 ]; then
+			printf "%s.    %s (SSID: %s)\\n" "$COUNTER" "$(Get_Guest_Name "$IFACE_MENU")" "$(nvram get "$IFACE_MENU""_ssid")"
+		fi
 		COUNTER=$((COUNTER + 1))
 	done
 	
