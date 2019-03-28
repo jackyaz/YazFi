@@ -1192,6 +1192,8 @@ Config_Networks(){
 		service restart_wireless >/dev/null 2>&1
 	fi
 	
+	Iface_BounceClients 2>/dev/null
+	
 	Print_Output "true" "YazFi $YAZFI_VERSION completed successfully" "$PASS"
 }
 
