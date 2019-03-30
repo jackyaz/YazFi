@@ -1569,9 +1569,8 @@ Menu_GuestConfig(){
 	done
 		
 	if [ "$exitmenu" != "true" ]; then
-		ScriptHeader
-		
 		while true; do
+			ScriptHeader
 			printf "\\n\\e[1m    %s (%s)\\e[0m\\n\\n" "$(Get_Guest_Name "$IFACE_MENU")" "$selectediface"
 			printf "\\e[1mAvailable options:\\e[0m\\n\\n"
 			printf "1.    Set SSID (current: %s)\\n" "$(nvram get "$selectediface""_ssid")"
@@ -1637,24 +1636,10 @@ Menu_GuestConfig(){
 								fi
 								
 								Set_WiFi_Passphrase "$selectediface" "$newpassphraseclean"
-								changesmade=true
+								changesmade="true"
 								break
 							;;
 							e)
-								if [ "$changesmade" = "true" ]; then
-									printf "\\n\\e[1mDo you want to restart wireless services now? (y/n)\\e[0m\\n"
-									read -r "confirmrestart"
-									case "$confirmrestart" in
-										y|Y)
-											Clear_Lock
-											service restart_wireless >/dev/null 2>&1
-											break
-										;;
-										*)
-											break
-										;;
-									esac
-								fi
 								break
 							;;
 							*)
@@ -1664,6 +1649,22 @@ Menu_GuestConfig(){
 					done
 				;;
 				e)
+					if [ "$changesmade" = "true" ]; then
+						while true; do
+							printf "\\n\\e[1mDo you want to restart wireless services now? (y/n)\\e[0m\\n"
+							read -r "confirmrestart"
+							case "$confirmrestart" in
+								y|Y)
+									Clear_Lock
+									service restart_wireless >/dev/null 2>&1
+									break
+								;;
+								*)
+									break
+								;;
+							esac
+						done
+					fi
 					ScriptHeader
 					break
 				;;
