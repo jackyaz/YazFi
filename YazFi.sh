@@ -1268,7 +1268,7 @@ MainMenu(){
 	printf "3.    Edit %s config\\n" "$YAZFI_NAME"
 	printf "4.    Edit Guest Network config (SSID + passphrase)\\n\\n"
 	printf "u.    Check for updates\\n"
-	printf "uf.   Update %s with latest from GitHub (forced update)\\n" "$YAZFI_NAME"
+	printf "uf.   Update %s with latest version (forced update)\\n\\n" "$YAZFI_NAME"
 	printf "d.    Generate %s diagnostics\\n\\n" "$YAZFI_NAME"
 	printf "e.    Exit %s\\n\\n" "$YAZFI_NAME"
 	printf "z.    Uninstall %s\\n" "$YAZFI_NAME"
