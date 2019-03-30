@@ -1300,23 +1300,35 @@ MainMenu(){
 			;;
 			3)
 				printf "\\n"
-				Menu_Edit
+				if Check_Lock "menu"; then
+					Menu_Edit
+				else
+					PressEnter
+				fi
 				break
 			;;
 			4)
 				printf "\\n"
-				Menu_GuestConfig
+				if Check_Lock "menu"; then
+					Menu_GuestConfig
+				else
+					PressEnter
+				fi
 				break
 			;;
 			u)
 				printf "\\n"
-				Menu_Update
+				if Check_Lock "menu"; then
+					Menu_Update
+				fi
 				PressEnter
 				break
 			;;
 			uf)
 				printf "\\n"
-				Menu_ForceUpdate
+				if Check_Lock "menu"; then
+					Menu_ForceUpdate
+				fi
 				PressEnter
 				break
 			;;
@@ -1455,10 +1467,9 @@ Menu_Edit(){
 	done
 	
 	if [ "$exitmenu" != "true" ]; then
-		Check_Lock
 		$texteditor $YAZFI_CONF
-		Clear_Lock
 	fi
+	Clear_Lock
 }
 
 Menu_RunNow(){
@@ -1467,21 +1478,18 @@ Menu_RunNow(){
 }
 
 Menu_Update(){
-	Check_Lock
 	sleep 1
 	Update_Version
 	Clear_Lock
 }
 
 Menu_ForceUpdate(){
-	Check_Lock
 	sleep 1
 	Update_Version force
 	Clear_Lock
 }
 
 Menu_Uninstall(){
-	Check_Lock
 	Print_Output "true" "Removing $YAZFI_NAME..." "$PASS"
 	Auto_Startup delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
@@ -1509,11 +1517,11 @@ Menu_Uninstall(){
 	rm -f "/jffs/scripts/$YAZFI_NAME" 2>/dev/null
 	Clear_Lock
 	Print_Output "true" "Restarting firewall to complete uninstall" "$PASS"
+	service restart_dnsmasq >/dev/null 2>&1
 	service restart_firewall >/dev/null 2>&1
 }
 
 Menu_BounceClients(){
-	Check_Lock
 	Iface_BounceClients
 	Clear_Lock
 }
@@ -1680,6 +1688,7 @@ Menu_GuestConfig(){
 		
 		Menu_GuestConfig
 	fi
+	Clear_Lock
 }
 
 Menu_Status(){
@@ -1801,19 +1810,23 @@ case "$1" in
 		exit 0
 	;;
 	update)
+		Check_Lock
 		Menu_Update
 		exit 0
 	;;
 	forceupdate)
+		Check_Lock
 		Menu_ForceUpdate
 		exit 0
 	;;
 	uninstall)
+		Check_Lock
 		Menu_Uninstall
 		exit 0
 	;;
 	bounceclients)
 		if [ -z "$2" ] && [ -z "$3" ]; then
+			Check_Lock
 			Menu_BounceClients
 		elif [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
 			Check_Lock
