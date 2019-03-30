@@ -236,7 +236,11 @@ Check_Lock(){
 			return 0
 		else
 			Print_Output "true" "Lock file found (age: $ageoflock seconds) - stopping to prevent duplicate runs" "$ERR"
-			exit 1
+			if [ -z "$1" ]; then
+				exit 1
+			else
+				return 1
+			fi
 		fi
 	else
 		echo "$$" > "/tmp/$YAZFI_NAME.lock"
@@ -1282,6 +1286,7 @@ MainMenu(){
 		case "$menu" in
 			1)
 				printf "\\n"
+				Check_Lock "menu"
 				Menu_RunNow
 				PressEnter
 				break
@@ -1390,7 +1395,6 @@ Check_Requirements(){
 }
 
 Menu_Install(){
-	Check_Lock
 	Print_Output "true" "Welcome to $YAZFI_NAME $YAZFI_VERSION, a script by JackYaz"
 	sleep 1
 	
@@ -1457,7 +1461,6 @@ Menu_Edit(){
 }
 
 Menu_RunNow(){
-	Check_Lock
 	Config_Networks
 	Clear_Lock
 }
@@ -1787,10 +1790,12 @@ fi
 
 case "$1" in
 	install)
+		Check_Lock
 		Menu_Install
 		exit 0
 	;;
 	runnow)
+		Check_Lock
 		Menu_RunNow
 		exit 0
 	;;
