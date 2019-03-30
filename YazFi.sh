@@ -1207,7 +1207,7 @@ Config_Networks(){
 		service restart_wireless >/dev/null 2>&1
 	fi
 	
-	Iface_BounceClients 2>/dev/null
+	Iface_BounceClients
 	
 	Print_Output "true" "$YAZFI_NAME $YAZFI_VERSION completed successfully" "$PASS"
 }
@@ -1515,8 +1515,9 @@ Menu_BounceClients(){
 }
 
 Menu_GuestConfig(){
-	exitmenu=""
+	exitmenu="false"
 	selectediface=""
+	changesmade="false"
 	
 	ScriptHeader
 	
@@ -1589,6 +1590,7 @@ Menu_GuestConfig(){
 					# shellcheck disable=SC2140
 					nvram set "$selectediface""_ssid"="$newssidclean"
 					nvram commit
+					changesmade="true"
 				;;
 				2)
 					while true; do
@@ -1621,9 +1623,8 @@ Menu_GuestConfig(){
 								if [ -n "$validpasslength" ]; then
 									newpassphrase="$(Generate_Random_String "$validpasslength")"
 									newpassphraseclean="$(echo "$newpassphrase" | sed 's/[^a-zA-Z0-9]//g')"
-									
 									Set_WiFi_Passphrase "$selectediface" "$newpassphraseclean"
-									ScriptHeader
+									changesmade="true"
 									break
 								fi
 							;;
@@ -1636,11 +1637,24 @@ Menu_GuestConfig(){
 								fi
 								
 								Set_WiFi_Passphrase "$selectediface" "$newpassphraseclean"
-								ScriptHeader
+								changesmade=true
 								break
 							;;
 							e)
-								ScriptHeader
+								if [ "$changesmade" = "true" ]; then
+									printf "\\n\\e[1mDo you want to restart wireless services now? (y/n)\\e[0m\\n"
+									read -r "confirmrestart"
+									case "$confirmrestart" in
+										y|Y)
+											Clear_Lock
+											service restart_wireless >/dev/null 2>&1
+											break
+										;;
+										*)
+											break
+										;;
+									esac
+								fi
 								break
 							;;
 							*)
@@ -1801,7 +1815,6 @@ case "$1" in
 			Print_Output "true" "Wireless restarted - sleeping 30s before running $YAZFI_NAME" "$PASS"
 			sleep 30
 			Config_Networks
-			Iface_BounceClients
 			Clear_Lock
 		fi
 		exit 0
