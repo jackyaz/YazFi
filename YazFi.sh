@@ -1286,8 +1286,9 @@ MainMenu(){
 		case "$menu" in
 			1)
 				printf "\\n"
-				Check_Lock "menu"
-				Menu_RunNow
+				if Check_Lock "menu"; then
+					Menu_RunNow
+				fi
 				PressEnter
 				break
 			;;
