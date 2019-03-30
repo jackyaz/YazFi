@@ -1680,11 +1680,10 @@ Menu_GuestConfig(){
 
 Menu_Status(){
 	### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
-	Check_Lock
 	. "$YAZFI_CONF"
 	
-		ScriptHeader
-		printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
+	ScriptHeader
+	printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
 	
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
@@ -1721,7 +1720,6 @@ Menu_Status(){
 	printf "%75s\\n\\n" "" |tr " " "-"
 	
 	printf "\\e[1m$PASS%sQuery complete, please see above for results\\e[0m\\n\\n" ""
-	Clear_Lock
 	#######################################################################################################
 }
 
