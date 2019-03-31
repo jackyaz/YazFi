@@ -26,7 +26,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v3.1.0"
+readonly YAZFI_VERSION="v3.2.0"
 readonly YAZFI_BRANCH="master"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -40,13 +40,14 @@ readonly PASS="\\e[32m"
 
 ### Start of router environment variables ###
 readonly LAN="$(nvram get lan_ipaddr)"
-readonly IFACELIST="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
+[ -z "$(nvram get odmpid)" ] && ROUTER_MODEL=$(nvram get productid) || ROUTER_MODEL=$(nvram get odmpid)
+readonly IFACELIST_FULL="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
+readonly IFACELIST="$(echo "$(nvram get wl0_vifnames) $(nvram get wl1_vifnames) $(nvram get wl2_vifnames)" | awk '{$1=$1;print}')"
 ### End of router environment variables ###
 
 ### Start of path variables ###
 readonly DNSCONF="/jffs/configs/dnsmasq.conf.add"
 readonly TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
-readonly YAZFI_BLOCKDHCPFILE="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.blockdhcp"
 ### End of path variables ###
 
 ### Start of firewall variables ###
@@ -56,12 +57,6 @@ readonly LGRJT="$YAZFI_NAME""REJECT"
 readonly DNSFLTR="$YAZFI_NAME""DNSFILTER"
 readonly CHAINS="$INPT $FWRD $LGRJT"
 readonly NATCHAINS="$DNSFLTR"
-BLOCKDHCP=""
-if [ -f "$YAZFI_BLOCKDHCPFILE" ]; then
-	BLOCKDHCP="true"
-else
-	BLOCKDHCP="false"
-fi
 ### End of firewall variables ###
 
 ### Start of VPN clientlist variables ###
@@ -87,6 +82,21 @@ Print_Output(){
 	fi
 }
 
+Generate_Random_String(){
+	PASSLENGTH=16
+	if Validate_Number "" "$1" "silent"; then
+		if [ "$1" -le 32 ] && [ "$1" -ge 8 ]; then
+			PASSLENGTH=$1
+		else
+			printf "\\e[1mNumber is not between 8 and 32, using default of 16 characters\\e[0m\\n"
+		fi
+	else
+		printf "\\e[1mInvalid number provided, using default of 16 characters\\e[0m\\n"
+	fi
+	
+	< /dev/urandom tr -cd 'A-Za-z0-9' | head -c "$PASSLENGTH"
+}
+
 Escape_Sed(){
 	sed -e 's/</\\</g;s/>/\\>/g;s/ /\\ /g'
 }
@@ -96,17 +106,23 @@ Get_Iface_Var(){
 }
 
 Get_Guest_Name(){
-	VPN_NVRAM=""
-	
 	if echo "$1" | grep -q "wl0"; then
-		VPN_NVRAM="2.4GHz Guest $(echo "$1" | cut -f2 -d".")"
+		echo "2.4GHz Guest $(echo "$1" | cut -f2 -d".")"
 	elif echo "$1" | grep -q "wl1"; then
-		VPN_NVRAM="5GHz1 Guest $(echo "$1" | cut -f2 -d".")"
+		echo "5GHz1 Guest $(echo "$1" | cut -f2 -d".")"
 	else
-		VPN_NVRAM="5GHz2 Guest $(echo "$1" | cut -f2 -d".")"
+		echo "5GHz2 Guest $(echo "$1" | cut -f2 -d".")"
 	fi
-	
-	echo "$VPN_NVRAM"
+}
+
+Set_WiFi_Passphrase(){
+	# shellcheck disable=SC2140
+	nvram set "$1""_wpa_psk"="$2"
+	# shellcheck disable=SC2140
+	nvram set "$1""_auth_mode_x"="psk2"
+	# shellcheck disable=SC2140
+	nvram set "$1""_akm"="psk2"
+	nvram commit
 }
 
 Iface_Manage(){
@@ -126,7 +142,7 @@ Iface_Manage(){
 }
 
 Iface_BounceClients(){
-	Print_Output "true" "Forcing YazFi Guest WiFi clients to reauthenticate" "$PASS"
+	Print_Output "true" "Forcing $YAZFI_NAME Guest WiFi clients to reauthenticate" "$PASS"
 	
 	for IFACE in $IFACELIST; do
 		wl -i "$IFACE" deauthenticate >/dev/null 2>&1
@@ -163,20 +179,6 @@ Auto_ServiceEvent(){
 				
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/service-event
-				fi
-			fi
-		;;
-	esac
-}
-
-Auto_Block_DHCP(){
-	case $1 in
-		delete)
-			if [ -f /jffs/scripts/dnsmasq.postconf ]; then
-				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/dnsmasq.postconf)
-				
-				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
-					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/dnsmasq.postconf
 				fi
 			fi
 		;;
@@ -234,7 +236,11 @@ Check_Lock(){
 			return 0
 		else
 			Print_Output "true" "Lock file found (age: $ageoflock seconds) - stopping to prevent duplicate runs" "$ERR"
-			exit 1
+			if [ -z "$1" ]; then
+				exit 1
+			else
+				return 1
+			fi
 		fi
 	else
 		echo "$$" > "/tmp/$YAZFI_NAME.lock"
@@ -249,12 +255,28 @@ Clear_Lock(){
 
 Update_Version(){
 	if [ -z "$1" ]; then
+		doupdate="false"
 		localver=$(grep "YAZFI_VERSION=" /jffs/scripts/$YAZFI_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; Clear_Lock; exit 1; }
+		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; return 1; }
 		serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 		if [ "$localver" != "$serverver" ]; then
+			doupdate="version"
+		else
+			localmd5="$(md5sum "/jffs/scripts/$YAZFI_NAME" | awk '{print $1}')"
+			remotemd5="$(curl -fsL --retry 3 "$YAZFI_REPO.sh" | md5sum | awk '{print $1}')"
+			if [ "$localmd5" != "$remotemd5" ]; then
+				doupdate="md5"
+			fi
+		fi
+		
+		if [ "$doupdate" = "version" ]; then
 			Print_Output "true" "New version of $YAZFI_NAME available - updating to $serverver" "$PASS"
-			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
+		elif [ "$doupdate" = "md5" ]; then
+			Print_Output "true" "MD5 hash of $YAZFI_NAME does not match - downloading updated $serverver" "$PASS"
+		fi
+		
+		if [ "$doupdate" != "false" ]; then
+			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
 			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
 			Clear_Lock
 			service restart_firewall >/dev/null 2>&1
@@ -269,7 +291,7 @@ Update_Version(){
 		force)
 			serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 			Print_Output "true" "Downloading latest version ($serverver) of $YAZFI_NAME" "$PASS"
-			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "YazFi successfully updated - restarting firewall to apply update"
+			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
 			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
 			Clear_Lock
 			service restart_firewall >/dev/null 2>&1
@@ -299,12 +321,34 @@ IP_Router(){
 	fi
 }
 
-Validate_IFACE(){
-	if [ "$(nvram get "$IFACE""_bss_enabled")" -eq 0 ]; then
-		Print_Output "false" "$1 - Interface not enabled/configured in Web GUI (Guest Network menu)" "$ERR"
+Validate_Enabled_IFACE(){
+	IFACE_TEST="$(nvram get "$1""_bss_enabled")"
+	if ! Validate_Number "" "$IFACE_TEST" "silent"; then IFACE_TEST=0; fi
+	if [ "$IFACE_TEST" -eq 0 ]; then
+		if [ -z "$2" ]; then
+			Print_Output "false" "$1 - Interface not enabled/configured in Web GUI (Guest Network menu)" "$ERR"
+		fi
 		return 1
 	else
 		return 0
+	fi
+}
+
+Validate_Exists_IFACE(){
+	validiface=""
+	for IFACE_EXIST in $IFACELIST; do
+		if [ "$1" = "$IFACE_EXIST" ]; then
+			validiface="true"
+		fi
+	done
+	
+	if [ "$validiface" = "true" ]; then
+		return 0
+	else
+		if [ -z "$2" ]; then
+			Print_Output "false" "$1 - Interface not supported on this router" "$ERR"
+		fi
+		return 1
 	fi
 }
 
@@ -385,12 +429,21 @@ Validate_TrueFalse(){
 	esac
 }
 
+Validate_String(){
+		if expr "$1" : '[a-zA-Z0-9][a-zA-Z0-9]*$' >/dev/null; then
+			return 0
+		else
+			Print_Output "false" "String contains non-alphanumeric characters, these will be removed" "$ERR"
+			return 1
+		fi
+}
+
 Conf_Validate(){
 	
 	CONF_VALIDATED="true"
 	NETWORKS_ENABLED="false"
 	
-	for IFACE in $IFACELIST; do
+	for IFACE in $IFACELIST_FULL; do
 		IFACETMP="$(Get_Iface_Var "$IFACE")"
 		IPADDRTMP=""
 		ENABLEDTMP=""
@@ -409,143 +462,148 @@ Conf_Validate(){
 			ENABLEDTMP="$(eval echo '$'"$IFACETMP""_ENABLED")"
 		fi
 		
-		if [ "$ENABLEDTMP" = "true" ]; then
-			NETWORKS_ENABLED="true"
-			# Validate interface is enabled in GUI
-			if ! Validate_IFACE "$IFACE"; then
-				IFACE_PASS="false"
-			fi
-			
-			# Only validate interfaces enabled in config file
-			if [ "$(eval echo '$'"$IFACETMP""_ENABLED")" = "true" ]; then
-				# Validate _IPADDR
-				if [ -z "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
-					IPADDRTMP="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+1))"
-					
-					COUNTER=1
-					until [ "$(grep -o "$IPADDRTMP".0 $YAZFI_CONF | wc -l)" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMP"."$(nvram get lan_ipaddr | cut -f4 -d".")" | wc -l )" -eq 0 ]; do
-						IPADDRTMP="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+COUNTER))"
-						COUNTER=$((COUNTER + 1))
-					done
-					
-					sed -i -e "s/""$IFACETMP""_IPADDR=/""$IFACETMP""_IPADDR=""$IPADDRTMP"".0/" "$YAZFI_CONF"
-					Print_Output "false" "$IFACETMP""_IPADDR is blank, setting to next available subnet above primary LAN subnet" "$WARN"
-				elif ! Validate_IP "$IFACETMP""_IPADDR" "$(eval echo '$'"$IFACETMP""_IPADDR")"; then
-					IFACE_PASS="false"
-				else
-					
-					IPADDRTMP="$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".")"
-					
-					# Set last octet to 0
-					if [ "$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f4 -d".")" -ne 0 ]; then
-						sed -i -e "s/""$IFACETMP""_IPADDR=$(eval echo '$'"$IFACETMP""_IPADDR")/""$IFACETMP""_IPADDR=""$IPADDRTMP"".0/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_IPADDR setting last octet to 0" "$WARN"
-					fi
-					
-					if [ "$(grep -o "$IPADDRTMP".0 $YAZFI_CONF | wc -l )" -gt 1 ] || [ "$(ifconfig -a | grep -o "$IPADDRTMP"."$(nvram get lan_ipaddr | cut -f4 -d".")" | wc -l )" -gt 1 ]; then
-						Print_Output "false" "$IFACETMP""_IPADDR ($(eval echo '$'"$IFACETMP""_IPADDR")) has been used for another interface already" "$ERR"
-						IFACE_PASS="false"
-					fi
-				fi
-				
-				#Validate _DHCPSTART and _DHCPEND
-				if [ -z "$(eval echo '$'"$IFACETMP""_DHCPSTART")" ]; then
-					sed -i -e "s/""$IFACETMP""_DHCPSTART=/""$IFACETMP""_DHCPSTART=2/" "$YAZFI_CONF"
-					Print_Output "false" "$IFACETMP""_DHCPSTART is blank, setting to 2" "$WARN"
-				fi
-				
-				if [ -z "$(eval echo '$'"$IFACETMP""_DHCPEND")" ]; then
-					sed -i -e "s/""$IFACETMP""_DHCPEND=/""$IFACETMP""_DHCPEND=254/" "$YAZFI_CONF"
-					Print_Output "false" "$IFACETMP""_DHCPEND is blank, setting to 254" "$WARN"
-				fi
-				
-				if [ ! -z "$(eval echo '$'"$IFACETMP""_DHCPSTART")" ] && [ ! -z "$(eval echo '$'"$IFACETMP""_DHCPEND")" ]; then
-					if ! Validate_DHCP "$IFACETMP""_DHCPSTART|and|""$IFACETMP""_DHCPEND" "$(eval echo '$'"$IFACETMP""_DHCPSTART")" "$(eval echo '$'"$IFACETMP""_DHCPEND")"; then
-					IFACE_PASS="false"
-					fi
-				fi
-				
-				# Validate _DNS1
-				if [ -z "$(eval echo '$'"$IFACETMP""_DNS1")" ]; then
-					if [ ! -z "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
-						sed -i -e "s/""$IFACETMP""_DNS1=/""$IFACETMP""_DNS1=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_DNS1 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
-					else
-						sed -i -e "s/""$IFACETMP""_DNS1=/""$IFACETMP""_DNS1=$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_DNS1 is blank, setting to $IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
-					fi
-				elif ! Validate_IP "$IFACETMP""_DNS1" "$(eval echo '$'"$IFACETMP""_DNS1")" "DNS"; then
+		if ! Validate_Exists_IFACE "$IFACE" "silent" && [ "$ENABLEDTMP" = "true" ]; then
+			IFACE_PASS="false"
+			Print_Output "false" "$IFACE - Interface not supported on this router" "$ERR"
+		else
+			if [ "$ENABLEDTMP" = "true" ]; then
+				NETWORKS_ENABLED="true"
+				# Validate interface is enabled in GUI
+				if ! Validate_Enabled_IFACE "$IFACE"; then
 					IFACE_PASS="false"
 				fi
 				
-				# Validate _DNS2
-				if [ -z "$(eval echo '$'"$IFACETMP""_DNS2")" ]; then
-					if [ ! -z "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
-						sed -i -e "s/""$IFACETMP""_DNS2=/""$IFACETMP""_DNS2=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_DNS2 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
-					else
-						sed -i -e "s/""$IFACETMP""_DNS2=/""$IFACETMP""_DNS2=$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_DNS2 is blank, setting to $IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
-					fi
-				elif ! Validate_IP "$IFACETMP""_DNS2" "$(eval echo '$'"$IFACETMP""_DNS2")" "DNS"; then
-					IFACE_PASS="false"
-				fi
-				
-				# Validate _FORCEDNS
-				if [ -z "$(eval echo '$'"$IFACETMP""_FORCEDNS")" ]; then
-					sed -i -e "s/""$IFACETMP""_FORCEDNS=/""$IFACETMP""_FORCEDNS=false/" "$YAZFI_CONF"
-					Print_Output "false" "$IFACETMP""_FORCEDNS is blank, setting to false" "$WARN"
-				elif ! Validate_TrueFalse "$IFACETMP""_FORCEDNS" "$(eval echo '$'"$IFACETMP""_FORCEDNS")"; then
-					IFACE_PASS="false"
-				fi
-				
-				# Validate _REDIRECTALLTOVPN
-				if [ -z "$(eval echo '$'"$IFACETMP""_REDIRECTALLTOVPN")" ]; then
-					REDIRECTTMP="false"
-					sed -i -e "s/""$IFACETMP""_REDIRECTALLTOVPN=/""$IFACETMP""_REDIRECTALLTOVPN=false/" "$YAZFI_CONF"
-					Print_Output "false" "$IFACETMP""_REDIRECTALLTOVPN is blank, setting to false" "$WARN"
-				elif ! Validate_TrueFalse "$IFACETMP""_REDIRECTALLTOVPN" "$(eval echo '$'"$IFACETMP""_REDIRECTALLTOVPN")"; then
-					REDIRECTTMP="false"
-					IFACE_PASS="false"
-				else
-					REDIRECTTMP="$(eval echo '$'"$IFACETMP""_REDIRECTALLTOVPN")"
-				fi
-				
-				# Validate _VPNCLIENTNUMBER if _REDIRECTALLTOVPN is enabled
-				if [ "$REDIRECTTMP" = "true" ]; then
-					if [ -z "$(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER")" ]; then
-						Print_Output "false" "$IFACETMP""_VPNCLIENTNUMBER is blank" "$ERR"
-						IFACE_PASS="false"
-					elif ! Validate_VPNClientNo "$IFACETMP""_VPNCLIENTNUMBER" "$(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER")"; then
+				# Only validate interfaces enabled in config file
+				if [ "$(eval echo '$'"$IFACETMP""_ENABLED")" = "true" ]; then
+					# Validate _IPADDR
+					if [ -z "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
+						IPADDRTMP="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+1))"
+						
+						COUNTER=1
+						until [ "$(grep -o "$IPADDRTMP".0 $YAZFI_CONF | wc -l)" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMP"."$(nvram get lan_ipaddr | cut -f4 -d".")" | wc -l )" -eq 0 ]; do
+							IPADDRTMP="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+COUNTER))"
+							COUNTER=$((COUNTER + 1))
+						done
+						
+						sed -i -e "s/""$IFACETMP""_IPADDR=/""$IFACETMP""_IPADDR=""$IPADDRTMP"".0/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_IPADDR is blank, setting to next available subnet above primary LAN subnet" "$WARN"
+					elif ! Validate_IP "$IFACETMP""_IPADDR" "$(eval echo '$'"$IFACETMP""_IPADDR")"; then
 						IFACE_PASS="false"
 					else
-						#Validate VPN client is configured for policy routing
-						if [ "$(nvram get vpn_client"$(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER")"_rgw)" -lt 2 ]; then
-							Print_Output "false" "VPN Client $(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER") is not configured for Policy Routing" "$ERR"
+						
+						IPADDRTMP="$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".")"
+						
+						# Set last octet to 0
+						if [ "$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f4 -d".")" -ne 0 ]; then
+							sed -i -e "s/""$IFACETMP""_IPADDR=$(eval echo '$'"$IFACETMP""_IPADDR")/""$IFACETMP""_IPADDR=""$IPADDRTMP"".0/" "$YAZFI_CONF"
+							Print_Output "false" "$IFACETMP""_IPADDR setting last octet to 0" "$WARN"
+						fi
+						
+						if [ "$(grep -o "$IPADDRTMP".0 $YAZFI_CONF | wc -l )" -gt 1 ] || [ "$(ifconfig -a | grep -o "$IPADDRTMP"."$(nvram get lan_ipaddr | cut -f4 -d".")" | wc -l )" -gt 1 ]; then
+							Print_Output "false" "$IFACETMP""_IPADDR ($(eval echo '$'"$IFACETMP""_IPADDR")) has been used for another interface already" "$ERR"
 							IFACE_PASS="false"
 						fi
 					fi
-				fi
-				
-				# Validate _LANACCESS
-				if [ -z "$(eval echo '$'"$IFACETMP""_LANACCESS")" ]; then
-					sed -i -e "s/""$IFACETMP""_LANACCESS=/""$IFACETMP""_LANACCESS=false/" "$YAZFI_CONF"
-					Print_Output "false" "$IFACETMP""_LANACCESS is blank, setting to false" "$WARN"
-				elif ! Validate_TrueFalse "$IFACETMP""_LANACCESS" "$(eval echo '$'"$IFACETMP""_LANACCESS")"; then
-					IFACE_PASS="false"
-				fi
-				
-				# Validate _CLIENTISOLATION
-				if [ -z "$(eval echo '$'"$IFACETMP""_CLIENTISOLATION")" ]; then
-					sed -i -e "s/""$IFACETMP""_CLIENTISOLATION=/""$IFACETMP""_CLIENTISOLATION=true/" "$YAZFI_CONF"
-					Print_Output "false" "$IFACETMP""_CLIENTISOLATION is blank, setting to true" "$WARN"
-				elif ! Validate_TrueFalse "$IFACETMP""_CLIENTISOLATION" "$(eval echo '$'"$IFACETMP""_CLIENTISOLATION")"; then
-					IFACE_PASS="false"
-				fi
-				
-				# Print success message
-				if [ "$IFACE_PASS" = "true" ]; then
-					Print_Output "false" "$IFACE passed validation" "$PASS"
+					
+					#Validate _DHCPSTART and _DHCPEND
+					if [ -z "$(eval echo '$'"$IFACETMP""_DHCPSTART")" ]; then
+						sed -i -e "s/""$IFACETMP""_DHCPSTART=/""$IFACETMP""_DHCPSTART=2/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_DHCPSTART is blank, setting to 2" "$WARN"
+					fi
+					
+					if [ -z "$(eval echo '$'"$IFACETMP""_DHCPEND")" ]; then
+						sed -i -e "s/""$IFACETMP""_DHCPEND=/""$IFACETMP""_DHCPEND=254/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_DHCPEND is blank, setting to 254" "$WARN"
+					fi
+					
+					if [ ! -z "$(eval echo '$'"$IFACETMP""_DHCPSTART")" ] && [ ! -z "$(eval echo '$'"$IFACETMP""_DHCPEND")" ]; then
+						if ! Validate_DHCP "$IFACETMP""_DHCPSTART|and|""$IFACETMP""_DHCPEND" "$(eval echo '$'"$IFACETMP""_DHCPSTART")" "$(eval echo '$'"$IFACETMP""_DHCPEND")"; then
+						IFACE_PASS="false"
+						fi
+					fi
+					
+					# Validate _DNS1
+					if [ -z "$(eval echo '$'"$IFACETMP""_DNS1")" ]; then
+						if [ ! -z "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
+							sed -i -e "s/""$IFACETMP""_DNS1=/""$IFACETMP""_DNS1=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+							Print_Output "false" "$IFACETMP""_DNS1 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
+						else
+							sed -i -e "s/""$IFACETMP""_DNS1=/""$IFACETMP""_DNS1=$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+							Print_Output "false" "$IFACETMP""_DNS1 is blank, setting to $IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
+						fi
+					elif ! Validate_IP "$IFACETMP""_DNS1" "$(eval echo '$'"$IFACETMP""_DNS1")" "DNS"; then
+						IFACE_PASS="false"
+					fi
+					
+					# Validate _DNS2
+					if [ -z "$(eval echo '$'"$IFACETMP""_DNS2")" ]; then
+						if [ ! -z "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
+							sed -i -e "s/""$IFACETMP""_DNS2=/""$IFACETMP""_DNS2=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+							Print_Output "false" "$IFACETMP""_DNS2 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
+						else
+							sed -i -e "s/""$IFACETMP""_DNS2=/""$IFACETMP""_DNS2=$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+							Print_Output "false" "$IFACETMP""_DNS2 is blank, setting to $IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
+						fi
+					elif ! Validate_IP "$IFACETMP""_DNS2" "$(eval echo '$'"$IFACETMP""_DNS2")" "DNS"; then
+						IFACE_PASS="false"
+					fi
+					
+					# Validate _FORCEDNS
+					if [ -z "$(eval echo '$'"$IFACETMP""_FORCEDNS")" ]; then
+						sed -i -e "s/""$IFACETMP""_FORCEDNS=/""$IFACETMP""_FORCEDNS=false/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_FORCEDNS is blank, setting to false" "$WARN"
+					elif ! Validate_TrueFalse "$IFACETMP""_FORCEDNS" "$(eval echo '$'"$IFACETMP""_FORCEDNS")"; then
+						IFACE_PASS="false"
+					fi
+					
+					# Validate _REDIRECTALLTOVPN
+					if [ -z "$(eval echo '$'"$IFACETMP""_REDIRECTALLTOVPN")" ]; then
+						REDIRECTTMP="false"
+						sed -i -e "s/""$IFACETMP""_REDIRECTALLTOVPN=/""$IFACETMP""_REDIRECTALLTOVPN=false/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_REDIRECTALLTOVPN is blank, setting to false" "$WARN"
+					elif ! Validate_TrueFalse "$IFACETMP""_REDIRECTALLTOVPN" "$(eval echo '$'"$IFACETMP""_REDIRECTALLTOVPN")"; then
+						REDIRECTTMP="false"
+						IFACE_PASS="false"
+					else
+						REDIRECTTMP="$(eval echo '$'"$IFACETMP""_REDIRECTALLTOVPN")"
+					fi
+					
+					# Validate _VPNCLIENTNUMBER if _REDIRECTALLTOVPN is enabled
+					if [ "$REDIRECTTMP" = "true" ]; then
+						if [ -z "$(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER")" ]; then
+							Print_Output "false" "$IFACETMP""_VPNCLIENTNUMBER is blank" "$ERR"
+							IFACE_PASS="false"
+						elif ! Validate_VPNClientNo "$IFACETMP""_VPNCLIENTNUMBER" "$(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER")"; then
+							IFACE_PASS="false"
+						else
+							#Validate VPN client is configured for policy routing
+							if [ "$(nvram get vpn_client"$(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER")"_rgw)" -lt 2 ]; then
+								Print_Output "false" "VPN Client $(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER") is not configured for Policy Routing" "$ERR"
+								IFACE_PASS="false"
+							fi
+						fi
+					fi
+					
+					# Validate _LANACCESS
+					if [ -z "$(eval echo '$'"$IFACETMP""_LANACCESS")" ]; then
+						sed -i -e "s/""$IFACETMP""_LANACCESS=/""$IFACETMP""_LANACCESS=false/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_LANACCESS is blank, setting to false" "$WARN"
+					elif ! Validate_TrueFalse "$IFACETMP""_LANACCESS" "$(eval echo '$'"$IFACETMP""_LANACCESS")"; then
+						IFACE_PASS="false"
+					fi
+					
+					# Validate _CLIENTISOLATION
+					if [ -z "$(eval echo '$'"$IFACETMP""_CLIENTISOLATION")" ]; then
+						sed -i -e "s/""$IFACETMP""_CLIENTISOLATION=/""$IFACETMP""_CLIENTISOLATION=true/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_CLIENTISOLATION is blank, setting to true" "$WARN"
+					elif ! Validate_TrueFalse "$IFACETMP""_CLIENTISOLATION" "$(eval echo '$'"$IFACETMP""_CLIENTISOLATION")"; then
+						IFACE_PASS="false"
+					fi
+					
+					# Print success message
+					if [ "$IFACE_PASS" = "true" ]; then
+						Print_Output "false" "$IFACE passed validation" "$PASS"
+					fi
 				fi
 			fi
 		fi
@@ -561,11 +619,10 @@ Conf_Validate(){
 		if [ "$CONF_VALIDATED" = "true" ]; then
 			return 0
 		else
-			Clear_Lock
 			return 1
 		fi
 	else
-		Print_Output "true" "No YazFi guests are enabled in the configuration file!" "$CRIT"
+		Print_Output "true" "No $YAZFI_NAME guests are enabled in the configuration file!" "$CRIT"
 		return 1
 	fi
 }
@@ -577,10 +634,10 @@ Conf_Download(){
 	dos2unix "$1"
 	echo ""
 	echo ""
-	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings using option 2 from the YazFi menu."
+	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings using option 2 from the $YAZFI_NAME menu."
 	sleep 1
 	echo ""
-	Print_Output "false" "When finished, run YazFi using option 1 from the YazFi menu."
+	Print_Output "false" "When finished, run $YAZFI_NAME using option 1 from the $YAZFI_NAME menu."
 	Clear_Lock
 }
 
@@ -704,9 +761,6 @@ Firewall_Rules(){
 		ebtables -t broute "$ACTION" BROUTING -p ipv4 -i "$IFACE" -j DROP
 		ebtables -t broute "$ACTION" BROUTING -p ipv6 -i "$IFACE" -j DROP
 		ebtables -t broute "$ACTION" BROUTING -p arp -i "$IFACE" -j DROP
-		
-		ebtables "$ACTION" FORWARD -i "$IFACE" -j DROP
-		ebtables "$ACTION" FORWARD -o "$IFACE" -j DROP
 		
 		ebtables -t broute -D BROUTING -p IPv4 -i "$IFACE" --ip-dst "$LAN"/24 --ip-proto tcp -j DROP
 		ebtables -t broute -D BROUTING -p IPv4 -i "$IFACE" --ip-dst "$LAN" --ip-proto icmp -j ACCEPT
@@ -986,18 +1040,6 @@ Routing_NVRAM(){
 	esac
 }
 
-DHCP_Conf_Block(){
-	case $1 in
-		delete)
-			DHCPBLOCK_BR0=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' $DNSCONF)
-			
-			if [ "$DHCPBLOCK_BR0" -gt 0 ]; then
-				sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' $DNSCONF
-			fi
-		;;
-	esac
-}
-
 DHCP_Conf(){
 	case $1 in
 		initialise)
@@ -1057,7 +1099,6 @@ DHCP_Conf(){
 				service restart_dnsmasq >/dev/null 2>&1
 				Print_Output "true" "DHCP configuration updated"
 				sleep 2
-				Iface_BounceClients 2>/dev/null
 			fi
 			
 			rm -f $TMPCONF
@@ -1066,16 +1107,18 @@ DHCP_Conf(){
 }
 
 Config_Networks(){
-	Print_Output "true" "YazFi $YAZFI_VERSION starting up"
+	Print_Output "true" "$YAZFI_NAME $YAZFI_VERSION starting up"
 	WIRELESSRESTART="false"
 	
 	if ! Conf_Exists; then
 		Conf_Download $YAZFI_CONF
-		exit 1
+		Clear_Lock
+		return 1
 	fi
 	
 	if ! Conf_Validate; then
-		exit 1
+		Clear_Lock
+		return 1
 	fi
 	
 	. $YAZFI_CONF
@@ -1178,23 +1221,15 @@ Config_Networks(){
 	
 	DHCP_Conf save 2>/dev/null
 	
-	#Clean DHCP blocking
-	if [ "$BLOCKDHCP" = "true" ]; then
-		Auto_Block_DHCP delete 2>/dev/null
-		DHCP_Conf_Block delete 2>/dev/null
-		rm -f "$YAZFI_BLOCKDHCPFILE" 2>/dev/null
-		service restart_dnsmasq >/dev/null 2>&1
-	fi
-	
 	if [ "$WIRELESSRESTART" = "true" ]; then
 		nvram commit
 		Clear_Lock
 		service restart_wireless >/dev/null 2>&1
 	fi
 	
-	Iface_BounceClients 2>/dev/null
+	Iface_BounceClients
 	
-	Print_Output "true" "YazFi $YAZFI_VERSION completed successfully" "$PASS"
+	Print_Output "true" "$YAZFI_NAME $YAZFI_VERSION completed successfully" "$PASS"
 }
 
 Shortcut_YazFi(){
@@ -1219,7 +1254,7 @@ PressEnter(){
 		read -r "key"
 		case "$key" in
 			*)
-				break;
+				break
 			;;
 		esac
 	done
@@ -1238,7 +1273,7 @@ ScriptHeader(){
 	printf "\\e[1m######        | || (_| | / / | |     | |       ######\\e[0m\\n"
 	printf "\\e[1m######        |_| \__,_|/___||_|     |_|       ######\\e[0m\\n"
 	printf "\\e[1m######                                         ######\\e[0m\\n"
-	printf "\\e[1m######                 %s                  ######\\e[0m\\n" "$YAZFI_VERSION"
+	printf "\\e[1m######           %s on %-9s           ######\\e[0m\\n" "$YAZFI_VERSION" "$ROUTER_MODEL"
 	printf "\\e[1m######                                         ######\\e[0m\\n"
 	printf "\\e[1m######    https://github.com/jackyaz/YazFi/    ######\\e[0m\\n"
 	printf "\\e[1m######                                         ######\\e[0m\\n"
@@ -1248,13 +1283,15 @@ ScriptHeader(){
 
 MainMenu(){
 	Shortcut_YazFi create
-	printf "1.    Apply %s settings\\n" "$YAZFI_NAME"
-	printf "2.    Edit %s configuration\\n" "$YAZFI_NAME"
-	printf "3.    Check for updates\\n"
-	printf "4.    Show connected clients using %s\\n" "$YAZFI_NAME"
-	printf "5.    Uninstall %s\\n" "$YAZFI_NAME"
-	printf "d.    Generate %s diagnostics\\n" "$YAZFI_NAME"
-	printf "e.    Exit YazFi\\n"
+	printf "1.    Apply %s settings\\n\\n" "$YAZFI_NAME"
+	printf "2.    Show connected clients using %s\\n\\n" "$YAZFI_NAME"
+	printf "3.    Edit %s config\\n" "$YAZFI_NAME"
+	printf "4.    Edit Guest Network config (SSID + passphrase)\\n\\n"
+	printf "u.    Check for updates\\n"
+	printf "uf.   Update %s with latest version (force update)\\n\\n" "$YAZFI_NAME"
+	printf "d.    Generate %s diagnostics\\n\\n" "$YAZFI_NAME"
+	printf "e.    Exit %s\\n\\n" "$YAZFI_NAME"
+	printf "z.    Uninstall %s\\n" "$YAZFI_NAME"
 	printf "\\n"
 	printf "\\e[1m#####################################################\\e[0m\\n"
 	printf "\\n"
@@ -1265,47 +1302,51 @@ MainMenu(){
 		case "$menu" in
 			1)
 				printf "\\n"
-				Menu_RunNow
+				if Check_Lock "menu"; then
+					Menu_RunNow
+				fi
 				PressEnter
 				break
 			;;
 			2)
 				printf "\\n"
-				Menu_Edit
-				break
-			;;
-			3)
-				printf "\\n"
-				Menu_Update
-				PressEnter
-				break
-			;;
-			3f)
-				printf "\\n"
-				Menu_ForceUpdate
-				PressEnter
-				break
-			;;
-			4)
-				printf "\\n"
 				Menu_Status
 				PressEnter
 				break
 			;;
-			5)
-				while true; do
-					printf "\\n\\e[1mAre you sure you want to uninstall YazFi? (y/n)\\e[0m\\n"
-					read -r "confirm"
-					case "$confirm" in
-						y|Y)
-							Menu_Uninstall
-							exit 0
-						;;
-						*)
-							break
-						;;
-					esac
-				done
+			3)
+				printf "\\n"
+				if Check_Lock "menu"; then
+					Menu_Edit
+				else
+					PressEnter
+				fi
+				break
+			;;
+			4)
+				printf "\\n"
+				if Check_Lock "menu"; then
+					Menu_GuestConfig
+				else
+					PressEnter
+				fi
+				break
+			;;
+			u)
+				printf "\\n"
+				if Check_Lock "menu"; then
+					Menu_Update
+				fi
+				PressEnter
+				break
+			;;
+			uf)
+				printf "\\n"
+				if Check_Lock "menu"; then
+					Menu_ForceUpdate
+				fi
+				PressEnter
+				break
 			;;
 			d)
 				ScriptHeader
@@ -1317,6 +1358,21 @@ MainMenu(){
 				ScriptHeader
 				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n\\n\\n" "$YAZFI_NAME"
 				exit 0
+			;;
+			z)
+				while true; do
+					printf "\\n\\e[1mAre you sure you want to uninstall %s? (y/n)\\e[0m\\n" "$YAZFI_NAME"
+					read -r "confirm"
+					case "$confirm" in
+						y|Y)
+							Menu_Uninstall
+							exit 0
+						;;
+						*)
+							break
+						;;
+					esac
+				done
 			;;
 			*)
 				printf "\\nPlease choose a valid option\\n\\n"
@@ -1368,8 +1424,7 @@ Check_Requirements(){
 }
 
 Menu_Install(){
-	Check_Lock
-	Print_Output "true" "Welcome to YazFi $YAZFI_VERSION, a script by JackYaz"
+	Print_Output "true" "Welcome to $YAZFI_NAME $YAZFI_VERSION, a script by JackYaz"
 	sleep 1
 	
 	Print_Output "true" "Checking your router meets the requirements for $YAZFI_NAME"
@@ -1391,40 +1446,38 @@ Menu_Install(){
 	Shortcut_YazFi create
 	echo ""
 	echo ""
-	Print_Output "true" "You can access YazFi's menu via amtm (if installed) with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
+	Print_Output "true" "You can access $YAZFI_NAME's menu via amtm (if installed) with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
 	PressEnter
 	Clear_Lock
 }
 
 Menu_Edit(){
-	Check_Lock
 	texteditor=""
 	exitmenu="false"
+	
+	printf "\\n\\e[1mA choice of text editors is available:\\e[0m\\n"
+	printf "1.    nano (recommended for beginners)\\n"
+	printf "2.    vi\\n"
+	printf "\\ne.    Exit to main menu\\n"
+	
 	while true; do
-		printf "\\n\\e[1mA choice of text editors is available:\\e[0m\\n"
-		printf "1.    nano (recommended for beginners)\\n"
-		printf "2.    vi\\n"
-		printf "e.    Exit to main menu\\n"
-		printf "\\n\\e[1mWhich editor would you like to use?\\e[0m\\n"
+		printf "\\n\\e[1mChoose an option:\\e[0m    "
 		read -r "editor"
 		case "$editor" in
 			1)
 				texteditor="nano -K"
-				break;
+				break
 			;;
 			2)
 				texteditor="vi"
-				break;
+				break
 			;;
 			e)
 				exitmenu="true"
-				break;
+				break
 			;;
 			*)
-				printf "\\nInvalid option, continuing using nano\\n\\n"
-				texteditor="nano -K"
-				sleep 2
-				break
+				printf "\\nPlease choose a valid option\\n\\n"
 			;;
 		esac
 	done
@@ -1432,33 +1485,28 @@ Menu_Edit(){
 	if [ "$exitmenu" != "true" ]; then
 		$texteditor $YAZFI_CONF
 	fi
-	
 	Clear_Lock
 }
 
 Menu_RunNow(){
-	Check_Lock
 	Config_Networks
 	Clear_Lock
 }
 
 Menu_Update(){
-	Check_Lock
 	sleep 1
 	Update_Version
 	Clear_Lock
 }
 
 Menu_ForceUpdate(){
-	Check_Lock
 	sleep 1
 	Update_Version force
 	Clear_Lock
 }
 
 Menu_Uninstall(){
-	Check_Lock
-	Print_Output "true" "Removing YazFi..." "$PASS"
+	Print_Output "true" "Removing $YAZFI_NAME..." "$PASS"
 	Auto_Startup delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
 	Routing_NVRAM deleteall 2>/dev/null
@@ -1469,7 +1517,7 @@ Menu_Uninstall(){
 	Iface_Manage deleteall 2>/dev/null
 	DHCP_Conf deleteall 2>/dev/null
 	while true; do
-		printf "\\n\\e[1mDo you want to delete YazFi configuration file(s)? (y/n)\\e[0m\\n"
+		printf "\\n\\e[1mDo you want to delete %s configuration file(s)? (y/n)\\e[0m\\n" "$YAZFI_NAME"
 		read -r "confirm"
 		case "$confirm" in
 			y|Y)
@@ -1485,22 +1533,186 @@ Menu_Uninstall(){
 	rm -f "/jffs/scripts/$YAZFI_NAME" 2>/dev/null
 	Clear_Lock
 	Print_Output "true" "Restarting firewall to complete uninstall" "$PASS"
+	service restart_dnsmasq >/dev/null 2>&1
 	service restart_firewall >/dev/null 2>&1
 }
 
 Menu_BounceClients(){
-	Check_Lock
 	Iface_BounceClients
+	Clear_Lock
+}
+
+Menu_GuestConfig(){
+	exitmenu="false"
+	selectediface=""
+	changesmade="false"
+	
+	ScriptHeader
+	
+	printf "\\n\\e[1mPlease select a Guest Network:\\e[0m\\n\\n"
+	COUNTER=1
+	for IFACE_MENU in $IFACELIST; do
+		if [ $((COUNTER % 4)) -eq 0 ]; then printf "\\n"; fi
+		IFACE_MENU_TEST="$(nvram get "$IFACE_MENU""_bss_enabled")"
+		if ! Validate_Number "" "$IFACE_MENU_TEST" "silent"; then IFACE_MENU_TEST=0; fi
+		if [ "$IFACE_MENU_TEST" -eq 1 ]; then
+			printf "%s.    %s (SSID: %s)\\n" "$COUNTER" "$(Get_Guest_Name "$IFACE_MENU")" "$(nvram get "$IFACE_MENU""_ssid")"
+		fi
+		COUNTER=$((COUNTER + 1))
+	done
+	
+	printf "\\ne.    Go back\\n"
+	
+	while true; do
+		selectediface=""
+		printf "\\n\\e[1mChoose an option:\\e[0m    "
+		read -r "selectedguest"
+		
+		case "$selectedguest" in
+			1|2|3|4|5|6|7|8|9)
+				selectediface="$(echo "$IFACELIST" | awk '{print $'"$selectedguest"'}')"
+			;;
+			e)
+				exitmenu="true"
+				break
+			;;
+			*)
+				printf "\\nPlease choose a valid option\\n\\n"
+			;;
+		esac
+			
+		if [ -n "$selectediface" ]; then
+			if ! Validate_Exists_IFACE "$selectediface" "silent"; then
+				printf "\\nSelected guest (%s) not supported on your router, please choose a different option\\n" "$selectediface"
+			else
+				selectediface_TEST="$(nvram get "$selectediface""_bss_enabled")"
+				if ! Validate_Number "" "$selectediface_TEST" "silent"; then selectediface_TEST=0; fi
+				if [ "$selectediface_TEST" -eq 1 ]; then
+					break
+				else
+					printf "\\nSelected guest (%s) not enabled on your router, please choose a different option\\n" "$selectediface"
+				fi
+			fi
+		fi
+	done
+		
+	if [ "$exitmenu" != "true" ]; then
+		while true; do
+			ScriptHeader
+			printf "\\n\\e[1m    %s (%s)\\e[0m\\n\\n" "$(Get_Guest_Name "$selectediface")" "$selectediface"
+			printf "\\e[1mAvailable options:\\e[0m\\n\\n"
+			printf "1.    Set SSID (current: %s)\\n" "$(nvram get "$selectediface""_ssid")"
+			printf "2.    Set passphrase (current: %s)\\n" "$(nvram get "$selectediface""_wpa_psk")"
+			printf "\\ne.    Go back\\n"
+			printf "\\n\\e[1mChoose an option:\\e[0m    "
+			read -r "guestoption"
+			case "$guestoption" in
+				1)
+					printf "\\n\\e[1mPlease enter your new SSID:\\e[0m    "
+					read -r "newssid"
+					newssidclean="$newssid"
+					if ! Validate_String "$newssid"; then
+						newssidclean="$(echo "$newssid" | sed 's/[^a-zA-Z0-9]//g')"
+					fi
+					# shellcheck disable=SC2140
+					nvram set "$selectediface""_ssid"="$newssidclean"
+					nvram commit
+					changesmade="true"
+				;;
+				2)
+					while true; do
+						printf "\\n\\e[1mAvailable options:\\e[0m\\n\\n"
+						printf "1.    Generate random passphrase\\n"
+						printf "2.    Manually set passphrase\\n"
+						printf "\\ne.    Go back\\n"
+						printf "\\n\\e[1mChoose an option:\\e[0m    "
+						read -r "passoption"
+						case "$passoption" in
+							1)
+								validpasslength=""
+								while true; do
+									printf "\\n\\e[1mHow many characters? (8-32)\\e[0m    "
+									read -r "passlength"
+									if Validate_Number "" "$passlength" "silent"; then
+										if [ "$passlength" -le 32 ] && [ "$passlength" -ge 8 ]; then
+											validpasslength="$passlength"
+											break
+										else
+											printf "\\nPlease choose a number between 8 and 32\\n\\n"
+										fi
+									elif [ "$passlength" = "e" ]; then
+										break
+									else
+										printf "\\nPlease choose a valid number\\n\\n"
+									fi
+								done
+								
+								if [ -n "$validpasslength" ]; then
+									newpassphrase="$(Generate_Random_String "$validpasslength")"
+									newpassphraseclean="$(echo "$newpassphrase" | sed 's/[^a-zA-Z0-9]//g')"
+									Set_WiFi_Passphrase "$selectediface" "$newpassphraseclean"
+									changesmade="true"
+									break
+								fi
+							;;
+							2)
+								printf "\\n\\e[1mPlease enter your new passphrase:\\e[0m    "
+								read -r "newpassphrase"
+								newpassphraseclean="$newpassphrase"
+								if ! Validate_String "$newpassphrase"; then
+									newpassphraseclean="$(echo "$newpassphrase" | sed 's/[^a-zA-Z0-9]//g')"
+								fi
+								
+								Set_WiFi_Passphrase "$selectediface" "$newpassphraseclean"
+								changesmade="true"
+								break
+							;;
+							e)
+								break
+							;;
+							*)
+								printf "\\nPlease choose a valid option\\n\\n"
+							;;
+						esac
+					done
+				;;
+				e)
+					if [ "$changesmade" = "true" ]; then
+						while true; do
+							printf "\\n\\e[1mDo you want to restart wireless services now? (y/n)\\e[0m\\n"
+							read -r "confirmrestart"
+							case "$confirmrestart" in
+								y|Y)
+									Clear_Lock
+									service restart_wireless >/dev/null 2>&1
+									break
+								;;
+								*)
+									break
+								;;
+							esac
+						done
+					fi
+					ScriptHeader
+					break
+				;;
+				*)
+					printf "\\nPlease choose a valid option\\n\\n"
+				;;
+			esac
+		done
+		
+		Menu_GuestConfig
+	fi
 	Clear_Lock
 }
 
 Menu_Status(){
 	### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
-	Check_Lock
-	sleep 1
 	. "$YAZFI_CONF"
 	
-	Print_Output "false" "Querying router for connected WiFi clients..." "$PASS"
+	ScriptHeader
+	printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
 	
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
@@ -1529,15 +1741,14 @@ Menu_Status(){
 				done
 				unset IFS
 			else
-				printf "\\e[1m\\e[33mNo clients connected\\e[0m\\n\\n"
+				printf "\\e[1m$WARN%sNo clients connected\\e[0m\\n\\n" ""
 			fi
 		fi
 	done
 	
 	printf "%75s\\n\\n" "" |tr " " "-"
 	
-	Print_Output "false" "Query complete, please see above for results" "$PASS"
-	Clear_Lock
+	printf "\\e[1m$PASS%sQuery complete, please see above for results\\e[0m\\n\\n" ""
 	#######################################################################################################
 }
 
@@ -1572,7 +1783,7 @@ Menu_Diagnostics(){
 	mkdir -p "$DIAGPATH"
 	
 	iptables-save > "$DIAGPATH""/iptables.txt"
-	
+		
 	ebtables -L > "$DIAGPATH""/ebtables.txt"
 	echo "" >> "$DIAGPATH""/ebtables.txt"
 	ebtables -t broute -L >> "$DIAGPATH""/ebtables.txt"
@@ -1582,9 +1793,9 @@ Menu_Diagnostics(){
 	cp "/jffs/scripts/firewall-start" "$DIAGPATH""/firewall-start"
 	cp "/jffs/scripts/service-event" "$DIAGPATH""/service-event"
 	
-	SEC=$(< /dev/urandom tr -cd 'a-z0-9' | head -c 32)
+	SEC="$(Generate_Random_String 32)"
 	tar -czf "/tmp/$YAZFI_NAME.tar.gz" -C "$DIAGPATH" .
-	/usr/sbin/openssl enc -aes-256-cbc -k "$SEC" -e -in "/tmp/$YAZFI_NAME.tar.gz" -out "/tmp/YazFi.tar.gz.enc"
+	/usr/sbin/openssl enc -aes-256-cbc -k "$SEC" -e -in "/tmp/$YAZFI_NAME.tar.gz" -out "/tmp/$YAZFI_NAME.tar.gz.enc"
 	
 	Print_Output "true" "Diagnostics saved to /tmp/$YAZFI_NAME.tar.gz.enc with passphrase $SEC" "$PASS"
 	
@@ -1605,34 +1816,39 @@ fi
 
 case "$1" in
 	install)
+		Check_Lock
 		Menu_Install
 		exit 0
 	;;
 	runnow)
+		Check_Lock
 		Menu_RunNow
 		exit 0
 	;;
 	update)
+		Check_Lock
 		Menu_Update
 		exit 0
 	;;
 	forceupdate)
+		Check_Lock
 		Menu_ForceUpdate
 		exit 0
 	;;
 	uninstall)
+		Check_Lock
 		Menu_Uninstall
 		exit 0
 	;;
 	bounceclients)
 		if [ -z "$2" ] && [ -z "$3" ]; then
+			Check_Lock
 			Menu_BounceClients
 		elif [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
 			Check_Lock
-			Print_Output "true" "Wireless restarted - sleeping 30s before running YazFi" "$PASS"
+			Print_Output "true" "Wireless restarted - sleeping 30s before running $YAZFI_NAME" "$PASS"
 			sleep 30
 			Config_Networks
-			Iface_BounceClients
 			Clear_Lock
 		fi
 		exit 0
