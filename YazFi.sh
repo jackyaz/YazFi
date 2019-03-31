@@ -255,11 +255,27 @@ Clear_Lock(){
 
 Update_Version(){
 	if [ -z "$1" ]; then
+		doupdate="false"
 		localver=$(grep "YAZFI_VERSION=" /jffs/scripts/$YAZFI_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; return 1; }
 		serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 		if [ "$localver" != "$serverver" ]; then
+			doupdate="version"
+		else
+			localmd5="$(md5sum "/jffs/scripts/$YAZFI_NAME" | awk '{print $1}')"
+			remotemd5="$(curl -fsL --retry 3 "$YAZFI_REPO.sh" | md5sum | awk '{print $1}')"
+			if [ "$localmd5" != "$remotemd5" ]; then
+				doupdate="md5"
+			fi
+		fi
+		
+		if [ "$doupdate" = "version" ]; then
 			Print_Output "true" "New version of $YAZFI_NAME available - updating to $serverver" "$PASS"
+		elif [ "$doupdate" = "md5" ]; then
+			Print_Output "true" "MD5 hash of $YAZFI_NAME does not match - downloading updated $serverver" "$PASS"
+		fi
+		
+		if [ "$doupdate" != "false" ]; then
 			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
 			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
 			Clear_Lock
