@@ -18,9 +18,8 @@ YazFi is free to use under the [GNU General Public License version 3](https://op
 
 ![Menu UI](https://puu.sh/CNwF7/a095903835.png)
 
-## Donations
+#### Supporting development
 Love the script and want to support future development? Any and all donations gratefully received!
-
 [**PayPal donation**](https://paypal.me/jackyaz21)
 
 ## Supported Models
