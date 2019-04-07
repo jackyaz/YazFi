@@ -1494,13 +1494,11 @@ Menu_RunNow(){
 }
 
 Menu_Update(){
-	sleep 1
 	Update_Version
 	Clear_Lock
 }
 
 Menu_ForceUpdate(){
-	sleep 1
 	Update_Version force
 	Clear_Lock
 }
@@ -1800,7 +1798,7 @@ Menu_Diagnostics(){
 	Print_Output "true" "Diagnostics saved to /tmp/$YAZFI_NAME.tar.gz.enc with passphrase $SEC" "$PASS"
 	
 	rm -f "/tmp/$YAZFI_NAME.tar.gz" 2>/dev/null
-	rm -rf "$DIAGPATH" 2>/dev/null 2>/dev/null
+	rm -rf "$DIAGPATH" 2>/dev/null
 	SEC=""
 }
 
