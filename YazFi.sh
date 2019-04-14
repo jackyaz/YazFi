@@ -26,7 +26,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v3.2.0"
+readonly YAZFI_VERSION="v3.2.1"
 readonly YAZFI_BRANCH="develop"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -190,19 +190,19 @@ Auto_Startup(){
 		create)
 			if [ -f /jffs/scripts/firewall-start ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME runnow"' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME runnow &"' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					echo "/jffs/scripts/$YAZFI_NAME runnow"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
+					echo "/jffs/scripts/$YAZFI_NAME runnow &"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/firewall-start
 				echo "" >> /jffs/scripts/firewall-start
-				echo "/jffs/scripts/$YAZFI_NAME runnow"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
+				echo "/jffs/scripts/$YAZFI_NAME runnow &"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 				chmod 0755 /jffs/scripts/firewall-start
 			fi
 		;;
@@ -1820,6 +1820,8 @@ case "$1" in
 	;;
 	runnow)
 		Check_Lock
+		Print_Output "true" "Firewall restarted - sleeping 30s before running $YAZFI_NAME" "$PASS"
+		sleep 30
 		Menu_RunNow
 		exit 0
 	;;
