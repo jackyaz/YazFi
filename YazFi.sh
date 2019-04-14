@@ -1820,8 +1820,8 @@ case "$1" in
 	;;
 	runnow)
 		Check_Lock
-		Print_Output "true" "Firewall restarted - sleeping 30s before running $YAZFI_NAME" "$PASS"
-		sleep 30
+		Print_Output "true" "Firewall restarted - sleeping 60s before running $YAZFI_NAME" "$PASS"
+		sleep 60
 		Menu_RunNow
 		exit 0
 	;;
@@ -1846,8 +1846,8 @@ case "$1" in
 			Menu_BounceClients
 		elif [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
 			Check_Lock
-			Print_Output "true" "Wireless restarted - sleeping 30s before running $YAZFI_NAME" "$PASS"
-			sleep 30
+			Print_Output "true" "Wireless restarted - sleeping 60s before running $YAZFI_NAME" "$PASS"
+			sleep 60
 			Config_Networks
 			Clear_Lock
 		fi
