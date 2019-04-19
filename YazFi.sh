@@ -27,7 +27,7 @@ readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_VERSION="v3.2.1"
-readonly YAZFI_BRANCH="develop"
+readonly YAZFI_BRANCH="master"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
 
@@ -1819,10 +1819,16 @@ case "$1" in
 		exit 0
 	;;
 	runnow)
-		Check_Lock
-		Print_Output "true" "Firewall restarted - sleeping 60s before running $YAZFI_NAME" "$PASS"
-		sleep 60
-		Menu_RunNow
+		if [ -z "$2" ]; then
+			Check_Lock
+			Print_Output "true" "Firewall restarted - sleeping 60s before running $YAZFI_NAME" "$PASS"
+			sleep 60
+			Menu_RunNow
+		else
+			Check_Lock
+			Menu_RunNow
+		fi
+		
 		exit 0
 	;;
 	update)
