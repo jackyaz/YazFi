@@ -26,7 +26,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v3.2.0"
+readonly YAZFI_VERSION="v3.2.1"
 readonly YAZFI_BRANCH="master"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -190,19 +190,19 @@ Auto_Startup(){
 		create)
 			if [ -f /jffs/scripts/firewall-start ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME runnow"' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME runnow &"' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					echo "/jffs/scripts/$YAZFI_NAME runnow"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
+					echo "/jffs/scripts/$YAZFI_NAME runnow &"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/firewall-start
 				echo "" >> /jffs/scripts/firewall-start
-				echo "/jffs/scripts/$YAZFI_NAME runnow"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
+				echo "/jffs/scripts/$YAZFI_NAME runnow &"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 				chmod 0755 /jffs/scripts/firewall-start
 			fi
 		;;
@@ -1494,13 +1494,11 @@ Menu_RunNow(){
 }
 
 Menu_Update(){
-	sleep 1
 	Update_Version
 	Clear_Lock
 }
 
 Menu_ForceUpdate(){
-	sleep 1
 	Update_Version force
 	Clear_Lock
 }
@@ -1800,7 +1798,7 @@ Menu_Diagnostics(){
 	Print_Output "true" "Diagnostics saved to /tmp/$YAZFI_NAME.tar.gz.enc with passphrase $SEC" "$PASS"
 	
 	rm -f "/tmp/$YAZFI_NAME.tar.gz" 2>/dev/null
-	rm -rf "$DIAGPATH" 2>/dev/null 2>/dev/null
+	rm -rf "$DIAGPATH" 2>/dev/null
 	SEC=""
 }
 
@@ -1821,8 +1819,16 @@ case "$1" in
 		exit 0
 	;;
 	runnow)
-		Check_Lock
-		Menu_RunNow
+		if [ -z "$2" ]; then
+			Check_Lock
+			Print_Output "true" "Firewall restarted - sleeping 60s before running $YAZFI_NAME" "$PASS"
+			sleep 60
+			Menu_RunNow
+		else
+			Check_Lock
+			Menu_RunNow
+		fi
+		
 		exit 0
 	;;
 	update)
@@ -1846,8 +1852,8 @@ case "$1" in
 			Menu_BounceClients
 		elif [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
 			Check_Lock
-			Print_Output "true" "Wireless restarted - sleeping 30s before running $YAZFI_NAME" "$PASS"
-			sleep 30
+			Print_Output "true" "Wireless restarted - sleeping 60s before running $YAZFI_NAME" "$PASS"
+			sleep 60
 			Config_Networks
 			Clear_Lock
 		fi
