@@ -24,10 +24,9 @@
 
 ### Start of script variables ###
 readonly YAZFI_NAME="YazFi"
-readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v3.2.1"
-readonly YAZFI_BRANCH="master"
+readonly YAZFI_VERSION="v3.2.2"
+readonly YAZFI_BRANCH="develop"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
 
@@ -648,12 +647,6 @@ Conf_Exists(){
 		sed -i -e 's/"//g' "$YAZFI_CONF"
 		. "$YAZFI_CONF"
 		return 0
-	elif [ -f "$YAZFI_CONF_OLD" ]; then
-		Print_Output "true" "$YAZFI_NAME.conf found in old directory, moving to new $YAZFI_NAME directory" "$WARN"
-		mkdir -p "/jffs/configs/$YAZFI_NAME"
-		cp "$YAZFI_CONF_OLD" "$YAZFI_CONF_OLD.bak"
-		mv "$YAZFI_CONF_OLD" "$YAZFI_CONF"
-		Conf_Exists
 	else
 		return 1
 	fi
