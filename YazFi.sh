@@ -776,6 +776,41 @@ Firewall_Rules(){
 		iptables "$ACTION" "$INPT" -i "$IFACE" -p icmp -j ACCEPT
 		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT
 		
+		#if [ -f /jffs/scripts/firewall ]; then
+		#	skynetloc="$(grep -ow "skynetloc=.* # Skynet" /jffs/scripts/firewall-start 2>/dev/null | grep -vE "^#" | awk '{print $1}' | cut -c 11-)"
+		#	skynetcfg="${skynetloc}/skynet.cfg"
+		#fi
+		
+		# if [ "$filtertraffic" = "all" ] || [ "$filtertraffic" = "outbound" ]; then
+		# 	iptables -t raw -I PREROUTING -i br0 -m set ! --match-set Skynet-Whitelist dst -m set --match-set Skynet-Master dst -j DROP 2>/dev/null
+		# fi
+		#
+		# if [ "$debugmode" = "enabled" ]; then
+		# 	pos3="$(iptables --line -nL PREROUTING -t raw | grep -F "Skynet-Master dst" | grep -F "DROP" | awk '{print $1}')"
+		# 	iptables -t raw -I PREROUTING "$pos3" -i br0 -m set ! --match-set Skynet-Whitelist dst -m set --match-set Skynet-Master dst -j LOG --log-prefix "[BLOCKED - OUTBOUND] " --log-tcp-sequence --log-tcp-options --log-ip-options 2>/dev/null
+		#
+		# 	pos5="$(iptables --line -nL FORWARD | grep -F "Skynet-IOT" | grep -F "DROP" | awk '{print $1}')"
+		# 	iptables -I FORWARD "$pos5" -i br0 -m set --match-set Skynet-IOT src ! -o tun2+ -j LOG --log-prefix "[BLOCKED - IOT] " --log-tcp-sequence --log-tcp-options --log-ip-options 2>/dev/null
+		# fi
+		#
+		# iptables -I FORWARD -i br0 -m set --match-set Skynet-IOT src ! -o tun2+ -j DROP 2>/dev/null
+		# if [ -n "$iotports" ]; then
+		# 	if [ "$iotproto" = "all" ] || [ "$iotproto" = "udp" ]; then
+		# 		iptables -I FORWARD -i br0 -m set --match-set Skynet-IOT src -o "$iface" -p udp -m udp -m multiport --dports "$iotports" -j ACCEPT 2>/dev/null
+		# 	fi
+		# 	if [ "$iotproto" = "all" ] || [ "$iotproto" = "tcp" ]; then
+		# 		iptables -I FORWARD -i br0 -m set --match-set Skynet-IOT src -o "$iface" -p tcp -m tcp -m multiport --dports "$iotports" -j ACCEPT 2>/dev/null
+		# 	fi
+		# else
+		# 	if [ "$iotproto" = "all" ] || [ "$iotproto" = "udp" ]; then
+		# 		iptables -I FORWARD -i br0 -m set --match-set Skynet-IOT src -o "$iface" -p udp -m udp --dport 123 -j ACCEPT 2>/dev/null
+		# 	fi
+		# 	if [ "$iotproto" = "all" ] || [ "$iotproto" = "tcp" ]; then
+		# 		iptables -I FORWARD -i br0 -m set --match-set Skynet-IOT src -o "$iface" -p tcp -m tcp --dport 123 -j ACCEPT 2>/dev/null
+		# 	fi
+		# fi
+		
+		
 		ENABLED_WINS="$(nvram get smbd_wins)"
 		ENABLED_SAMBA="$(nvram get enable_samba)"
 		if ! Validate_Number "" "$ENABLED_SAMBA" "silent"; then ENABLED_SAMBA=0; fi
