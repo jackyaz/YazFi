@@ -1827,6 +1827,12 @@ Menu_Diagnostics(){
 	echo "" >> "$DIAGPATH""/ebtables.txt"
 	ebtables -t broute -L >> "$DIAGPATH""/ebtables.txt"
 	
+	ip rule show > "$DIAGPATH""/iprule.txt"
+	ip route show > "$DIAGPATH""/iproute.txt"
+	ip route show table all | grep "table" | sed 's/.*\(table.*\)/\1/g' | awk '{print $2}' | sort | uniq | grep ovpn > "$DIAGPATH""/routetables.txt"
+	#ip route show table ovpnc1 > "$DIAGPATH""/ebtables.txt"
+	ifconfig -a > "$DIAGPATH""/ifconfig.txt"
+	
 	cp "$YAZFI_CONF" "$DIAGPATH""/""$YAZFI_NAME"".conf"
 	cp "$DNSCONF" "$DIAGPATH""/dnsmasq.conf.add"
 	cp "/jffs/scripts/firewall-start" "$DIAGPATH""/firewall-start"
