@@ -24,9 +24,8 @@
 
 ### Start of script variables ###
 readonly YAZFI_NAME="YazFi"
-readonly YAZFI_CONF_OLD="/jffs/configs/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v3.2.1"
+readonly YAZFI_VERSION="v3.2.2"
 readonly YAZFI_BRANCH="master"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -258,7 +257,7 @@ Update_Version(){
 		doupdate="false"
 		localver=$(grep "YAZFI_VERSION=" /jffs/scripts/$YAZFI_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; return 1; }
-		serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+		serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 		if [ "$localver" != "$serverver" ]; then
 			doupdate="version"
 		else
@@ -648,19 +647,13 @@ Conf_Exists(){
 		sed -i -e 's/"//g' "$YAZFI_CONF"
 		. "$YAZFI_CONF"
 		return 0
-	elif [ -f "$YAZFI_CONF_OLD" ]; then
-		Print_Output "true" "$YAZFI_NAME.conf found in old directory, moving to new $YAZFI_NAME directory" "$WARN"
-		mkdir -p "/jffs/configs/$YAZFI_NAME"
-		cp "$YAZFI_CONF_OLD" "$YAZFI_CONF_OLD.bak"
-		mv "$YAZFI_CONF_OLD" "$YAZFI_CONF"
-		Conf_Exists
 	else
 		return 1
 	fi
 }
 
 Firewall_Chains(){
-	FWRDSTART="$(iptables -nvL FORWARD --line | grep -E "ACCEPT     all.*state RELATED,ESTABLISHED" | tail -1 | awk '{print $1}')"
+	FWRDSTART="$(iptables -nvL FORWARD --line | grep -E "all.*state RELATED,ESTABLISHED" | tail -1 | awk '{print $1}')"
 	
 	case $1 in
 		create)
@@ -1051,16 +1044,29 @@ DHCP_Conf(){
 		;;
 		create)
 			CONFSTRING=""
+			CONFADDSTRING=""
+			
 			ENABLED_WINS="$(nvram get smbd_wins)"
 			ENABLED_SAMBA="$(nvram get enable_samba)"
 			if ! Validate_Number "" "$ENABLED_SAMBA" "silent"; then ENABLED_SAMBA=0; fi
 			if ! Validate_Number "" "$ENABLED_WINS" "silent"; then ENABLED_WINS=0; fi
 			
-			if [ "$ENABLED_WINS" -eq 1 ] && [ "$ENABLED_SAMBA" -eq 1 ]; then
-				CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")||||dhcp-option=$2,44,$(nvram get lan_ipaddr)"
-			else
-				CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")"
+			ENABLED_NTPD=0
+			if [ -f /jffs/scripts/nat-start ]; then
+				STARTUPLINECOUNT=$(grep -c '# ntpMerlin' /jffs/scripts/nat-start)
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then ENABLED_NTPD=1; fi
 			fi
+			
+			if [ "$ENABLED_WINS" -eq 1 ] && [ "$ENABLED_SAMBA" -eq 1 ]; then
+				CONFADDSTRING="$CONFADDSTRING||||dhcp-option=$2,44,$(nvram get lan_ipaddr)"
+			fi
+			
+			if [ "$ENABLED_NTPD" -eq 1 ]; then
+				CONFADDSTRING="$CONFADDSTRING||||dhcp-option=$2,42,$(nvram get lan_ipaddr)"
+			fi
+			
+			CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")""_DHCPEND"),255.255.255.0,43200s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")""_DNS2")$CONFADDSTRING"
+			
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
@@ -1785,6 +1791,12 @@ Menu_Diagnostics(){
 	ebtables -L > "$DIAGPATH""/ebtables.txt"
 	echo "" >> "$DIAGPATH""/ebtables.txt"
 	ebtables -t broute -L >> "$DIAGPATH""/ebtables.txt"
+	
+	ip rule show > "$DIAGPATH""/iprule.txt"
+	ip route show > "$DIAGPATH""/iproute.txt"
+	ip route show table all | grep "table" | sed 's/.*\(table.*\)/\1/g' | awk '{print $2}' | sort | uniq | grep ovpn > "$DIAGPATH""/routetables.txt"
+	#ip route show table ovpnc1 > "$DIAGPATH""/ebtables.txt"
+	ifconfig -a > "$DIAGPATH""/ifconfig.txt"
 	
 	cp "$YAZFI_CONF" "$DIAGPATH""/""$YAZFI_NAME"".conf"
 	cp "$DNSCONF" "$DIAGPATH""/dnsmasq.conf.add"
