@@ -515,7 +515,7 @@ Conf_Validate(){
 						Print_Output "false" "$IFACETMP""_DHCPEND is blank, setting to 254" "$WARN"
 					fi
 					
-					if [ ! -z "$(eval echo '$'"$IFACETMP""_DHCPSTART")" ] && [ ! -z "$(eval echo '$'"$IFACETMP""_DHCPEND")" ]; then
+					if [ -n "$(eval echo '$'"$IFACETMP""_DHCPSTART")" ] && [ -n "$(eval echo '$'"$IFACETMP""_DHCPEND")" ]; then
 						if ! Validate_DHCP "$IFACETMP""_DHCPSTART|and|""$IFACETMP""_DHCPEND" "$(eval echo '$'"$IFACETMP""_DHCPSTART")" "$(eval echo '$'"$IFACETMP""_DHCPEND")"; then
 						IFACE_PASS="false"
 						fi
@@ -523,7 +523,7 @@ Conf_Validate(){
 					
 					# Validate _DNS1
 					if [ -z "$(eval echo '$'"$IFACETMP""_DNS1")" ]; then
-						if [ ! -z "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
+						if [ -n "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
 							sed -i -e "s/""$IFACETMP""_DNS1=/""$IFACETMP""_DNS1=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
 							Print_Output "false" "$IFACETMP""_DNS1 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
 						else
@@ -536,7 +536,7 @@ Conf_Validate(){
 					
 					# Validate _DNS2
 					if [ -z "$(eval echo '$'"$IFACETMP""_DNS2")" ]; then
-						if [ ! -z "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
+						if [ -n "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
 							sed -i -e "s/""$IFACETMP""_DNS2=/""$IFACETMP""_DNS2=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
 							Print_Output "false" "$IFACETMP""_DNS2 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
 						else
