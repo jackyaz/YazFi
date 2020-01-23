@@ -25,7 +25,7 @@
 ### Start of script variables ###
 readonly YAZFI_NAME="YazFi"
 readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_VERSION="v3.2.2"
+readonly YAZFI_VERSION="v3.2.3"
 readonly YAZFI_BRANCH="develop"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -1439,6 +1439,7 @@ Menu_Install(){
 		Print_Output "true" "Requirements for $YAZFI_NAME not met, please see above for the reason(s)" "$CRIT"
 		PressEnter
 		Clear_Lock
+		rm -f "/jffs/scripts/$YAZFI_NAME" 2>/dev/null
 		exit 1
 	fi
 	
