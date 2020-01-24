@@ -24,7 +24,8 @@
 
 ### Start of script variables ###
 readonly YAZFI_NAME="YazFi"
-readonly YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
+readonly OLD_YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
+readonly YAZFI_CONF="/jffs/addons/$YAZFI_NAME.d/config"
 readonly YAZFI_VERSION="v3.2.3"
 readonly YAZFI_BRANCH="develop"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
@@ -627,7 +628,7 @@ Conf_Validate(){
 }
 
 Conf_Download(){
-	mkdir -p "/jffs/configs/$YAZFI_NAME/"
+	mkdir -p "/jffs/addons/$YAZFI_NAME.d"
 	/usr/sbin/curl -s --retry 3 "$YAZFI_REPO.config.example" -o "$1"
 	chmod 0644 "$1"
 	dos2unix "$1"
@@ -641,6 +642,12 @@ Conf_Download(){
 }
 
 Conf_Exists(){
+	
+	if [ -f "$OLD_YAZFI_CONF" ]; then
+		mkdir -p "/jffs/addons/$YAZFI_NAME.d"
+		mv "$OLD_YAZFI_CONF" "$YAZFI_CONF"
+	fi
+	
 	if [ -f "$YAZFI_CONF" ]; then
 		dos2unix "$YAZFI_CONF"
 		chmod 0644 "$YAZFI_CONF"
@@ -1447,7 +1454,7 @@ Menu_Install(){
 		Conf_Download "$YAZFI_CONF"
 	else
 		Print_Output "false" "Existing $YAZFI_CONF found. This will be kept by $YAZFI_NAME"
-		Conf_Download $YAZFI_CONF".example"
+		Conf_Download "$YAZFI_CONF.example"
 	fi
 	
 	Shortcut_YazFi create
@@ -1526,7 +1533,7 @@ Menu_Uninstall(){
 		read -r "confirm"
 		case "$confirm" in
 			y|Y)
-				rm -rf "/jffs/configs/$YAZFI_NAME" 2>/dev/null
+				rm -rf "/jffs/addons/$YAZFI_NAME.d" 2>/dev/null
 				break
 			;;
 			*)
