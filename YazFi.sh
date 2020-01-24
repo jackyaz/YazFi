@@ -642,9 +642,10 @@ Conf_Download(){
 }
 
 Conf_Exists(){
-	if [ -f "$OLD_YAZFI_CONF" ]; then
+	if [ -d "/jffs/configs/$YAZFI_NAME" ]; then
 		mkdir -p "/jffs/addons/$YAZFI_NAME.d"
-		mv "$OLD_YAZFI_CONF" "$YAZFI_CONF"
+		mv "/jffs/configs/$YAZFI_NAME/*" "/jffs/addons/$YAZFI_NAME.d/"
+		rm -rf "/jffs/configs/$YAZFI_NAME"
 	fi
 	
 	if [ -f "$YAZFI_CONF" ]; then
@@ -1823,9 +1824,10 @@ Menu_Diagnostics(){
 
 if [ -z "$1" ]; then
 	Check_Lock
-	if [ -f "$OLD_YAZFI_CONF" ]; then
+	if [ -d "/jffs/configs/$YAZFI_NAME" ]; then
 		mkdir -p "/jffs/addons/$YAZFI_NAME.d"
-		mv "$OLD_YAZFI_CONF" "$YAZFI_CONF"
+		mv "/jffs/configs/$YAZFI_NAME/*" "/jffs/addons/$YAZFI_NAME.d/"
+		rm -rf "/jffs/configs/$YAZFI_NAME"
 	fi
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
