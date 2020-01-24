@@ -643,6 +643,9 @@ Conf_Download(){
 
 Conf_Exists(){
 	if [ -d "/jffs/configs/$YAZFI_NAME" ]; then
+		mv "/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config" "/jffs/configs/$YAZFI_NAME/config"
+		mv "/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config.blank" "/jffs/configs/$YAZFI_NAME/config.blank"
+		mv "/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config.example" "/jffs/configs/$YAZFI_NAME/config.example"
 		mkdir -p "/jffs/addons/$YAZFI_NAME.d"
 		cp -a "/jffs/configs/$YAZFI_NAME/"* "/jffs/addons/$YAZFI_NAME.d/."
 		rm -rf "/jffs/configs/$YAZFI_NAME"
@@ -1825,6 +1828,9 @@ Menu_Diagnostics(){
 if [ -z "$1" ]; then
 	Check_Lock
 	if [ -d "/jffs/configs/$YAZFI_NAME" ]; then
+		mv "/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config" "/jffs/configs/$YAZFI_NAME/config"
+		mv "/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config.blank" "/jffs/configs/$YAZFI_NAME/config.blank"
+		mv "/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config.example" "/jffs/configs/$YAZFI_NAME/config.example"
 		mkdir -p "/jffs/addons/$YAZFI_NAME.d"
 		cp -a "/jffs/configs/$YAZFI_NAME/"* "/jffs/addons/$YAZFI_NAME.d/."
 		rm -rf "/jffs/configs/$YAZFI_NAME"
