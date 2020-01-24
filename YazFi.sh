@@ -644,7 +644,7 @@ Conf_Download(){
 Conf_Exists(){
 	if [ -d "/jffs/configs/$YAZFI_NAME" ]; then
 		mkdir -p "/jffs/addons/$YAZFI_NAME.d"
-		mv "/jffs/configs/$YAZFI_NAME/*" "/jffs/addons/$YAZFI_NAME.d/"
+		cp -a "/jffs/configs/$YAZFI_NAME/*" "/jffs/addons/$YAZFI_NAME.d/."
 		rm -rf "/jffs/configs/$YAZFI_NAME"
 	fi
 	
@@ -1826,7 +1826,7 @@ if [ -z "$1" ]; then
 	Check_Lock
 	if [ -d "/jffs/configs/$YAZFI_NAME" ]; then
 		mkdir -p "/jffs/addons/$YAZFI_NAME.d"
-		mv "/jffs/configs/$YAZFI_NAME/*" "/jffs/addons/$YAZFI_NAME.d/"
+		cp -a "/jffs/configs/$YAZFI_NAME/*" "/jffs/addons/$YAZFI_NAME.d/."
 		rm -rf "/jffs/configs/$YAZFI_NAME"
 	fi
 	Auto_Startup create 2>/dev/null
