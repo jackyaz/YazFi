@@ -1826,7 +1826,6 @@ Menu_Diagnostics(){
 }
 
 if [ -z "$1" ]; then
-	Check_Lock
 	if [ -d "/jffs/configs/$YAZFI_NAME" ]; then
 		mv "/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config" "/jffs/configs/$YAZFI_NAME/config"
 		mv "/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config.blank" "/jffs/configs/$YAZFI_NAME/config.blank"
