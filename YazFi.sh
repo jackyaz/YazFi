@@ -1837,7 +1837,6 @@ if [ -z "$1" ]; then
 	fi
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
-	Clear_Lock
 	ScriptHeader
 	MainMenu
 	exit 0
