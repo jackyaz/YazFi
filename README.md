@@ -104,8 +104,9 @@ Should Guest Network traffic be sent via VPN? (true/false)
 #### wl01_VPNCLIENTNUMBER
 The number of the VPN Client to send traffic through (1-5)
 
-#### wl01_LANACCESS
-Should Guest Network traffic have unrestricted access to the LAN? (true/false)
+#### wl01_TWOWAYTOGUEST
+Should LAN/Guest Network traffic have unrestricted access to each other? (true/false)
+Cannot be enabled if _ONEWAYTOGUEST is enabled
 
 #### wl01_CLIENTISOLATION
 Should Guest Network radio prevent clients from talking to each other? (true/false)

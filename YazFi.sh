@@ -584,11 +584,11 @@ Conf_Validate(){
 						fi
 					fi
 					
-					# Validate _LANACCESS
-					if [ -z "$(eval echo '$'"$IFACETMP""_LANACCESS")" ]; then
-						sed -i -e "s/""$IFACETMP""_LANACCESS=/""$IFACETMP""_LANACCESS=false/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_LANACCESS is blank, setting to false" "$WARN"
-					elif ! Validate_TrueFalse "$IFACETMP""_LANACCESS" "$(eval echo '$'"$IFACETMP""_LANACCESS")"; then
+					# Validate _TWOWAYTOGUEST
+					if [ -z "$(eval echo '$'"$IFACETMP""_TWOWAYTOGUEST")" ]; then
+						sed -i -e "s/""$IFACETMP""_TWOWAYTOGUEST=/""$IFACETMP""_TWOWAYTOGUEST=false/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_TWOWAYTOGUEST is blank, setting to false" "$WARN"
+					elif ! Validate_TrueFalse "$IFACETMP""_TWOWAYTOGUEST" "$(eval echo '$'"$IFACETMP""_TWOWAYTOGUEST")"; then
 						IFACE_PASS="false"
 					fi
 					
@@ -652,6 +652,7 @@ Conf_Exists(){
 	fi
 	
 	if [ -f "$YAZFI_CONF" ]; then
+		sed -i -e 's/_LANACCESS/_TWOWAYTOGUEST/g' "$YAZFI_CONF"
 		dos2unix "$YAZFI_CONF"
 		chmod 0644 "$YAZFI_CONF"
 		sed -i -e 's/"//g' "$YAZFI_CONF"
@@ -774,7 +775,7 @@ Firewall_Rules(){
 		
 		iptables "$ACTION" "$FWRD" -i "$IFACE" -j ACCEPT
 		
-		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_LANACCESS")" = "false" ]; then
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_TWOWAYTOGUEST")" = "false" ]; then
 			iptables "$ACTION" "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT"
 			iptables "$ACTION" "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -j "$LGRJT"
 		else
