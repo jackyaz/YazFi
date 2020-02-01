@@ -592,6 +592,20 @@ Conf_Validate(){
 						IFACE_PASS="false"
 					fi
 					
+					# Validate _ONEWAYTOGUEST
+					if [ -z "$(eval echo '$'"$IFACETMP""_ONEWAYTOGUEST")" ]; then
+						sed -i -e "s/""$IFACETMP""_ONEWAYTOGUEST=/""$IFACETMP""_ONEWAYTOGUEST=false/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_ONEWAYTOGUEST is blank, setting to false" "$WARN"
+					elif ! Validate_TrueFalse "$IFACETMP""_ONEWAYTOGUEST" "$(eval echo '$'"$IFACETMP""_ONEWAYTOGUEST")"; then
+						IFACE_PASS="false"
+					fi
+					
+					# Validate _TWOWAYTOGUEST and _ONEWAYTOGUEST to make sure both aren't enabled
+					if [ "$(eval echo '$'"$IFACETMP""_ONEWAYTOGUEST")" = "true" ] && [ "$(eval echo '$'"$IFACETMP""_TWOWAYTOGUEST")" = "true" ]; then
+						Print_Output "false" "$(eval echo '$'"$IFACETMP""_ONEWAYTOGUEST") & $(eval echo '$'"$IFACETMP""_TWOWAYTOGUEST") cannot both be true" "$ERR"
+						IFACE_PASS="false"
+					fi
+					
 					# Validate _CLIENTISOLATION
 					if [ -z "$(eval echo '$'"$IFACETMP""_CLIENTISOLATION")" ]; then
 						sed -i -e "s/""$IFACETMP""_CLIENTISOLATION=/""$IFACETMP""_CLIENTISOLATION=true/" "$YAZFI_CONF"
@@ -652,8 +666,14 @@ Conf_Exists(){
 	fi
 	
 	if [ -f "$YAZFI_CONF" ]; then
-		sed -i -e 's/_LANACCESS/_TWOWAYTOGUEST/g' "$YAZFI_CONF"
 		dos2unix "$YAZFI_CONF"
+		sed -i -e 's/_LANACCESS/_TWOWAYTOGUEST/g' "$YAZFI_CONF"
+		if ! grep -q "_ONEWAYTOGUEST" "$YAZFI_CONF" ; then
+			for CONFIFACE in $IFACELIST_FULL ; do
+				CONFIFACETMP="$(Get_Iface_Var "$CONFIFACE")"
+				sed -i "/^$CONFIFACETMP""_TWOWAYTOGUEST=/a $CONFIFACETMP""_ONEWAYTOGUEST=" "$YAZFI_CONF"
+			done
+		fi
 		chmod 0644 "$YAZFI_CONF"
 		sed -i -e 's/"//g' "$YAZFI_CONF"
 		. "$YAZFI_CONF"
@@ -1472,7 +1492,9 @@ Menu_Install(){
 Menu_Edit(){
 	texteditor=""
 	exitmenu="false"
-	
+	if ! Conf_Exists; then
+		Conf_Download "$YAZFI_CONF"
+	fi
 	printf "\\n\\e[1mA choice of text editors is available:\\e[0m\\n"
 	printf "1.    nano (recommended for beginners)\\n"
 	printf "2.    vi\\n"

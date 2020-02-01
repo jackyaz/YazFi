@@ -108,5 +108,9 @@ The number of the VPN Client to send traffic through (1-5)
 Should LAN/Guest Network traffic have unrestricted access to each other? (true/false)
 Cannot be enabled if _ONEWAYTOGUEST is enabled
 
+#### wl01_ONEWAYTOGUEST
+Should LAN be able to initiate connections to Guest Network clients (but not the opposite)? (true/false)
+Cannot be enabled if _TWOWAYTOGUEST is enabled
+
 #### wl01_CLIENTISOLATION
 Should Guest Network radio prevent clients from talking to each other? (true/false)

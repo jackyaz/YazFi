@@ -25,6 +25,7 @@ wl01_FORCEDNS=true
 wl01_REDIRECTALLTOVPN=true
 wl01_VPNCLIENTNUMBER=2
 wl01_TWOWAYTOGUEST=false
+wl01_ONEWAYTOGUEST=true
 wl01_CLIENTISOLATION=
 ####################################################################
 ######                 Guest Network 2 (wl0.2)                 #####
@@ -39,6 +40,7 @@ wl02_FORCEDNS=false
 wl02_REDIRECTALLTOVPN=false
 wl02_VPNCLIENTNUMBER=
 wl02_TWOWAYTOGUEST=true
+wl02_ONEWAYTOGUEST=false
 wl02_CLIENTISOLATION=
 ####################################################################
 ######                 Guest Network 3 (wl0.3)                 #####
@@ -53,6 +55,7 @@ wl03_FORCEDNS=
 wl03_REDIRECTALLTOVPN=
 wl03_VPNCLIENTNUMBER=
 wl03_TWOWAYTOGUEST=
+wl03_ONEWAYTOGUEST=
 wl03_CLIENTISOLATION=
 ####################################################################
 ######                     5 GHz Networks                     ######
@@ -69,6 +72,7 @@ wl11_FORCEDNS=
 wl11_REDIRECTALLTOVPN=
 wl11_VPNCLIENTNUMBER=
 wl11_TWOWAYTOGUEST=
+wl11_ONEWAYTOGUEST=
 wl11_CLIENTISOLATION=
 ####################################################################
 ######                 Guest Network 2 (wl1.2)                 #####
@@ -83,6 +87,7 @@ wl12_FORCEDNS=
 wl12_REDIRECTALLTOVPN=
 wl12_VPNCLIENTNUMBER=
 wl12_TWOWAYTOGUEST=
+wl12_ONEWAYTOGUEST=
 wl12_CLIENTISOLATION=
 ####################################################################
 ######                 Guest Network 3 (wl1.3)                 #####
@@ -97,6 +102,7 @@ wl13_FORCEDNS=
 wl13_REDIRECTALLTOVPN=
 wl13_VPNCLIENTNUMBER=
 wl13_TWOWAYTOGUEST=
+wl13_ONEWAYTOGUEST=
 wl13_CLIENTISOLATION=
 ####################################################################
 ######                    5 GHz - 2 Networks                  ######
@@ -114,6 +120,7 @@ wl21_FORCEDNS=
 wl21_REDIRECTALLTOVPN=
 wl21_VPNCLIENTNUMBER=
 wl21_TWOWAYTOGUEST=
+wl21_ONEWAYTOGUEST=
 wl21_CLIENTISOLATION=
 ####################################################################
 ######                 Guest Network 2 (wl2.2)                 #####
@@ -128,6 +135,7 @@ wl22_FORCEDNS=
 wl22_REDIRECTALLTOVPN=
 wl22_VPNCLIENTNUMBER=
 wl22_TWOWAYTOGUEST=
+wl22_ONEWAYTOGUEST=
 wl22_CLIENTISOLATION=
 ####################################################################
 ######                 Guest Network 3 (wl2.3)                 #####
@@ -142,5 +150,6 @@ wl23_FORCEDNS=
 wl23_REDIRECTALLTOVPN=
 wl23_VPNCLIENTNUMBER=
 wl23_TWOWAYTOGUEST=
+wl23_ONEWAYTOGUEST=
 wl23_CLIENTISOLATION=
 ####################################################################
