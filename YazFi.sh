@@ -971,11 +971,21 @@ Routing_RPDB_LAN(){
 }
 
 Routing_FWNAT(){
+	IFACE_WAN=""
+	
+	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
+		IFACE_WAN="ppp0"
+	else
+		IFACE_WAN="$(nvram get wan0_ifname)"
+	fi
+	
 	case $1 in
 		create)
 			for ACTION in -D -I; do
 				modprobe xt_comment
 				iptables -t nat "$ACTION" POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 -o tun1"$3" -m comment --comment "$(Get_Guest_Name "$2")" -j MASQUERADE
+				iptables "$ACTION" "$FWRD" -i "$2" -o "$IFACE_WAN" -j "$LGRJT"
+				iptables "$ACTION" "$FWRD" -i "$IFACE_WAN" -o "$2" -j "$LGRJT"
 				iptables "$ACTION" "$FWRD" -i "$2" -o tun1"$3" -j ACCEPT
 				iptables "$ACTION" "$FWRD" -i tun1"$3" -o "$2" -j ACCEPT
 			done
@@ -990,6 +1000,9 @@ Routing_FWNAT(){
 			for RULENO in $RULES; do
 				iptables -D "$FWRD" "$RULENO"
 			done
+			
+			iptables -D "$FWRD" -i "$2" -o "$IFACE_WAN" -j "$LGRJT"
+			iptables -D "$FWRD" -i "$IFACE_WAN" -o "$2" -j "$LGRJT"
 		;;
 		deleteall)
 			for IFACE in $IFACELIST; do
