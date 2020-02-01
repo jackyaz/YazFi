@@ -803,6 +803,18 @@ Firewall_Rules(){
 			iptables -D "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -j "$LGRJT"
 		fi
 		
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ONEWAYTOGUEST")" = "true" ]; then
+			iptables "$ACTION" "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j ACCEPT
+			iptables "$ACTION" "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -m state --state RELATED,ESTABLISHED -j ACCEPT
+		else
+			iptables -D "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j ACCEPT
+			iptables -D "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -m state --state RELATED,ESTABLISHED -j ACCEPT
+		fi
+		
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_TWOWAYTOGUEST")" = "false" ] && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ONEWAYTOGUEST")" = "true" ]; then
+			iptables -D "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT"
+		fi
+		
 		iptables "$ACTION" "$INPT" -i "$IFACE" -j "$LGRJT"
 		iptables "$ACTION" "$INPT" -i "$IFACE" -p icmp -j ACCEPT
 		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT
