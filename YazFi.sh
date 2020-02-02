@@ -667,6 +667,10 @@ Conf_Exists(){
 	
 	if [ -f "$YAZFI_CONF" ]; then
 		dos2unix "$YAZFI_CONF"
+		chmod 0644 "$YAZFI_CONF"
+		if [ ! -f "$YAZFI_CONF.bak" ]; then
+			cp -a "$YAZFI_CONF" "$YAZFI_CONF.bak"
+		fi
 		sed -i -e 's/_LANACCESS/_TWOWAYTOGUEST/g' "$YAZFI_CONF"
 		if ! grep -q "_ONEWAYTOGUEST" "$YAZFI_CONF" ; then
 			for CONFIFACE in $IFACELIST_FULL ; do
@@ -674,7 +678,6 @@ Conf_Exists(){
 				sed -i "/^$CONFIFACETMP""_TWOWAYTOGUEST=/a $CONFIFACETMP""_ONEWAYTOGUEST=" "$YAZFI_CONF"
 			done
 		fi
-		chmod 0644 "$YAZFI_CONF"
 		sed -i -e 's/"//g' "$YAZFI_CONF"
 		. "$YAZFI_CONF"
 		return 0
