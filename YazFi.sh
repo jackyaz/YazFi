@@ -26,7 +26,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly OLD_YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/addons/$YAZFI_NAME.d/config"
-readonly YAZFI_VERSION="v3.2.3"
+readonly YAZFI_VERSION="v3.3.0"
 readonly YAZFI_BRANCH="master"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
 ### End of script variables ###
@@ -584,11 +584,25 @@ Conf_Validate(){
 						fi
 					fi
 					
-					# Validate _LANACCESS
-					if [ -z "$(eval echo '$'"$IFACETMP""_LANACCESS")" ]; then
-						sed -i -e "s/""$IFACETMP""_LANACCESS=/""$IFACETMP""_LANACCESS=false/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_LANACCESS is blank, setting to false" "$WARN"
-					elif ! Validate_TrueFalse "$IFACETMP""_LANACCESS" "$(eval echo '$'"$IFACETMP""_LANACCESS")"; then
+					# Validate _TWOWAYTOGUEST
+					if [ -z "$(eval echo '$'"$IFACETMP""_TWOWAYTOGUEST")" ]; then
+						sed -i -e "s/""$IFACETMP""_TWOWAYTOGUEST=/""$IFACETMP""_TWOWAYTOGUEST=false/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_TWOWAYTOGUEST is blank, setting to false" "$WARN"
+					elif ! Validate_TrueFalse "$IFACETMP""_TWOWAYTOGUEST" "$(eval echo '$'"$IFACETMP""_TWOWAYTOGUEST")"; then
+						IFACE_PASS="false"
+					fi
+					
+					# Validate _ONEWAYTOGUEST
+					if [ -z "$(eval echo '$'"$IFACETMP""_ONEWAYTOGUEST")" ]; then
+						sed -i -e "s/""$IFACETMP""_ONEWAYTOGUEST=/""$IFACETMP""_ONEWAYTOGUEST=false/" "$YAZFI_CONF"
+						Print_Output "false" "$IFACETMP""_ONEWAYTOGUEST is blank, setting to false" "$WARN"
+					elif ! Validate_TrueFalse "$IFACETMP""_ONEWAYTOGUEST" "$(eval echo '$'"$IFACETMP""_ONEWAYTOGUEST")"; then
+						IFACE_PASS="false"
+					fi
+					
+					# Validate _TWOWAYTOGUEST and _ONEWAYTOGUEST to make sure both aren't enabled
+					if [ "$(eval echo '$'"$IFACETMP""_ONEWAYTOGUEST")" = "true" ] && [ "$(eval echo '$'"$IFACETMP""_TWOWAYTOGUEST")" = "true" ]; then
+						Print_Output "false" "$(eval echo '$'"$IFACETMP""_ONEWAYTOGUEST") & $(eval echo '$'"$IFACETMP""_TWOWAYTOGUEST") cannot both be true" "$ERR"
 						IFACE_PASS="false"
 					fi
 					
@@ -654,6 +668,16 @@ Conf_Exists(){
 	if [ -f "$YAZFI_CONF" ]; then
 		dos2unix "$YAZFI_CONF"
 		chmod 0644 "$YAZFI_CONF"
+		if [ ! -f "$YAZFI_CONF.bak" ]; then
+			cp -a "$YAZFI_CONF" "$YAZFI_CONF.bak"
+		fi
+		sed -i -e 's/_LANACCESS/_TWOWAYTOGUEST/g' "$YAZFI_CONF"
+		if ! grep -q "_ONEWAYTOGUEST" "$YAZFI_CONF" ; then
+			for CONFIFACE in $IFACELIST_FULL ; do
+				CONFIFACETMP="$(Get_Iface_Var "$CONFIFACE")"
+				sed -i "/^$CONFIFACETMP""_TWOWAYTOGUEST=/a $CONFIFACETMP""_ONEWAYTOGUEST=" "$YAZFI_CONF"
+			done
+		fi
 		sed -i -e 's/"//g' "$YAZFI_CONF"
 		. "$YAZFI_CONF"
 		return 0
@@ -774,12 +798,24 @@ Firewall_Rules(){
 		
 		iptables "$ACTION" "$FWRD" -i "$IFACE" -j ACCEPT
 		
-		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_LANACCESS")" = "false" ]; then
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_TWOWAYTOGUEST")" = "false" ]; then
 			iptables "$ACTION" "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT"
 			iptables "$ACTION" "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -j "$LGRJT"
 		else
 			iptables -D "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT"
 			iptables -D "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -j "$LGRJT"
+		fi
+		
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ONEWAYTOGUEST")" = "true" ]; then
+			iptables "$ACTION" "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j ACCEPT
+			iptables "$ACTION" "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -m state --state RELATED,ESTABLISHED -j ACCEPT
+		else
+			iptables -D "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j ACCEPT
+			iptables -D "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -m state --state RELATED,ESTABLISHED -j ACCEPT
+		fi
+		
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_TWOWAYTOGUEST")" = "false" ] && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ONEWAYTOGUEST")" = "true" ]; then
+			iptables -D "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT"
 		fi
 		
 		iptables "$ACTION" "$INPT" -i "$IFACE" -j "$LGRJT"
@@ -938,11 +974,21 @@ Routing_RPDB_LAN(){
 }
 
 Routing_FWNAT(){
+	IFACE_WAN=""
+	
+	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
+		IFACE_WAN="ppp0"
+	else
+		IFACE_WAN="$(nvram get wan0_ifname)"
+	fi
+	
 	case $1 in
 		create)
 			for ACTION in -D -I; do
 				modprobe xt_comment
 				iptables -t nat "$ACTION" POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".")".0/24 -o tun1"$3" -m comment --comment "$(Get_Guest_Name "$2")" -j MASQUERADE
+				iptables "$ACTION" "$FWRD" -i "$2" -o "$IFACE_WAN" -j "$LGRJT"
+				iptables "$ACTION" "$FWRD" -i "$IFACE_WAN" -o "$2" -j "$LGRJT"
 				iptables "$ACTION" "$FWRD" -i "$2" -o tun1"$3" -j ACCEPT
 				iptables "$ACTION" "$FWRD" -i tun1"$3" -o "$2" -j ACCEPT
 			done
@@ -957,6 +1003,9 @@ Routing_FWNAT(){
 			for RULENO in $RULES; do
 				iptables -D "$FWRD" "$RULENO"
 			done
+			
+			iptables -D "$FWRD" -i "$2" -o "$IFACE_WAN" -j "$LGRJT"
+			iptables -D "$FWRD" -i "$IFACE_WAN" -o "$2" -j "$LGRJT"
 		;;
 		deleteall)
 			for IFACE in $IFACELIST; do
@@ -1471,7 +1520,9 @@ Menu_Install(){
 Menu_Edit(){
 	texteditor=""
 	exitmenu="false"
-	
+	if ! Conf_Exists; then
+		Conf_Download "$YAZFI_CONF"
+	fi
 	printf "\\n\\e[1mA choice of text editors is available:\\e[0m\\n"
 	printf "1.    nano (recommended for beginners)\\n"
 	printf "2.    vi\\n"
