@@ -28,7 +28,7 @@ readonly OLD_YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/addons/$YAZFI_NAME.d/config"
 readonly YAZFI_VERSION="v4.0.0"
 readonly YAZFI_BRANCH="develop"
-readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
+readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH"""
 readonly SCRIPT_DIR="/jffs/addons/$YAZFI_NAME.d"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
 readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$YAZFI_NAME"
@@ -268,13 +268,13 @@ Update_Version(){
 	if [ -z "$1" ]; then
 		doupdate="false"
 		localver=$(grep "YAZFI_VERSION=" /jffs/scripts/$YAZFI_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; return 1; }
-		serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+		/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; return 1; }
+		serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 		if [ "$localver" != "$serverver" ]; then
 			doupdate="version"
 		else
 			localmd5="$(md5sum "/jffs/scripts/$YAZFI_NAME" | awk '{print $1}')"
-			remotemd5="$(curl -fsL --retry 3 "$YAZFI_REPO.sh" | md5sum | awk '{print $1}')"
+			remotemd5="$(curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" | md5sum | awk '{print $1}')"
 			if [ "$localmd5" != "$remotemd5" ]; then
 				doupdate="md5"
 			fi
@@ -293,7 +293,7 @@ Update_Version(){
 		fi
 		
 		if [ "$doupdate" != "false" ]; then
-			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
+			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
 			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
 			Clear_Lock
 			service restart_firewall >/dev/null 2>&1
@@ -306,9 +306,9 @@ Update_Version(){
 	
 	case "$1" in
 		force)
-			serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+			serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 			Print_Output "true" "Downloading latest version ($serverver) of $YAZFI_NAME" "$PASS"
-			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
+			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
 			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
 			if Firmware_Version_WebUI ; then
 				Update_File "YazFi_www.asp"
@@ -326,12 +326,12 @@ Update_Version(){
 Update_File(){
 	if [ "$1" = "YazFi_www.asp" ]; then
 		tmpfile="/tmp/$1"
-		Download_File "$YAZFI_REPO/$1" "$tmpfile"
+		Download_File "$SCRIPT_REPO/$1" "$tmpfile"
 		if ! diff -q "$tmpfile" "$SCRIPT_DIR/$1" >/dev/null 2>&1; then
 			Get_WebUI_Page "$SCRIPT_DIR/$1"
 			sed -i "\\~$MyPage~d" /tmp/menuTree.js
 			rm -f "$SCRIPT_WEBPAGE_DIR/$MyPage" 2>/dev/null
-			Download_File "$YAZFI_REPO/$1" "$SCRIPT_DIR/$1"
+			Download_File "$SCRIPT_REPO/$1" "$SCRIPT_DIR/$1"
 			Print_Output "true" "New version of $1 downloaded" "$PASS"
 			Mount_WebUI
 		fi
@@ -743,7 +743,7 @@ Mount_WebUI(){
 
 Conf_Download(){
 	mkdir -p "/jffs/addons/$YAZFI_NAME.d"
-	/usr/sbin/curl -s --retry 3 "$YAZFI_REPO.config.example" -o "$1"
+	/usr/sbin/curl -s --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.config.example" -o "$1"
 	chmod 0644 "$1"
 	dos2unix "$1"
 	echo ""
