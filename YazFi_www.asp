@@ -119,6 +119,9 @@ function get_conf_file(){
 				$("#table_buttons").before(BuildConfigTable("wl0","2.4GHz Guest Networks"));
 				$("#table_buttons").before(BuildConfigTable("wl1","5GHz-1 Guest Networks"));
 				$("#table_buttons").before(BuildConfigTable("wl2","5GHz-2 Guest Networks"));
+				for (var i = 0; i < window["yazfi_settings"].length; i++) {
+					window["yazfi_" + window["yazfi_settings"][i][0]] = window["yazfi_settings"][i][1];
+				}
 				AddEventHandlers();
 			}
 	});
