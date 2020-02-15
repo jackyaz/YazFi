@@ -718,31 +718,27 @@ Get_WebUI_Page () {
 }
 
 Mount_WebUI(){
-	if Firmware_Version_Check "webui"; then
-		Get_WebUI_Page "$SCRIPT_DIR/YazFi_www.asp"
-		if [ "$MyPage" = "none" ]; then
-			Print_Output "true" "Unable to mount $YAZFI_NAME WebUI page, exiting" "$CRIT"
-			exit 1
-		fi
-		Print_Output "true" "Mounting $YAZFI_NAME WebUI page as $MyPage" "$PASS"
-		cp -f "$SCRIPT_DIR/YazFi_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
-		
-		umount /www/index_style.css 2>/dev/null
-		mount -o bind /tmp/index_style.css /www/index_style.css
-		
-		if [ ! -f "/tmp/menuTree.js" ]; then
-			cp -f "/www/require/modules/menuTree.js" "/tmp/"
-		fi
-		
-		sed -i "\\~$MyPage~d" /tmp/menuTree.js
-		
-		sed -i "/url: \"Guest_network.asp\", tabName:/a {url: \"$MyPage\", tabName: \"YazFi\"}," /tmp/menuTree.js
-		
-		umount /www/require/modules/menuTree.js 2>/dev/null
-		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
-	else
-		: # No WebUI for you
+	Get_WebUI_Page "$SCRIPT_DIR/YazFi_www.asp"
+	if [ "$MyPage" = "none" ]; then
+		Print_Output "true" "Unable to mount $YAZFI_NAME WebUI page, exiting" "$CRIT"
+		exit 1
 	fi
+	Print_Output "true" "Mounting $YAZFI_NAME WebUI page as $MyPage" "$PASS"
+	cp -f "$SCRIPT_DIR/YazFi_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
+	
+	umount /www/index_style.css 2>/dev/null
+	mount -o bind /tmp/index_style.css /www/index_style.css
+	
+	if [ ! -f "/tmp/menuTree.js" ]; then
+		cp -f "/www/require/modules/menuTree.js" "/tmp/"
+	fi
+	
+	sed -i "\\~$MyPage~d" /tmp/menuTree.js
+	
+	sed -i "/url: \"Guest_network.asp\", tabName:/a {url: \"$MyPage\", tabName: \"YazFi\"}," /tmp/menuTree.js
+	
+	umount /www/require/modules/menuTree.js 2>/dev/null
+	mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 }
 
 Conf_Download(){
