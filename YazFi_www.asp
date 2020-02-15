@@ -45,7 +45,7 @@ thead.collapsibleparent {
 
 .SettingsTable {
   table-layout: fixed !important;
-  width: 760px !important;
+  width: 745px !important;
   text-align: center;
 }
 
@@ -218,9 +218,9 @@ function BuildConfigTable(prefix,title){
 	
 	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable SettingsTable">';
 	charthtml+='<col style="width:130px;">';
-	charthtml+='<col style="width:210px;">';
-	charthtml+='<col style="width:210px;">';
-	charthtml+='<col style="width:210px;">';
+	charthtml+='<col style="width:205px;">';
+	charthtml+='<col style="width:205px;">';
+	charthtml+='<col style="width:205px;">';
 	charthtml+='<thead>';
 	charthtml+='<tr>';
 	charthtml+='<th>&nbsp;</th>';
@@ -407,7 +407,6 @@ function AddEventHandlers(){
 <div>&nbsp;</div>
 <div class="formfonttitle">YazFi Configuration</div>
 <div style="margin:10px 0 10px 5px;" class="splitLine"></div>
-<div class="formfontdesc">YazFi extends the features of Guest Networks in Asuswrt-Merlin</div>
 <table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons">
 <tr class="apply_gen" valign="top" height="35px">
 <td style="background-color:rgb(77, 89, 93);border:0px;">
