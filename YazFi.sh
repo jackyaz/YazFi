@@ -29,6 +29,9 @@ readonly YAZFI_CONF="/jffs/addons/$YAZFI_NAME.d/config"
 readonly YAZFI_VERSION="v3.3.0"
 readonly YAZFI_BRANCH="master"
 readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
+readonly SCRIPT_DIR="/jffs/addons/$YAZFI_NAME.d"
+readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
+readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$YAZFI_NAME"
 ### End of script variables ###
 
 ### Start of output format variables ###
@@ -224,6 +227,14 @@ Firmware_Version_Check(){
 }
 ############################################################################
 
+Firmware_Version_WebUI(){
+	if [ "$(uname -o)" = "ASUSWRT-Merlin" ] && nvram get rc_support | grep -qF "am_addons"; then
+		return 0
+	else
+		return 1
+	fi
+}
+
 ### Code for these functions inspired by https://github.com/Adamm00 - credit to @Adamm ###
 Check_Lock(){
 	if [ -f "/tmp/$YAZFI_NAME.lock" ]; then
@@ -275,6 +286,12 @@ Update_Version(){
 			Print_Output "true" "MD5 hash of $YAZFI_NAME does not match - downloading updated $serverver" "$PASS"
 		fi
 		
+		if Firmware_Version_WebUI ; then
+			Update_File "YazFi_www.asp"
+		else
+			Print_Output "true" "WebUI is only support on Merlin 384.15 and later" "$WARN"
+		fi
+		
 		if [ "$doupdate" != "false" ]; then
 			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
 			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
@@ -293,6 +310,11 @@ Update_Version(){
 			Print_Output "true" "Downloading latest version ($serverver) of $YAZFI_NAME" "$PASS"
 			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
 			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
+			if Firmware_Version_WebUI ; then
+				Update_File "YazFi_www.asp"
+			else
+				Print_Output "true" "WebUI is only support on Merlin 384.15 and later" "$WARN"
+			fi
 			Clear_Lock
 			service restart_firewall >/dev/null 2>&1
 			exit 0
@@ -300,6 +322,25 @@ Update_Version(){
 	esac
 }
 ############################################################################
+
+Update_File(){
+	if [ "$1" = "YazFi_www.asp" ]; then
+		tmpfile="/tmp/$1"
+		Download_File "$YAZFI_REPO/$1" "$tmpfile"
+		if ! diff -q "$tmpfile" "$SCRIPT_DIR/$1" >/dev/null 2>&1; then
+			Get_WebUI_Page "$SCRIPT_DIR/$1"
+			sed -i "\\~$MyPage~d" /tmp/menuTree.js
+			rm -f "$SCRIPT_WEBPAGE_DIR/$MyPage" 2>/dev/null
+			Download_File "$YAZFI_REPO/$1" "$SCRIPT_DIR/$1"
+			Print_Output "true" "New version of $1 downloaded" "$PASS"
+			Mount_WebUI
+		fi
+		rm -f "$tmpfile"
+	else
+		return 1
+	fi
+}
+
 
 IP_Local(){
 	if echo "$1" | grep -qE '(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)'; then
@@ -638,6 +679,69 @@ Conf_Validate(){
 	else
 		Print_Output "true" "No $YAZFI_NAME guests are enabled in the configuration file!" "$CRIT"
 		return 1
+	fi
+}
+
+Create_Dirs(){
+	if [ ! -d "$SCRIPT_DIR" ]; then
+		mkdir -p "$SCRIPT_DIR"
+	fi
+	
+	if [ ! -d "$SCRIPT_WEBPAGE_DIR" ]; then
+		mkdir -p "$SCRIPT_WEBPAGE_DIR"
+	fi
+		
+	if [ ! -d "$SCRIPT_WEB_DIR" ]; then
+		mkdir -p "$SCRIPT_WEB_DIR"
+	fi
+}
+
+Create_Symlinks(){
+	rm -f "$SCRIPT_WEB_DIR/"* 2>/dev/null
+	
+	ln -s "$SCRIPT_DIR/config"  "$SCRIPT_WEB_DIR/config.htm" 2>/dev/null
+}
+
+Download_File(){
+	/usr/sbin/curl -fsL --retry 3 "$1" -o "$2"
+}
+
+Get_WebUI_Page () {
+	for i in 1 2 3 4 5 6 7 8 9 10; do
+		page="$SCRIPT_WEBPAGE_DIR/user$i.asp"
+		if [ ! -f "$page" ] || [ "$(md5sum < "$1")" = "$(md5sum < "$page")" ]; then
+			MyPage="user$i.asp"
+			return
+		fi
+	done
+	MyPage="none"
+}
+
+Mount_WebUI(){
+	if Firmware_Version_Check "webui"; then
+		Get_WebUI_Page "$SCRIPT_DIR/YazFi_www.asp"
+		if [ "$MyPage" = "none" ]; then
+			Print_Output "true" "Unable to mount $YAZFI_NAME WebUI page, exiting" "$CRIT"
+			exit 1
+		fi
+		Print_Output "true" "Mounting $YAZFI_NAME WebUI page as $MyPage" "$PASS"
+		cp -f "$SCRIPT_DIR/YazFi_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
+		
+		umount /www/index_style.css 2>/dev/null
+		mount -o bind /tmp/index_style.css /www/index_style.css
+		
+		if [ ! -f "/tmp/menuTree.js" ]; then
+			cp -f "/www/require/modules/menuTree.js" "/tmp/"
+		fi
+		
+		sed -i "\\~$MyPage~d" /tmp/menuTree.js
+		
+		sed -i "/url: \"Guest_network.asp\", tabName:/a {url: \"$MyPage\", tabName: \"YazFi\"}," /tmp/menuTree.js
+		
+		umount /www/require/modules/menuTree.js 2>/dev/null
+		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
+	else
+		: # No WebUI for you
 	fi
 }
 
@@ -1347,7 +1451,6 @@ ScriptHeader(){
 }
 
 MainMenu(){
-	Shortcut_YazFi create
 	printf "1.    Apply %s settings\\n\\n" "$YAZFI_NAME"
 	printf "2.    Show connected clients using %s\\n\\n" "$YAZFI_NAME"
 	printf "3.    Edit %s config\\n" "$YAZFI_NAME"
@@ -1502,6 +1605,12 @@ Menu_Install(){
 		exit 1
 	fi
 	
+	if Firmware_Version_WebUI ; then
+		Update_File "YazFi_www.asp"
+	else
+		Print_Output "true" "WebUI is only support on Merlin 384.15 and later" "$WARN"
+	fi
+	
 	if ! Conf_Exists; then
 		Conf_Download "$YAZFI_CONF"
 	else
@@ -1510,6 +1619,8 @@ Menu_Install(){
 	fi
 	
 	Shortcut_YazFi create
+	Create_Dirs
+	Create_Symlinks
 	echo ""
 	echo ""
 	Print_Output "true" "You can access $YAZFI_NAME's menu via amtm (if installed) with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
@@ -1582,6 +1693,13 @@ Menu_Uninstall(){
 	Firewall_NVRAM deleteall "$IFACE" 2>/dev/null
 	Iface_Manage deleteall 2>/dev/null
 	DHCP_Conf deleteall 2>/dev/null
+	Get_WebUI_Page "$SCRIPT_DIR/YazFi_www.asp"
+		if [ -n "$MyPage" ] && [ "$MyPage" != "none" ] && [ -f "/tmp/menuTree.js" ]; then
+			sed -i "\\~$MyPage~d" /tmp/menuTree.js
+			umount /www/require/modules/menuTree.js
+			mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
+			rm -rf "{$SCRIPT_WEBPAGE_DIR:?}/$MyPage"
+		fi
 	while true; do
 		printf "\\n\\e[1mDo you want to delete %s configuration file(s)? (y/n)\\e[0m\\n" "$YAZFI_NAME"
 		read -r "confirm"
@@ -1857,7 +1975,6 @@ Menu_Diagnostics(){
 	ip rule show > "$DIAGPATH""/iprule.txt"
 	ip route show > "$DIAGPATH""/iproute.txt"
 	ip route show table all | grep "table" | sed 's/.*\(table.*\)/\1/g' | awk '{print $2}' | sort | uniq | grep ovpn > "$DIAGPATH""/routetables.txt"
-	#ip route show table ovpnc1 > "$DIAGPATH""/ebtables.txt"
 	ifconfig -a > "$DIAGPATH""/ifconfig.txt"
 	
 	cp "$YAZFI_CONF" "$DIAGPATH""/""$YAZFI_NAME"".conf"
@@ -1887,6 +2004,9 @@ if [ -z "$1" ]; then
 	fi
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
+	Shortcut_YazFi create
+	Create_Dirs
+	Create_Symlinks
 	ScriptHeader
 	MainMenu
 	exit 0
