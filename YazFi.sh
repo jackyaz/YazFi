@@ -289,7 +289,7 @@ Update_Version(){
 		if Firmware_Version_WebUI ; then
 			Update_File "YazFi_www.asp"
 		else
-			Print_Output "true" "WebUI is only support on Merlin 384.15 and later" "$WARN"
+			Print_Output "true" "WebUI is only supported on Merlin 384.15 and later" "$WARN"
 		fi
 		
 		if [ "$doupdate" != "false" ]; then
@@ -313,7 +313,7 @@ Update_Version(){
 			if Firmware_Version_WebUI ; then
 				Update_File "YazFi_www.asp"
 			else
-				Print_Output "true" "WebUI is only support on Merlin 384.15 and later" "$WARN"
+				Print_Output "true" "WebUI is only supported on Merlin 384.15 and later" "$WARN"
 			fi
 			Clear_Lock
 			service restart_firewall >/dev/null 2>&1
