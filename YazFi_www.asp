@@ -106,6 +106,7 @@ function get_conf_file(){
 		success: function(data){
 			var settings=data.split("\n");
 			settings.reverse();
+			settings.filter(Boolean);
 			var settingcount=settings.length;
 			window["yazfi_settings"] = new Array();
 			for (var i = 0; i < settingcount; i++) {
@@ -120,7 +121,8 @@ function get_conf_file(){
 				$("#table_buttons").before(BuildConfigTable("wl1","5GHz-1 Guest Networks"));
 				$("#table_buttons").before(BuildConfigTable("wl2","5GHz-2 Guest Networks"));
 				for (var i = 0; i < window["yazfi_settings"].length; i++) {
-					window["yazfi_" + window["yazfi_settings"][i][0]] = window["yazfi_settings"][i][1];
+					console.log(i)
+					eval("document.form.yazfi_"+window["yazfi_settings"][i][0].toLowerCase()).value = window["yazfi_settings"][i][1];
 				}
 				AddEventHandlers();
 			}
@@ -162,122 +164,6 @@ function initial(){
 	SetCurrentPage();
 	show_menu();
 	get_conf_file();
-
-/*if (custom_settings.unbound_enable == undefined){document.form.unbound_enable.value = "0";}
-else{document.form.unbound_enable.value = custom_settings.unbound_enable;}
-
-if (custom_settings.unbound_control == undefined)
-document.form.unbound_control.value = "1";
-else
-document.form.unbound_control.value = custom_settings.unbound_control;
-
-if (custom_settings.unbound_validator == undefined)
-document.form.unbound_validator.value = "1";
-else
-document.form.unbound_validator.value = custom_settings.unbound_validator;
-
-if (custom_settings.unbound_logdest == undefined)
-document.form.unbound_logdest.value = "syslog";
-else
-document.form.unbound_logdest.value = custom_settings.unbound_logdest;
-
-if (custom_settings.unbound_logextra == undefined)
-document.form.unbound_logextra.value = "0";
-else
-document.form.unbound_logextra.value = custom_settings.unbound_logextra;
-
-if (custom_settings.unbound_verbosity == undefined)
-document.form.unbound_verbosity.value = "1";
-else
-document.form.unbound_verbosity.value = custom_settings.unbound_verbosity;
-
-if (custom_settings.unbound_extended_stats == undefined)
-document.form.unbound_extended_stats.value = "0";
-else
-document.form.unbound_extended_stats.value = custom_settings.unbound_extended_stats;
-
-if (custom_settings.unbound_protocol == undefined)
-document.form.unbound_protocol.value = "ip4_only";
-else
-document.form.unbound_protocol.value = custom_settings.unbound_protocol;
-
-if (custom_settings.unbound_edns_size == undefined)
-document.getElementById('unbound_edns_size').value = "1280";
-else
-document.getElementById('unbound_edns_size').value = custom_settings.unbound_edns_size;
-
-if (custom_settings.unbound_listen_port == undefined)
-document.getElementById('unbound_listen_port').value = "53535";
-else
-document.getElementById('unbound_listen_port').value = custom_settings.unbound_listen_port;
-
-if (custom_settings.unbound_resource == undefined)
-document.form.unbound_resource.value = "default";
-else
-document.form.unbound_resource.value = custom_settings.unbound_resource;
-
-if (custom_settings.unbound_dns64 == undefined)
-document.form.unbound_dns64.value = "0";
-else
-document.form.unbound_dns64.value = custom_settings.unbound_dns64;
-
-hide_dns64(getRadioValue(document.form.unbound_dns64));
-
-if (custom_settings.unbound_dns64_prefix == undefined)
-document.getElementById('unbound_dns64_prefix').value = "64:ff9b::/96";
-else
-document.getElementById('unbound_dns64_prefix').value = custom_settings.unbound_dns64_prefix;
-
-if (custom_settings.unbound_recursion == undefined)
-document.form.unbound_recursion.value = "default";
-else
-document.form.unbound_recursion.value = custom_settings.unbound_recursion;
-
-if (custom_settings.unbound_query_minimize == undefined)
-document.form.unbound_query_minimize.value = "1";
-else
-document.form.unbound_query_minimize.value = custom_settings.unbound_query_minimize;
-
-if (custom_settings.unbound_query_min_strict == undefined)
-document.form.unbound_query_min_strict.value = "0";
-else
-document.form.unbound_query_min_strict.value = custom_settings.unbound_query_min_strict;
-
-if (custom_settings.unbound_ttl_min == undefined)
-document.getElementById('unbound_ttl_min').value = "120";
-else
-document.getElementById('unbound_ttl_min').value = custom_settings.unbound_ttl_min;
-
-if (custom_settings.unbound_rebind_protection == undefined)
-document.form.unbound_rebind_protection.value = "1";
-else
-document.form.unbound_rebind_protection.value = custom_settings.unbound_rebind_protection;
-
-if (custom_settings.unbound_rebind_localhost == undefined)
-document.form.unbound_rebind_localhost.value = "1";
-else
-document.form.unbound_rebind_localhost.value = custom_settings.unbound_rebind_localhost;
-
-if (custom_settings.unbound_domain_insecure == undefined)
-document.getElementById('unbound_domain_insecure').value ="<% nvram_get("ntp_server0"); %> <% nvram_get("ntp_server1"); %>";  // TODO Get NTP server 1 and 2 from nvram
-else
-document.getElementById('unbound_domain_insecure').value = Base64.decode(custom_settings.unbound_domain_insecure);
-
-if (custom_settings.unbound_domain_rebindok == undefined)
-document.getElementById('unbound_domain_rebindok').value = "";  // TODO Get NTP server 1 and 2 from nvram
-else
-document.getElementById('unbound_domain_rebindok').value = Base64.decode(custom_settings.unbound_domain_rebindok);
-
-if (custom_settings.unbound_validator_ntp == undefined)
-document.form.unbound_validator_ntp.value = "0";
-else
-document.form.unbound_validator_ntp.value = custom_settings.unbound_validator_ntp;
-
-if (custom_settings.unbound_statslog == undefined)
-document.form.unbound_statslog.value = "0";
-else
-document.form.unbound_statslog.value = custom_settings.unbound_statslog;*/
-
 }
 
 function applySettings(){

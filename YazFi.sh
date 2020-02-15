@@ -2001,7 +2001,6 @@ if [ -z "$1" ]; then
 	fi
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
-	Mount_WebUI
 	Shortcut_YazFi create
 	Create_Dirs
 	Create_Symlinks
