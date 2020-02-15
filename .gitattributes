@@ -1,3 +1,4 @@
-# All files to have Unix line endings
-* text eol=lf
-* linguist-language=Shell
+*.sh text eol=lf
+*.md text eol=lf
+*.asp text eol=lf
+*.config.example text eol=lf
