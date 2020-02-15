@@ -106,7 +106,7 @@ function get_conf_file(){
 		success: function(data){
 			var settings=data.split("\n");
 			settings.reverse();
-			settings.filter(Boolean);
+			settings = settings.filter(Boolean);
 			var settingcount=settings.length;
 			window["yazfi_settings"] = new Array();
 			for (var i = 0; i < settingcount; i++) {
