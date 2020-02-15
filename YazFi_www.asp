@@ -148,7 +148,8 @@ function get_conf_file(){
 				if(wl_info.band2g_support){$("#table_buttons").before(BuildConfigTable("wl0","2.4GHz Guest Networks"));bands = bands + 1;}
 				if(wl_info.band5g_support){$("#table_buttons").before(BuildConfigTable("wl1","5GHz-1 Guest Networks"));bands = bands + 1;}
 				if(wl_info.band5g_2_support){$("#table_buttons").before(BuildConfigTable("wl2","5GHz-2 Guest Networks"));bands = bands + 1;}
-				for (var i = 0; i < bands*12; i++) {
+				var totalbands = bands*12*3;
+				for (var i = 0; i < totalbands; i++) {
 					eval("document.form.yazfi_"+window["yazfi_settings"][i][0].toLowerCase()).value = window["yazfi_settings"][i][1];
 				}
 				AddEventHandlers();
