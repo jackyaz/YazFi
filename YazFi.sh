@@ -2021,10 +2021,12 @@ case "$1" in
 			Check_Lock
 			Print_Output "true" "Firewall restarted - sleeping 60s before running $YAZFI_NAME" "$PASS"
 			sleep 60
-			Menu_RunNow
+			Config_Networks
+			Clear_Lock
 		else
 			Check_Lock
-			Menu_RunNow
+			Config_Networks
+			Clear_Lock
 		fi
 		
 		exit 0

@@ -148,7 +148,7 @@ function reload() {
 }
 
 function applyRule() {
-	var action_script_tmp = "start_YazFi";
+	var action_script_tmp = "restart_wireless";
 	document.form.action_script.value = action_script_tmp;
 	var restart_time = document.form.action_wait.value*1;
 	parent.showLoading(restart_time, "waiting");
@@ -492,7 +492,7 @@ function AddEventHandlers(){
 <input autocomplete="off" autocapitalize="off" type="hidden" name="group_id" value="">
 <input autocomplete="off" autocapitalize="off" type="hidden" name="modified" value="0">
 <input autocomplete="off" autocapitalize="off" type="hidden" name="action_mode" value="apply">
-<input autocomplete="off" autocapitalize="off" type="hidden" name="action_wait" value="5">
+<input autocomplete="off" autocapitalize="off" type="hidden" name="action_wait" value="75">
 <input autocomplete="off" autocapitalize="off" type="hidden" name="first_time" value="">
 <input autocomplete="off" autocapitalize="off" type="hidden" name="action_script" value="">
 <input autocomplete="off" autocapitalize="off" type="hidden" name="preferred_lang" id="preferred_lang" value="<% nvram_get("preferred_lang"); %>">
