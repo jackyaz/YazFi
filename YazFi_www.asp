@@ -102,6 +102,8 @@ thead.collapsibleparent {
 <script language="JavaScript" type="text/javascript" src="/validator.js"></script>
 <script language="JavaScript" type="text/javascript" src="/base64.js"></script>
 <script>
+var custom_settings = <% get_custom_settings(); %>;
+
 function YazHint(hintid) {
 	var tag_name= document.getElementsByTagName('a');
 	for (var i=0;i<tag_name.length;i++){
@@ -181,7 +183,8 @@ function reload() {
 }
 
 function applyRule() {
-	var action_script_tmp = "restart_wireless";
+	document.getElementById('amng_custom').value = JSON.stringify($('form').serializeObject())
+	var action_script_tmp = "start_yazfi";
 	document.form.action_script.value = action_script_tmp;
 	var restart_time = document.form.action_wait.value*1;
 	parent.showLoading(restart_time, "waiting");
@@ -199,9 +202,6 @@ function applySettings(){
 !validator.numberRange(document.form.unbound_listen_port, 1, 65535) ||
 !validator.numberRange(document.form.unbound_ttl_min, 0, 1800))
 return false;*/
-
-/* Store object as a string in the amng_custom hidden input field */
-document.getElementById('amng_custom').value = JSON.stringify(custom_settings);
 }
 
 function BuildConfigTable(prefix,title){
@@ -370,26 +370,42 @@ function AddEventHandlers(){
 		}
 	}
 }
+
+
+$.fn.serializeObject = function(){
+    var o = {};
+    var a = this.serializeArray();
+    $.each(a, function() {
+        if (o[this.name] !== undefined && this.name.indexOf("yazfi") != -1) {
+            if (!o[this.name].push) {
+                o[this.name] = [o[this.name]];
+            }
+            o[this.name].push(this.value || '');
+        } else if (this.name.indexOf("yazfi") != -1){
+            o[this.name] = this.value || '';
+        }
+    });
+    return o;
+};
+
 </script>
 </head>
-
 <body onload="initial();" onunload="return unload_body();">
 <div id="TopBanner"></div>
 <div id="Loading" class="popup_bg"></div>
 <iframe name="hidden_frame" id="hidden_frame" src="about:blank" width="0" height="0" frameborder="0"></iframe>
-<form method="post" name="form" action="start_apply.htm" target="hidden_frame">
-<input autocomplete="off" autocapitalize="off" type="hidden" name="current_page" value="">
-<input autocomplete="off" autocapitalize="off" type="hidden" name="next_page" value="">
-<input autocomplete="off" autocapitalize="off" type="hidden" name="group_id" value="">
-<input autocomplete="off" autocapitalize="off" type="hidden" name="modified" value="0">
-<input autocomplete="off" autocapitalize="off" type="hidden" name="action_mode" value="apply">
-<input autocomplete="off" autocapitalize="off" type="hidden" name="action_wait" value="75">
-<input autocomplete="off" autocapitalize="off" type="hidden" name="first_time" value="">
-<input autocomplete="off" autocapitalize="off" type="hidden" name="action_script" value="">
-<input autocomplete="off" autocapitalize="off" type="hidden" name="preferred_lang" id="preferred_lang" value="<% nvram_get("preferred_lang"); %>">
-<input autocomplete="off" autocapitalize="off" type="hidden" name="firmver" value="<% nvram_get("firmver"); %>">
-<input autocomplete="off" autocapitalize="off" type="hidden" name="amng_custom" id="amng_custom" value="">
-<input autocomplete="off" autocapitalize="off" type="hidden" name="action_script" value="">
+<form method="post" name="form" id="ruleForm" action="/start_apply.htm" target="hidden_frame">
+<input type="hidden" name="current_page" value="">
+<input type="hidden" name="next_page" value="">
+<input type="hidden" name="modified" value="0">
+<input type="hidden" name="action_mode" value="apply">
+<input type="hidden" name="action_wait" value="65">
+<input type="hidden" name="first_time" value="">
+<input type="hidden" name="SystemCmd" value="">
+<input type="hidden" name="action_script" value="start_yazfi">
+<input type="hidden" name="preferred_lang" id="preferred_lang" value="<% nvram_get("preferred_lang"); %>">
+<input type="hidden" name="firmver" value="<% nvram_get("firmver"); %>">
+<input type="hidden" name="amng_custom" id="amng_custom" value="">
 <table class="content" align="center" cellpadding="0" cellspacing="0">
 <tr>
 <td width="17">&nbsp;</td>
@@ -410,7 +426,7 @@ function AddEventHandlers(){
 <table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons">
 <tr class="apply_gen" valign="top" height="35px">
 <td style="background-color:rgb(77, 89, 93);border:0px;">
-<input autocomplete="off" autocapitalize="off" name="button" type="button" class="button_gen" onclick="applyRule();" value="Apply"/>
+<input name="button" type="button" class="button_gen" onclick="applyRule();" value="Apply"/>
 </td>
 </tr>
 </table>
