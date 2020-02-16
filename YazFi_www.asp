@@ -126,18 +126,18 @@ function YazHint(hintid) {
 		tag_name[i].onmouseout=nd;
 	}
 	hinttext="My text goes here";
-	if(hintid == 1){hinttext="Enable YazFi for this Guest Network";}
-	if(hintid == 2){hinttext="IP address/subnet to use for Guest Network";}
-	if(hintid == 3){hinttext="Start of DHCP pool (2-253)";}
-	if(hintid == 4){hinttext="End of DHCP pool (3-254)";}
-	if(hintid == 5){hinttext="IP address for primary DNS resolver";}
-	if(hintid == 6){hinttext="IP address for secondary DNS resolver";}
-	if(hintid == 7){hinttext="Should Guest Network DNS requests be forced/redirected to DNS1? N.B. This setting is ignored if sending to VPN, and VPN Client's DNS configuration is Exclusive";}
-	if(hintid == 8){hinttext="Should Guest Network traffic be sent via VPN?";}
-	if(hintid == 9){hinttext="The number of the VPN Client to send traffic through (1-5)";}
-	if(hintid == 10){hinttext="Should LAN/Guest Network traffic have unrestricted access to each other? Cannot be enabled if _ONEWAYTOGUEST is enabled";}
-	if(hintid == 11){hinttext="Should LAN be able to initiate connections to Guest Network clients (but not the opposite)? Cannot be enabled if _TWOWAYTOGUEST is enabled";}
-	if(hintid == 12){hinttext="Should Guest Network radio prevent clients from talking to each other?";}
+	if(hintid == 1) hinttext="Enable YazFi for this Guest Network";
+	if(hintid == 2) hinttext="IP address/subnet to use for Guest Network";
+	if(hintid == 3) hinttext="Start of DHCP pool (2-253)";
+	if(hintid == 4) hinttext="End of DHCP pool (3-254)";
+	if(hintid == 5) hinttext="IP address for primary DNS resolver";
+	if(hintid == 6) hinttext="IP address for secondary DNS resolver";
+	if(hintid == 7) hinttext="Should Guest Network DNS requests be forced/redirected to DNS1? N.B. This setting is ignored if sending to VPN, and VPN Client's DNS configuration is Exclusive";
+	if(hintid == 8) hinttext="Should Guest Network traffic be sent via VPN?";
+	if(hintid == 9) hinttext="The number of the VPN Client to send traffic through (1-5)";
+	if(hintid == 10) hinttext="Should LAN/Guest Network traffic have unrestricted access to each other? Cannot be enabled if _ONEWAYTOGUEST is enabled";
+	if(hintid == 11) hinttext="Should LAN be able to initiate connections to Guest Network clients (but not the opposite)? Cannot be enabled if _TWOWAYTOGUEST is enabled";
+	if(hintid == 12) hinttext="Should Guest Network radio prevent clients from talking to each other?";
 	return overlib(hinttext, HAUTO, VAUTO);
 }
 
@@ -153,23 +153,30 @@ function Validate_IP(forminput,iptype){
 					matchfound=false;
 					for(var i = 0; i < bands; i++){
 						for(var i2 = 1; i2 < 4; i2++){
-							if("yazfi_wl"+i.toString()+i2.toString()+"_ipaddr" != inputname){ if(eval("document.form.yazfi_wl"+i.toString()+i2.toString()+"_ipaddr.value") == fixedip){ matchfound=true; } }
+							if("yazfi_wl"+i.toString()+i2.toString()+"_ipaddr" != inputname){
+								if(eval("document.form.yazfi_wl"+i.toString()+i2.toString()+"_ipaddr.value") == fixedip){
+									matchfound=true;
+								}
+							}
 						}
 					}
-					if(matchfound){
-						$(forminput).addClass("invalid");
-					}
-					else{
-						$(forminput).removeClass("invalid");
-					}
+					(matchfound) ? $(forminput).addClass("invalid") : $(forminput).removeClass("invalid");
 				}
-				else{ $(forminput).addClass("invalid"); }
+				else {
+					$(forminput).addClass("invalid");
+				}
 			}
-			else { $(forminput).addClass("invalid"); }
+			else {
+				$(forminput).addClass("invalid");
+			}
 		}
-		else { $(forminput).removeClass("invalid"); }
+		else {
+			$(forminput).removeClass("invalid");
+		}
 	}
-	else { $(forminput).addClass("invalid"); }
+	else {
+		$(forminput).addClass("invalid");
+	}
 }
 
 
