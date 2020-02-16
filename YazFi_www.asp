@@ -102,7 +102,17 @@ thead.collapsibleparent {
 <script language="JavaScript" type="text/javascript" src="/validator.js"></script>
 <script language="JavaScript" type="text/javascript" src="/base64.js"></script>
 <script>
-var custom_settings = <% get_custom_settings(); %>;
+var custom_settings;
+function LoadCustomSettings(){
+	custom_settings = <% get_custom_settings(); %>;
+	for (var prop in custom_settings) {
+		if (Object.prototype.hasOwnProperty.call(custom_settings, prop)) {
+			if(prop.indexOf("yazfi") != -1){
+				eval("delete custom_settings."+prop)
+			}
+		}
+	}
+}
 
 function YazHint(hintid) {
 	var tag_name= document.getElementsByTagName('a');
@@ -193,6 +203,7 @@ function applyRule() {
 
 function initial(){
 	SetCurrentPage();
+	LoadCustomSettings();
 	show_menu();
 	get_conf_file();
 }
@@ -371,21 +382,20 @@ function AddEventHandlers(){
 	}
 }
 
-
 $.fn.serializeObject = function(){
-    var o = {};
-    var a = this.serializeArray();
-    $.each(a, function() {
-        if (o[this.name] !== undefined && this.name.indexOf("yazfi") != -1) {
-            if (!o[this.name].push) {
-                o[this.name] = [o[this.name]];
-            }
-            o[this.name].push(this.value || '');
-        } else if (this.name.indexOf("yazfi") != -1){
-            o[this.name] = this.value || '';
-        }
-    });
-    return o;
+	var o = custom_settings;
+	var a = this.serializeArray();
+	$.each(a, function() {
+		if (o[this.name] !== undefined && this.name.indexOf("yazfi") != -1) {
+			if (!o[this.name].push) {
+				o[this.name] = [o[this.name]];
+			}
+			o[this.name].push(this.value || '');
+		} else if (this.name.indexOf("yazfi") != -1){
+			o[this.name] = this.value || '';
+		}
+	});
+	return o;
 };
 
 </script>
