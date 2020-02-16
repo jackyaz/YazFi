@@ -480,7 +480,6 @@ Validate_String(){
 }
 
 Conf_Validate(){
-	
 	CONF_VALIDATED="true"
 	NETWORKS_ENABLED="false"
 	
@@ -671,6 +670,11 @@ Conf_Validate(){
 					# Validate _CLIENTISOLATION
 					if ! Validate_TrueFalse "$IFACETMP""_CLIENTISOLATION" "$(eval echo '$'"$IFACETMP""_CLIENTISOLATION")"; then
 						IFACE_PASS="false"
+					fi
+					
+					# Force _CLIENTISOLATION=false on AX88U
+					if [ "$ROUTER_MODEL" = "RT-AX88U" ]; then
+						sed -i -e "s/""$IFACETMP""_CLIENTISOLATION=true/""$IFACETMP""_CLIENTISOLATION=false/" "$YAZFI_CONF"
 					fi
 					
 					# Print success message
