@@ -16,11 +16,13 @@ Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not l
 
 YazFi is free to use under the [GNU General Public License version 3](https://opensource.org/licenses/GPL-3.0) (GPL 3.0).
 
-![Menu UI](https://puu.sh/CNwF7/a095903835.png)
-
 ### Supporting development
 Love the script and want to support future development? Any and all donations gratefully received!
 [**PayPal donation**](https://paypal.me/jackyaz21)
+
+![Menu UI](https://puu.sh/CNwF7/a095903835.png)
+
+![Web UI](https://puu.sh/FbJeV/0f32c1da9d.png)
 
 ## Supported Models
 ### Models
@@ -34,12 +36,17 @@ All modes supported by [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/about). Mod
 *   RT-AC3100
 *   RT-AC3200
 *   RT-AC5300
-*   RT-AX88U (clientisolation=false may be required)
+*   RT-AX88U (clientisolation is not supported and is forced to false)
 
 ### Firmware versions
+#### Core YazFi features
 You must be running firmware no older than:
 *   [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/) 384.5
 *   [john9527 fork](https://www.snbforums.com/threads/fork-asuswrt-merlin-374-43-lts-releases-v37ea.18914/) 374.43_32D6j9527
+
+#### WebUI page for YazFi
+You must be running firmware no older than:
+*   [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/) 384.15
 
 ## Installation
 Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:
