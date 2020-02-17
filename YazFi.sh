@@ -489,8 +489,8 @@ Conf_FromSettings(){
 			grep "yazfi_" "$SETTINGSFILE" > "$TMPFILE"
 			sed -i "s/yazfi_//g;s/ /=/g" "$TMPFILE"
 			while IFS='' read -r line || [ -n "$line" ]; do
-				SETTINGNAME="$(echo $line | cut -f1 -d'=' | awk 'BEGIN{FS="_"}{ print $1 "_" toupper($2) }')"
-				SETTINGVALUE="$(echo $line | cut -f2 -d'=')"
+				SETTINGNAME="$(echo "$line" | cut -f1 -d'=' | awk 'BEGIN{FS="_"}{ print $1 "_" toupper($2) }')"
+				SETTINGVALUE="$(echo "$line" | cut -f2 -d'=')"
 				sed -i "s/$SETTINGNAME=.*/$SETTINGNAME=$SETTINGVALUE/" "$YAZFI_CONF"
 			done < "$TMPFILE"
 			sed -i "\\~yazfi_~d" "$SETTINGSFILE"
