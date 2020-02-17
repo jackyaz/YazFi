@@ -479,6 +479,29 @@ Validate_String(){
 		fi
 }
 
+Conf_FromSettings(){
+	SETTINGSFILE="/jffs/addons/custom_settings.txt"
+	TMPFILE="/tmp/yazfi_settings.txt"
+	if [ -f "/jffs/addons/custom_settings.txt" ]; then
+		if [ "$(grep -c "yazfi_" $SETTINGSFILE)" -gt 0 ]; then
+			Print_Output "true" "Updated settings from WebUI found, merging into $YAZFI_CONF" "$PASS"
+			cp -a "$YAZFI_CONF" "$YAZFI_CONF.bak"
+			grep "yazfi_" "$SETTINGSFILE" > "$TMPFILE"
+			sed -i "s/yazfi_//g;s/ /=/g" "$TMPFILE"
+			while IFS='' read -r line || [ -n "$line" ]; do
+				SETTINGNAME="$(echo $line | cut -f1 -d'=' | awk 'BEGIN{FS="_"}{ print $1 "_" toupper($2) }')"
+				SETTINGVALUE="$(echo $line | cut -f2 -d'=')"
+				sed -i "s/$SETTINGNAME=.*/$SETTINGNAME=$SETTINGVALUE/" "$YAZFI_CONF"
+			done < "$TMPFILE"
+			sed -i "\\~yazfi_~d" "$SETTINGSFILE"
+			rm -f "$TMPFILE"
+			Print_Output "true" "Merge of updated settings from WebUI completed successfully" "$PASS"
+		else
+			Print_Output "false" "No updated settings from WebUI found, no merge into $YAZFI_CONF necessary" "$PASS"
+		fi
+	fi
+}
+
 Conf_Validate(){
 	CONF_VALIDATED="true"
 	NETWORKS_ENABLED="false"
@@ -2077,6 +2100,12 @@ case "$1" in
 			Check_Lock
 			Print_Output "true" "Wireless restarted - sleeping 60s before running $YAZFI_NAME" "$PASS"
 			sleep 60
+			Config_Networks
+			Clear_Lock
+		elif [ "$2" = "start" ] && [ "$3" = "yazfi" ]; then
+			Check_Lock
+			Conf_FromSettings
+			Print_Output "true" "WebUI config updated - running $YAZFI_NAME" "$PASS"
 			Config_Networks
 			Clear_Lock
 		fi
