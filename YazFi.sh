@@ -158,7 +158,7 @@ Auto_ServiceEvent(){
 			if [ -f /jffs/scripts/service-event ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/service-event)
 				# shellcheck disable=SC2016
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/service-event)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME service_event"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks service_event' /jffs/scripts/service-event)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/service-event
@@ -166,13 +166,13 @@ Auto_ServiceEvent(){
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					# shellcheck disable=SC2016
-					echo "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
+					echo "/jffs/scripts/$YAZFI_NAME service_event"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/service-event
 				echo "" >> /jffs/scripts/service-event
 				# shellcheck disable=SC2016
-				echo "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
+				echo "/jffs/scripts/$YAZFI_NAME service_event"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
 				chmod 0755 /jffs/scripts/service-event
 			fi
 		;;
@@ -2068,10 +2068,12 @@ case "$1" in
 		exit 0
 	;;
 	bounceclients)
-		if [ -z "$2" ] && [ -z "$3" ]; then
-			Check_Lock
-			Menu_BounceClients
-		elif [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
+		Check_Lock
+		Menu_BounceClients
+		exit 0;
+	;;
+	service_event)
+		if [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
 			Check_Lock
 			Print_Output "true" "Wireless restarted - sleeping 60s before running $YAZFI_NAME" "$PASS"
 			sleep 60
