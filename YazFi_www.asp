@@ -503,7 +503,7 @@ $.fn.serializeObject = function(){
 <input type="hidden" name="next_page" value="">
 <input type="hidden" name="modified" value="0">
 <input type="hidden" name="action_mode" value="apply">
-<input type="hidden" name="action_wait" value="65">
+<input type="hidden" name="action_wait" value="10">
 <input type="hidden" name="first_time" value="">
 <input type="hidden" name="SystemCmd" value="">
 <input type="hidden" name="action_script" value="start_yazfi">
