@@ -144,12 +144,12 @@ function YazHint(hintid) {
 function Validate_IP(forminput,iptype){
 	var inputvalue = forminput.value;
 	var inputname = forminput.name;
-	if (/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(inputvalue)){
-		if ( iptype != "DNS" ){
+	if(/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(inputvalue)){
+		if(iptype != "DNS"){
 			var fixedip = inputvalue.substring(0,inputvalue.lastIndexOf("."))+".0";
 			$(forminput).val(fixedip);
 			if (/(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)/.test(fixedip)){
-				if( ! checkIPConflict("LAN",fixedip,"255.255.255.0",document.form.lan_ipaddr.value,document.form.lan_netmask.value).state){
+				if(! checkIPConflict("LAN",fixedip,"255.255.255.0",document.form.lan_ipaddr.value,document.form.lan_netmask.value).state){
 					matchfound=false;
 					for(var i = 0; i < bands; i++){
 						for(var i2 = 1; i2 < 4; i2++){
@@ -160,22 +160,33 @@ function Validate_IP(forminput,iptype){
 							}
 						}
 					}
-					(matchfound) ? $(forminput).addClass("invalid") : $(forminput).removeClass("invalid");
+					if(matchfound){
+						$(forminput).addClass("invalid");
+						return false;
+					}
+					else{
+						$(forminput).removeClass("invalid");
+						return true;
+					}
 				}
-				else {
+				else{
 					$(forminput).addClass("invalid");
+					return false;
 				}
 			}
-			else {
+			else{
 				$(forminput).addClass("invalid");
+				return false;
 			}
 		}
-		else {
+		else{
 			$(forminput).removeClass("invalid");
+			return true;
 		}
 	}
-	else {
+	else{
 		$(forminput).addClass("invalid");
+		return false;
 	}
 }
 
@@ -188,17 +199,33 @@ function Validate_DHCP(forminput){
 	if(startend == "start"){
 		if(inputvalue >= eval("document.form."+inputname.substring(0,inputname.indexOf("start"))+"end.value")*1){
 			$(forminput).addClass("invalid");
+			return false;
 		}
 		else{
-			(inputvalue > 254 || inputvalue < 2) ? $(forminput).addClass("invalid") : $(forminput).removeClass("invalid");
+			if(inputvalue > 254 || inputvalue < 2){
+				$(forminput).addClass("invalid");
+				return false;
+			}
+			else{
+				$(forminput).removeClass("invalid");
+				return true;
+			}
 		}
 	}
 	else {
-		if (inputvalue <= eval("document.form."+inputname.substring(0,inputname.indexOf("end"))+"start.value")*1) {
+		if(inputvalue <= eval("document.form."+inputname.substring(0,inputname.indexOf("end"))+"start.value")*1){
 			$(forminput).addClass("invalid");
+			return false;
 		}
 		else{
-			(inputvalue > 254 || inputvalue < 2) ? $(forminput).addClass("invalid") : $(forminput).removeClass("invalid");
+			if(inputvalue > 254 || inputvalue < 2){
+				$(forminput).addClass("invalid");
+				return false;
+			}
+			else{
+				$(forminput).removeClass("invalid");
+				return true;
+			}
 		}
 	}
 }
@@ -207,7 +234,14 @@ function Validate_VPNClientNo(forminput){
 	var inputname = forminput.name;
 	var inputvalue = forminput.value*1;
 	
-	(inputvalue > 5 || inputvalue < 1) ? $(forminput).addClass("invalid") : $(forminput).removeClass("invalid");
+	if(inputvalue > 5 || inputvalue < 1){
+		$(forminput).addClass("invalid");
+		return false;
+	}
+	else{
+		$(forminput).removeClass("invalid");
+		return true;
+	}
 }
 
 function Validate_OneTwoWay(forminput){
@@ -221,10 +255,31 @@ function Validate_OneTwoWay(forminput){
 			eval("document.form."+inputname.substring(0,inputname.indexOf("one"))+"twowaytoguest.value=false");
 		}
 	}
-	else {
+	else{
 		if(inputvalue == "true"){
 			eval("document.form."+inputname.substring(0,inputname.indexOf("two"))+"onewaytoguest.value=false");
 		}
+	}
+}
+
+function Validate_All(){
+	var validationfailed = false;
+	for(var i=0; i < bands; i++){
+		for(var i2=1; i2 < 4; i2++){
+			if(! Validate_IP(eval("document.form.yazfi_wl"+i+i2+"_ipaddr"),"IP")){validationfailed=true;}
+			if(! Validate_DHCP(eval("document.form.yazfi_wl"+i+i2+"_dhcpstart"))){validationfailed=true;}
+			if(! Validate_DHCP(eval("document.form.yazfi_wl"+i+i2+"_dhcpend"))){validationfailed=true;}
+			if(! Validate_IP(eval("document.form.yazfi_wl"+i+i2+"_dns1"),"DNS")){validationfailed=true;}
+			if(! Validate_IP(eval("document.form.yazfi_wl"+i+i2+"_dns2"),"DNS")){validationfailed=true;}
+			if(! Validate_VPNClientNo(eval("document.form.yazfi_wl"+i+i2+"_vpnclientnumber"))){validationfailed=true;}
+		}
+	}
+	if(validationfailed){
+		alert("Validation for some fields failed. Please correct invalid values and try again.");
+		return false;
+	}
+	else{
+		return true;
 	}
 }
 
@@ -291,15 +346,20 @@ function reload() {
 }
 
 function applyRule() {
-	if(productid == "RT-AX88U"){
-		$("input[name*=clientisolation]").attr('disabled',false);
+	if(Validate_All()){
+		if(productid == "RT-AX88U"){
+			$("input[name*=clientisolation]").attr('disabled',false);
+		}
+		document.getElementById('amng_custom').value = JSON.stringify($('form').serializeObject())
+		var action_script_tmp = "start_yazfi";
+		document.form.action_script.value = action_script_tmp;
+		var restart_time = document.form.action_wait.value*1;
+		showLoading();
+		document.form.submit();
 	}
-	document.getElementById('amng_custom').value = JSON.stringify($('form').serializeObject())
-	var action_script_tmp = "start_yazfi";
-	document.form.action_script.value = action_script_tmp;
-	var restart_time = document.form.action_wait.value*1;
-	showLoading();
-	document.form.submit();
+	else{
+		return false;
+	}
 }
 
 function initial(){
