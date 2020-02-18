@@ -502,9 +502,99 @@ Conf_FromSettings(){
 	fi
 }
 
+Conf_FixBlanks(){
+	if ! Conf_Exists; then
+		Conf_Download "$YAZFI_CONF"
+		Clear_Lock
+		return 1
+	fi
+	
+	for IFACEBLANK in $IFACELIST_FULL; do
+		IFACETMP="$(Get_Iface_Var "$IFACEBLANK")"
+		IPADDRTMPBLANK=""
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_IPADDR")" ]; then
+			IPADDRTMPBLANK="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+1))"
+			
+			COUNTER=1
+			until [ "$(grep -o "$IPADDRTMPBLANK".0 $YAZFI_CONF | wc -l)" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMPBLANK"."$(nvram get lan_ipaddr | cut -f4 -d".")" | wc -l )" -eq 0 ]; do
+				IPADDRTMPBLANK="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+COUNTER))"
+				COUNTER=$((COUNTER + 1))
+			done
+			
+			sed -i -e "s/""$IFACETMPBLANK""_IPADDR=/""$IFACETMPBLANK""_IPADDR=""$IPADDRTMPBLANK"".0/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_IPADDR is blank, setting to next available subnet above primary LAN subnet" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_DHCPSTART")" ]; then
+			sed -i -e "s/""$IFACETMPBLANK""_DHCPSTART=/""$IFACETMPBLANK""_DHCPSTART=2/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_DHCPSTART is blank, setting to 2" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_DHCPEND")" ]; then
+			sed -i -e "s/""$IFACETMPBLANK""_DHCPEND=/""$IFACETMPBLANK""_DHCPEND=254/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_DHCPEND is blank, setting to 254" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_DNS1")" ]; then
+			if [ -n "$(eval echo '$'"$IFACETMPBLANK""_IPADDR")" ]; then
+				sed -i -e "s/""$IFACETMPBLANK""_DNS1=/""$IFACETMPBLANK""_DNS1=$(eval echo '$'"$IFACETMPBLANK""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+				Print_Output "false" "$IFACETMPBLANK""_DNS1 is blank, setting to $(eval echo '$'"$IFACETMPBLANK""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
+			else
+				sed -i -e "s/""$IFACETMPBLANK""_DNS1=/""$IFACETMPBLANK""_DNS1=$IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+				Print_Output "false" "$IFACETMPBLANK""_DNS1 is blank, setting to $IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
+			fi
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_DNS2")" ]; then
+			if [ -n "$(eval echo '$'"$IFACETMPBLANK""_IPADDR")" ]; then
+				sed -i -e "s/""$IFACETMPBLANK""_DNS2=/""$IFACETMPBLANK""_DNS2=$(eval echo '$'"$IFACETMPBLANK""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+				Print_Output "false" "$IFACETMPBLANK""_DNS2 is blank, setting to $(eval echo '$'"$IFACETMPBLANK""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
+			else
+				sed -i -e "s/""$IFACETMPBLANK""_DNS2=/""$IFACETMPBLANK""_DNS2=$IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+				Print_Output "false" "$IFACETMPBLANK""_DNS2 is blank, setting to $IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
+			fi
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_FORCEDNS")" ]; then
+			sed -i -e "s/""$IFACETMPBLANK""_FORCEDNS=/""$IFACETMPBLANK""_FORCEDNS=false/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_FORCEDNS is blank, setting to false" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_REDIRECTALLTOVPN")" ]; then
+			REDIRECTTMP="false"
+			sed -i -e "s/""$IFACETMPBLANK""_REDIRECTALLTOVPN=/""$IFACETMPBLANK""_REDIRECTALLTOVPN=false/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_REDIRECTALLTOVPN is blank, setting to false" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_VPNCLIENTNUMBER")" ]; then
+			sed -i -e "s/""$IFACETMPBLANK""_VPNCLIENTNUMBER=/""$IFACETMPBLANK""_VPNCLIENTNUMBER=1/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_VPNCLIENTNUMBER is blank, setting to 1" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_TWOWAYTOGUEST")" ]; then
+			sed -i -e "s/""$IFACETMPBLANK""_TWOWAYTOGUEST=/""$IFACETMPBLANK""_TWOWAYTOGUEST=false/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_TWOWAYTOGUEST is blank, setting to false" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_ONEWAYTOGUEST")" ]; then
+			sed -i -e "s/""$IFACETMPBLANK""_ONEWAYTOGUEST=/""$IFACETMPBLANK""_ONEWAYTOGUEST=false/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_ONEWAYTOGUEST is blank, setting to false" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_CLIENTISOLATION")" ]; then
+			sed -i -e "s/""$IFACETMPBLANK""_CLIENTISOLATION=/""$IFACETMPBLANK""_CLIENTISOLATION=false/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_CLIENTISOLATION is blank, setting to false" "$WARN"
+		fi
+	done
+}
+
 Conf_Validate(){
 	CONF_VALIDATED="true"
 	NETWORKS_ENABLED="false"
+	
+	# Mop up blank settings regardless of state
+	Conf_FixBlanks
 	
 	for IFACE in $IFACELIST_FULL; do
 		IFACETMP="$(Get_Iface_Var "$IFACE")"
@@ -523,81 +613,6 @@ Conf_Validate(){
 			IFACE_PASS="false"
 		else
 			ENABLEDTMP="$(eval echo '$'"$IFACETMP""_ENABLED")"
-		fi
-		
-		# Mop up blank settings regardless of state
-		if [ -z "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
-			IPADDRTMP="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+1))"
-			
-			COUNTER=1
-			until [ "$(grep -o "$IPADDRTMP".0 $YAZFI_CONF | wc -l)" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMP"."$(nvram get lan_ipaddr | cut -f4 -d".")" | wc -l )" -eq 0 ]; do
-				IPADDRTMP="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+COUNTER))"
-				COUNTER=$((COUNTER + 1))
-			done
-			
-			sed -i -e "s/""$IFACETMP""_IPADDR=/""$IFACETMP""_IPADDR=""$IPADDRTMP"".0/" "$YAZFI_CONF"
-			Print_Output "false" "$IFACETMP""_IPADDR is blank, setting to next available subnet above primary LAN subnet" "$WARN"
-		fi
-		
-		if [ -z "$(eval echo '$'"$IFACETMP""_DHCPSTART")" ]; then
-			sed -i -e "s/""$IFACETMP""_DHCPSTART=/""$IFACETMP""_DHCPSTART=2/" "$YAZFI_CONF"
-			Print_Output "false" "$IFACETMP""_DHCPSTART is blank, setting to 2" "$WARN"
-		fi
-		
-		if [ -z "$(eval echo '$'"$IFACETMP""_DHCPEND")" ]; then
-			sed -i -e "s/""$IFACETMP""_DHCPEND=/""$IFACETMP""_DHCPEND=254/" "$YAZFI_CONF"
-			Print_Output "false" "$IFACETMP""_DHCPEND is blank, setting to 254" "$WARN"
-		fi
-		
-		if [ -z "$(eval echo '$'"$IFACETMP""_DNS1")" ]; then
-			if [ -n "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
-				sed -i -e "s/""$IFACETMP""_DNS1=/""$IFACETMP""_DNS1=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
-				Print_Output "false" "$IFACETMP""_DNS1 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
-			else
-				sed -i -e "s/""$IFACETMP""_DNS1=/""$IFACETMP""_DNS1=$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
-				Print_Output "false" "$IFACETMP""_DNS1 is blank, setting to $IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
-			fi
-		fi
-		
-		if [ -z "$(eval echo '$'"$IFACETMP""_DNS2")" ]; then
-			if [ -n "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
-				sed -i -e "s/""$IFACETMP""_DNS2=/""$IFACETMP""_DNS2=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
-				Print_Output "false" "$IFACETMP""_DNS2 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
-			else
-				sed -i -e "s/""$IFACETMP""_DNS2=/""$IFACETMP""_DNS2=$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
-				Print_Output "false" "$IFACETMP""_DNS2 is blank, setting to $IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
-			fi
-		fi
-		
-		if [ -z "$(eval echo '$'"$IFACETMP""_FORCEDNS")" ]; then
-			sed -i -e "s/""$IFACETMP""_FORCEDNS=/""$IFACETMP""_FORCEDNS=false/" "$YAZFI_CONF"
-			Print_Output "false" "$IFACETMP""_FORCEDNS is blank, setting to false" "$WARN"
-		fi
-		
-		if [ -z "$(eval echo '$'"$IFACETMP""_REDIRECTALLTOVPN")" ]; then
-			REDIRECTTMP="false"
-			sed -i -e "s/""$IFACETMP""_REDIRECTALLTOVPN=/""$IFACETMP""_REDIRECTALLTOVPN=false/" "$YAZFI_CONF"
-			Print_Output "false" "$IFACETMP""_REDIRECTALLTOVPN is blank, setting to false" "$WARN"
-		fi
-		
-		if [ -z "$(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER")" ]; then
-			sed -i -e "s/""$IFACETMP""_VPNCLIENTNUMBER=/""$IFACETMP""_VPNCLIENTNUMBER=1/" "$YAZFI_CONF"
-			Print_Output "false" "$IFACETMP""_VPNCLIENTNUMBER is blank, setting to 1" "$WARN"
-		fi
-		
-		if [ -z "$(eval echo '$'"$IFACETMP""_TWOWAYTOGUEST")" ]; then
-			sed -i -e "s/""$IFACETMP""_TWOWAYTOGUEST=/""$IFACETMP""_TWOWAYTOGUEST=false/" "$YAZFI_CONF"
-			Print_Output "false" "$IFACETMP""_TWOWAYTOGUEST is blank, setting to false" "$WARN"
-		fi
-		
-		if [ -z "$(eval echo '$'"$IFACETMP""_ONEWAYTOGUEST")" ]; then
-			sed -i -e "s/""$IFACETMP""_ONEWAYTOGUEST=/""$IFACETMP""_ONEWAYTOGUEST=false/" "$YAZFI_CONF"
-			Print_Output "false" "$IFACETMP""_ONEWAYTOGUEST is blank, setting to false" "$WARN"
-		fi
-		
-		if [ -z "$(eval echo '$'"$IFACETMP""_CLIENTISOLATION")" ]; then
-			sed -i -e "s/""$IFACETMP""_CLIENTISOLATION=/""$IFACETMP""_CLIENTISOLATION=false/" "$YAZFI_CONF"
-			Print_Output "false" "$IFACETMP""_CLIENTISOLATION is blank, setting to false" "$WARN"
 		fi
 		
 		if ! Validate_Exists_IFACE "$IFACE" "silent" && [ "$ENABLEDTMP" = "true" ]; then
@@ -1321,7 +1336,7 @@ Config_Networks(){
 	WIRELESSRESTART="false"
 	
 	if ! Conf_Exists; then
-		Conf_Download $YAZFI_CONF
+		Conf_Download "$YAZFI_CONF"
 		Clear_Lock
 		return 1
 	fi
@@ -2049,6 +2064,7 @@ if [ -z "$1" ]; then
 	Shortcut_YazFi create
 	Create_Dirs
 	Create_Symlinks
+	Conf_FixBlanks
 	ScriptHeader
 	MainMenu
 	exit 0
