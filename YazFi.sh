@@ -510,7 +510,7 @@ Conf_FixBlanks(){
 	fi
 	
 	for IFACEBLANK in $IFACELIST_FULL; do
-		IFACETMP="$(Get_Iface_Var "$IFACEBLANK")"
+		IFACETMPBLANK="$(Get_Iface_Var "$IFACEBLANK")"
 		IPADDRTMPBLANK=""
 		
 		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_IPADDR")" ]; then
