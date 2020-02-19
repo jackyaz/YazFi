@@ -516,10 +516,10 @@ Conf_FixBlanks(){
 		IPADDRTMPBLANK=""
 		
 		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_IPADDR")" ]; then
-			IPADDRTMPBLANK="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+1))"
+			IPADDRTMPBLANK="192.168.0"
 			
 			COUNTER=1
-			until [ "$(grep -o "$IPADDRTMPBLANK".0 $YAZFI_CONF | wc -l)" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMPBLANK"."$(nvram get lan_ipaddr | cut -f4 -d".")" | wc -l )" -eq 0 ]; do
+			until [ "$(grep -o "$IPADDRTMPBLANK" $YAZFI_CONF | wc -l)" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMPBLANK" | wc -l )" -eq 0 ]; do
 				IPADDRTMPBLANK="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+COUNTER))"
 				COUNTER=$((COUNTER + 1))
 			done
