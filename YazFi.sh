@@ -509,6 +509,8 @@ Conf_FixBlanks(){
 		return 1
 	fi
 	
+	cp -a "$YAZFI_CONF" "$YAZFI_CONF.bak"
+	
 	for IFACEBLANK in $IFACELIST_FULL; do
 		IFACETMPBLANK="$(Get_Iface_Var "$IFACEBLANK")"
 		IPADDRTMPBLANK=""
