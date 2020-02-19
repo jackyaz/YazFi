@@ -518,14 +518,14 @@ Conf_FixBlanks(){
 		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_IPADDR")" ]; then
 			IPADDRTMPBLANK="192.168.0"
 			
-			COUNTER=1
+			COUNTER=0
 			until [ "$(grep -o "$IPADDRTMPBLANK" $YAZFI_CONF | wc -l)" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMPBLANK" | wc -l )" -eq 0 ]; do
-				IPADDRTMPBLANK="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+COUNTER))"
+				IPADDRTMPBLANK="192.168.""$COUNTER"
 				COUNTER=$((COUNTER + 1))
 			done
 			
 			sed -i -e "s/""$IFACETMPBLANK""_IPADDR=/""$IFACETMPBLANK""_IPADDR=""$IPADDRTMPBLANK"".0/" "$YAZFI_CONF"
-			Print_Output "false" "$IFACETMPBLANK""_IPADDR is blank, setting to next available subnet above primary LAN subnet" "$WARN"
+			Print_Output "false" "$IFACETMPBLANK""_IPADDR is blank, setting to next available subnet" "$WARN"
 		fi
 		
 		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_DHCPSTART")" ]; then
