@@ -26,9 +26,12 @@
 readonly YAZFI_NAME="YazFi"
 readonly OLD_YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/addons/$YAZFI_NAME.d/config"
-readonly YAZFI_VERSION="v3.3.0"
+readonly YAZFI_VERSION="v4.0.0"
 readonly YAZFI_BRANCH="master"
-readonly YAZFI_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH""/YazFi"
+readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH"""
+readonly SCRIPT_DIR="/jffs/addons/$YAZFI_NAME.d"
+readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
+readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$YAZFI_NAME"
 ### End of script variables ###
 
 ### Start of output format variables ###
@@ -155,7 +158,7 @@ Auto_ServiceEvent(){
 			if [ -f /jffs/scripts/service-event ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/service-event)
 				# shellcheck disable=SC2016
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/service-event)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME service_event"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks service_event' /jffs/scripts/service-event)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/service-event
@@ -163,13 +166,13 @@ Auto_ServiceEvent(){
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					# shellcheck disable=SC2016
-					echo "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
+					echo "/jffs/scripts/$YAZFI_NAME service_event"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/service-event
 				echo "" >> /jffs/scripts/service-event
 				# shellcheck disable=SC2016
-				echo "/jffs/scripts/$YAZFI_NAME bounceclients"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
+				echo "/jffs/scripts/$YAZFI_NAME service_event"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
 				chmod 0755 /jffs/scripts/service-event
 			fi
 		;;
@@ -224,6 +227,14 @@ Firmware_Version_Check(){
 }
 ############################################################################
 
+Firmware_Version_WebUI(){
+	if [ "$(uname -o)" = "ASUSWRT-Merlin" ] && nvram get rc_support | grep -qF "am_addons"; then
+		return 0
+	else
+		return 1
+	fi
+}
+
 ### Code for these functions inspired by https://github.com/Adamm00 - credit to @Adamm ###
 Check_Lock(){
 	if [ -f "/tmp/$YAZFI_NAME.lock" ]; then
@@ -257,13 +268,13 @@ Update_Version(){
 	if [ -z "$1" ]; then
 		doupdate="false"
 		localver=$(grep "YAZFI_VERSION=" /jffs/scripts/$YAZFI_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-		/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; return 1; }
-		serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+		/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; return 1; }
+		serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 		if [ "$localver" != "$serverver" ]; then
 			doupdate="version"
 		else
 			localmd5="$(md5sum "/jffs/scripts/$YAZFI_NAME" | awk '{print $1}')"
-			remotemd5="$(curl -fsL --retry 3 "$YAZFI_REPO.sh" | md5sum | awk '{print $1}')"
+			remotemd5="$(curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" | md5sum | awk '{print $1}')"
 			if [ "$localmd5" != "$remotemd5" ]; then
 				doupdate="md5"
 			fi
@@ -275,8 +286,14 @@ Update_Version(){
 			Print_Output "true" "MD5 hash of $YAZFI_NAME does not match - downloading updated $serverver" "$PASS"
 		fi
 		
+		if Firmware_Version_WebUI ; then
+			Update_File "YazFi_www.asp"
+		else
+			Print_Output "true" "WebUI is only supported on Merlin 384.15 and later" "$WARN"
+		fi
+		
 		if [ "$doupdate" != "false" ]; then
-			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
+			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
 			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
 			Clear_Lock
 			service restart_firewall >/dev/null 2>&1
@@ -289,10 +306,15 @@ Update_Version(){
 	
 	case "$1" in
 		force)
-			serverver=$(/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+			serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 			Print_Output "true" "Downloading latest version ($serverver) of $YAZFI_NAME" "$PASS"
-			/usr/sbin/curl -fsL --retry 3 "$YAZFI_REPO.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
+			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
 			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
+			if Firmware_Version_WebUI ; then
+				Update_File "YazFi_www.asp"
+			else
+				Print_Output "true" "WebUI is only supported on Merlin 384.15 and later" "$WARN"
+			fi
 			Clear_Lock
 			service restart_firewall >/dev/null 2>&1
 			exit 0
@@ -300,6 +322,25 @@ Update_Version(){
 	esac
 }
 ############################################################################
+
+Update_File(){
+	if [ "$1" = "YazFi_www.asp" ]; then
+		tmpfile="/tmp/$1"
+		Download_File "$SCRIPT_REPO/$1" "$tmpfile"
+		if ! diff -q "$tmpfile" "$SCRIPT_DIR/$1" >/dev/null 2>&1; then
+			Get_WebUI_Page "$SCRIPT_DIR/$1"
+			sed -i "\\~$MyPage~d" /tmp/menuTree.js
+			rm -f "$SCRIPT_WEBPAGE_DIR/$MyPage" 2>/dev/null
+			Download_File "$SCRIPT_REPO/$1" "$SCRIPT_DIR/$1"
+			Print_Output "true" "New version of $1 downloaded" "$PASS"
+			Mount_WebUI
+		fi
+		rm -f "$tmpfile"
+	else
+		return 1
+	fi
+}
+
 
 IP_Local(){
 	if echo "$1" | grep -qE '(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)'; then
@@ -438,10 +479,122 @@ Validate_String(){
 		fi
 }
 
-Conf_Validate(){
+Conf_FromSettings(){
+	SETTINGSFILE="/jffs/addons/custom_settings.txt"
+	TMPFILE="/tmp/yazfi_settings.txt"
+	if [ -f "/jffs/addons/custom_settings.txt" ]; then
+		if [ "$(grep -c "yazfi_" $SETTINGSFILE)" -gt 0 ]; then
+			Print_Output "true" "Updated settings from WebUI found, merging into $YAZFI_CONF" "$PASS"
+			cp -a "$YAZFI_CONF" "$YAZFI_CONF.bak"
+			grep "yazfi_" "$SETTINGSFILE" > "$TMPFILE"
+			sed -i "s/yazfi_//g;s/ /=/g" "$TMPFILE"
+			while IFS='' read -r line || [ -n "$line" ]; do
+				SETTINGNAME="$(echo "$line" | cut -f1 -d'=' | awk 'BEGIN{FS="_"}{ print $1 "_" toupper($2) }')"
+				SETTINGVALUE="$(echo "$line" | cut -f2 -d'=')"
+				sed -i "s/$SETTINGNAME=.*/$SETTINGNAME=$SETTINGVALUE/" "$YAZFI_CONF"
+			done < "$TMPFILE"
+			sed -i "\\~yazfi_~d" "$SETTINGSFILE"
+			rm -f "$TMPFILE"
+			Print_Output "true" "Merge of updated settings from WebUI completed successfully" "$PASS"
+		else
+			Print_Output "false" "No updated settings from WebUI found, no merge into $YAZFI_CONF necessary" "$PASS"
+		fi
+	fi
+}
+
+Conf_FixBlanks(){
+	if ! Conf_Exists; then
+		Conf_Download "$YAZFI_CONF"
+		Clear_Lock
+		return 1
+	fi
 	
+	for IFACEBLANK in $IFACELIST_FULL; do
+		IFACETMPBLANK="$(Get_Iface_Var "$IFACEBLANK")"
+		IPADDRTMPBLANK=""
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_IPADDR")" ]; then
+			IPADDRTMPBLANK="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+1))"
+			
+			COUNTER=1
+			until [ "$(grep -o "$IPADDRTMPBLANK".0 $YAZFI_CONF | wc -l)" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMPBLANK"."$(nvram get lan_ipaddr | cut -f4 -d".")" | wc -l )" -eq 0 ]; do
+				IPADDRTMPBLANK="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+COUNTER))"
+				COUNTER=$((COUNTER + 1))
+			done
+			
+			sed -i -e "s/""$IFACETMPBLANK""_IPADDR=/""$IFACETMPBLANK""_IPADDR=""$IPADDRTMPBLANK"".0/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_IPADDR is blank, setting to next available subnet above primary LAN subnet" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_DHCPSTART")" ]; then
+			sed -i -e "s/""$IFACETMPBLANK""_DHCPSTART=/""$IFACETMPBLANK""_DHCPSTART=2/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_DHCPSTART is blank, setting to 2" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_DHCPEND")" ]; then
+			sed -i -e "s/""$IFACETMPBLANK""_DHCPEND=/""$IFACETMPBLANK""_DHCPEND=254/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_DHCPEND is blank, setting to 254" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_DNS1")" ]; then
+			if [ -n "$(eval echo '$'"$IFACETMPBLANK""_IPADDR")" ]; then
+				sed -i -e "s/""$IFACETMPBLANK""_DNS1=/""$IFACETMPBLANK""_DNS1=$(eval echo '$'"$IFACETMPBLANK""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+				Print_Output "false" "$IFACETMPBLANK""_DNS1 is blank, setting to $(eval echo '$'"$IFACETMPBLANK""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
+			else
+				sed -i -e "s/""$IFACETMPBLANK""_DNS1=/""$IFACETMPBLANK""_DNS1=$IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+				Print_Output "false" "$IFACETMPBLANK""_DNS1 is blank, setting to $IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
+			fi
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_DNS2")" ]; then
+			if [ -n "$(eval echo '$'"$IFACETMPBLANK""_IPADDR")" ]; then
+				sed -i -e "s/""$IFACETMPBLANK""_DNS2=/""$IFACETMPBLANK""_DNS2=$(eval echo '$'"$IFACETMPBLANK""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+				Print_Output "false" "$IFACETMPBLANK""_DNS2 is blank, setting to $(eval echo '$'"$IFACETMPBLANK""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
+			else
+				sed -i -e "s/""$IFACETMPBLANK""_DNS2=/""$IFACETMPBLANK""_DNS2=$IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+				Print_Output "false" "$IFACETMPBLANK""_DNS2 is blank, setting to $IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
+			fi
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_FORCEDNS")" ]; then
+			sed -i -e "s/""$IFACETMPBLANK""_FORCEDNS=/""$IFACETMPBLANK""_FORCEDNS=false/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_FORCEDNS is blank, setting to false" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_REDIRECTALLTOVPN")" ]; then
+			REDIRECTTMP="false"
+			sed -i -e "s/""$IFACETMPBLANK""_REDIRECTALLTOVPN=/""$IFACETMPBLANK""_REDIRECTALLTOVPN=false/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_REDIRECTALLTOVPN is blank, setting to false" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_VPNCLIENTNUMBER")" ]; then
+			sed -i -e "s/""$IFACETMPBLANK""_VPNCLIENTNUMBER=/""$IFACETMPBLANK""_VPNCLIENTNUMBER=1/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_VPNCLIENTNUMBER is blank, setting to 1" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_TWOWAYTOGUEST")" ]; then
+			sed -i -e "s/""$IFACETMPBLANK""_TWOWAYTOGUEST=/""$IFACETMPBLANK""_TWOWAYTOGUEST=false/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_TWOWAYTOGUEST is blank, setting to false" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_ONEWAYTOGUEST")" ]; then
+			sed -i -e "s/""$IFACETMPBLANK""_ONEWAYTOGUEST=/""$IFACETMPBLANK""_ONEWAYTOGUEST=false/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_ONEWAYTOGUEST is blank, setting to false" "$WARN"
+		fi
+		
+		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_CLIENTISOLATION")" ]; then
+			sed -i -e "s/""$IFACETMPBLANK""_CLIENTISOLATION=/""$IFACETMPBLANK""_CLIENTISOLATION=false/" "$YAZFI_CONF"
+			Print_Output "false" "$IFACETMPBLANK""_CLIENTISOLATION is blank, setting to false" "$WARN"
+		fi
+	done
+}
+
+Conf_Validate(){
 	CONF_VALIDATED="true"
 	NETWORKS_ENABLED="false"
+	
+	# Mop up blank settings regardless of state
+	Conf_FixBlanks
 	
 	for IFACE in $IFACELIST_FULL; do
 		IFACETMP="$(Get_Iface_Var "$IFACE")"
@@ -476,21 +629,9 @@ Conf_Validate(){
 				# Only validate interfaces enabled in config file
 				if [ "$(eval echo '$'"$IFACETMP""_ENABLED")" = "true" ]; then
 					# Validate _IPADDR
-					if [ -z "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
-						IPADDRTMP="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+1))"
-						
-						COUNTER=1
-						until [ "$(grep -o "$IPADDRTMP".0 $YAZFI_CONF | wc -l)" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMP"."$(nvram get lan_ipaddr | cut -f4 -d".")" | wc -l )" -eq 0 ]; do
-							IPADDRTMP="$(echo "$LAN" | cut -f1-2 -d".").$(($(echo "$LAN" | cut -f3 -d".")+COUNTER))"
-							COUNTER=$((COUNTER + 1))
-						done
-						
-						sed -i -e "s/""$IFACETMP""_IPADDR=/""$IFACETMP""_IPADDR=""$IPADDRTMP"".0/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_IPADDR is blank, setting to next available subnet above primary LAN subnet" "$WARN"
-					elif ! Validate_IP "$IFACETMP""_IPADDR" "$(eval echo '$'"$IFACETMP""_IPADDR")"; then
+					if ! Validate_IP "$IFACETMP""_IPADDR" "$(eval echo '$'"$IFACETMP""_IPADDR")"; then
 						IFACE_PASS="false"
 					else
-						
 						IPADDRTMP="$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".")"
 						
 						# Set last octet to 0
@@ -506,16 +647,6 @@ Conf_Validate(){
 					fi
 					
 					#Validate _DHCPSTART and _DHCPEND
-					if [ -z "$(eval echo '$'"$IFACETMP""_DHCPSTART")" ]; then
-						sed -i -e "s/""$IFACETMP""_DHCPSTART=/""$IFACETMP""_DHCPSTART=2/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_DHCPSTART is blank, setting to 2" "$WARN"
-					fi
-					
-					if [ -z "$(eval echo '$'"$IFACETMP""_DHCPEND")" ]; then
-						sed -i -e "s/""$IFACETMP""_DHCPEND=/""$IFACETMP""_DHCPEND=254/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_DHCPEND is blank, setting to 254" "$WARN"
-					fi
-					
 					if [ -n "$(eval echo '$'"$IFACETMP""_DHCPSTART")" ] && [ -n "$(eval echo '$'"$IFACETMP""_DHCPEND")" ]; then
 						if ! Validate_DHCP "$IFACETMP""_DHCPSTART|and|""$IFACETMP""_DHCPEND" "$(eval echo '$'"$IFACETMP""_DHCPSTART")" "$(eval echo '$'"$IFACETMP""_DHCPEND")"; then
 						IFACE_PASS="false"
@@ -523,45 +654,22 @@ Conf_Validate(){
 					fi
 					
 					# Validate _DNS1
-					if [ -z "$(eval echo '$'"$IFACETMP""_DNS1")" ]; then
-						if [ -n "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
-							sed -i -e "s/""$IFACETMP""_DNS1=/""$IFACETMP""_DNS1=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
-							Print_Output "false" "$IFACETMP""_DNS1 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
-						else
-							sed -i -e "s/""$IFACETMP""_DNS1=/""$IFACETMP""_DNS1=$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
-							Print_Output "false" "$IFACETMP""_DNS1 is blank, setting to $IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
-						fi
-					elif ! Validate_IP "$IFACETMP""_DNS1" "$(eval echo '$'"$IFACETMP""_DNS1")" "DNS"; then
+					if ! Validate_IP "$IFACETMP""_DNS1" "$(eval echo '$'"$IFACETMP""_DNS1")" "DNS"; then
 						IFACE_PASS="false"
 					fi
 					
 					# Validate _DNS2
-					if [ -z "$(eval echo '$'"$IFACETMP""_DNS2")" ]; then
-						if [ -n "$(eval echo '$'"$IFACETMP""_IPADDR")" ]; then
-							sed -i -e "s/""$IFACETMP""_DNS2=/""$IFACETMP""_DNS2=$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
-							Print_Output "false" "$IFACETMP""_DNS2 is blank, setting to $(eval echo '$'"$IFACETMP""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
-						else
-							sed -i -e "s/""$IFACETMP""_DNS2=/""$IFACETMP""_DNS2=$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
-							Print_Output "false" "$IFACETMP""_DNS2 is blank, setting to $IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
-						fi
-					elif ! Validate_IP "$IFACETMP""_DNS2" "$(eval echo '$'"$IFACETMP""_DNS2")" "DNS"; then
+					if ! Validate_IP "$IFACETMP""_DNS2" "$(eval echo '$'"$IFACETMP""_DNS2")" "DNS"; then
 						IFACE_PASS="false"
 					fi
 					
 					# Validate _FORCEDNS
-					if [ -z "$(eval echo '$'"$IFACETMP""_FORCEDNS")" ]; then
-						sed -i -e "s/""$IFACETMP""_FORCEDNS=/""$IFACETMP""_FORCEDNS=false/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_FORCEDNS is blank, setting to false" "$WARN"
-					elif ! Validate_TrueFalse "$IFACETMP""_FORCEDNS" "$(eval echo '$'"$IFACETMP""_FORCEDNS")"; then
+					if ! Validate_TrueFalse "$IFACETMP""_FORCEDNS" "$(eval echo '$'"$IFACETMP""_FORCEDNS")"; then
 						IFACE_PASS="false"
 					fi
 					
 					# Validate _REDIRECTALLTOVPN
-					if [ -z "$(eval echo '$'"$IFACETMP""_REDIRECTALLTOVPN")" ]; then
-						REDIRECTTMP="false"
-						sed -i -e "s/""$IFACETMP""_REDIRECTALLTOVPN=/""$IFACETMP""_REDIRECTALLTOVPN=false/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_REDIRECTALLTOVPN is blank, setting to false" "$WARN"
-					elif ! Validate_TrueFalse "$IFACETMP""_REDIRECTALLTOVPN" "$(eval echo '$'"$IFACETMP""_REDIRECTALLTOVPN")"; then
+					if ! Validate_TrueFalse "$IFACETMP""_REDIRECTALLTOVPN" "$(eval echo '$'"$IFACETMP""_REDIRECTALLTOVPN")"; then
 						REDIRECTTMP="false"
 						IFACE_PASS="false"
 					else
@@ -570,10 +678,7 @@ Conf_Validate(){
 					
 					# Validate _VPNCLIENTNUMBER if _REDIRECTALLTOVPN is enabled
 					if [ "$REDIRECTTMP" = "true" ]; then
-						if [ -z "$(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER")" ]; then
-							Print_Output "false" "$IFACETMP""_VPNCLIENTNUMBER is blank" "$ERR"
-							IFACE_PASS="false"
-						elif ! Validate_VPNClientNo "$IFACETMP""_VPNCLIENTNUMBER" "$(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER")"; then
+						if ! Validate_VPNClientNo "$IFACETMP""_VPNCLIENTNUMBER" "$(eval echo '$'"$IFACETMP""_VPNCLIENTNUMBER")"; then
 							IFACE_PASS="false"
 						else
 							#Validate VPN client is configured for policy routing
@@ -585,18 +690,12 @@ Conf_Validate(){
 					fi
 					
 					# Validate _TWOWAYTOGUEST
-					if [ -z "$(eval echo '$'"$IFACETMP""_TWOWAYTOGUEST")" ]; then
-						sed -i -e "s/""$IFACETMP""_TWOWAYTOGUEST=/""$IFACETMP""_TWOWAYTOGUEST=false/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_TWOWAYTOGUEST is blank, setting to false" "$WARN"
-					elif ! Validate_TrueFalse "$IFACETMP""_TWOWAYTOGUEST" "$(eval echo '$'"$IFACETMP""_TWOWAYTOGUEST")"; then
+					if ! Validate_TrueFalse "$IFACETMP""_TWOWAYTOGUEST" "$(eval echo '$'"$IFACETMP""_TWOWAYTOGUEST")"; then
 						IFACE_PASS="false"
 					fi
 					
 					# Validate _ONEWAYTOGUEST
-					if [ -z "$(eval echo '$'"$IFACETMP""_ONEWAYTOGUEST")" ]; then
-						sed -i -e "s/""$IFACETMP""_ONEWAYTOGUEST=/""$IFACETMP""_ONEWAYTOGUEST=false/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_ONEWAYTOGUEST is blank, setting to false" "$WARN"
-					elif ! Validate_TrueFalse "$IFACETMP""_ONEWAYTOGUEST" "$(eval echo '$'"$IFACETMP""_ONEWAYTOGUEST")"; then
+					if ! Validate_TrueFalse "$IFACETMP""_ONEWAYTOGUEST" "$(eval echo '$'"$IFACETMP""_ONEWAYTOGUEST")"; then
 						IFACE_PASS="false"
 					fi
 					
@@ -607,11 +706,13 @@ Conf_Validate(){
 					fi
 					
 					# Validate _CLIENTISOLATION
-					if [ -z "$(eval echo '$'"$IFACETMP""_CLIENTISOLATION")" ]; then
-						sed -i -e "s/""$IFACETMP""_CLIENTISOLATION=/""$IFACETMP""_CLIENTISOLATION=true/" "$YAZFI_CONF"
-						Print_Output "false" "$IFACETMP""_CLIENTISOLATION is blank, setting to true" "$WARN"
-					elif ! Validate_TrueFalse "$IFACETMP""_CLIENTISOLATION" "$(eval echo '$'"$IFACETMP""_CLIENTISOLATION")"; then
+					if ! Validate_TrueFalse "$IFACETMP""_CLIENTISOLATION" "$(eval echo '$'"$IFACETMP""_CLIENTISOLATION")"; then
 						IFACE_PASS="false"
+					fi
+					
+					# Force _CLIENTISOLATION=false on AX88U
+					if [ "$ROUTER_MODEL" = "RT-AX88U" ]; then
+						sed -i -e "s/""$IFACETMP""_CLIENTISOLATION=true/""$IFACETMP""_CLIENTISOLATION=false/" "$YAZFI_CONF"
 					fi
 					
 					# Print success message
@@ -641,9 +742,68 @@ Conf_Validate(){
 	fi
 }
 
+Create_Dirs(){
+	if [ ! -d "$SCRIPT_DIR" ]; then
+		mkdir -p "$SCRIPT_DIR"
+	fi
+	
+	if [ ! -d "$SCRIPT_WEBPAGE_DIR" ]; then
+		mkdir -p "$SCRIPT_WEBPAGE_DIR"
+	fi
+		
+	if [ ! -d "$SCRIPT_WEB_DIR" ]; then
+		mkdir -p "$SCRIPT_WEB_DIR"
+	fi
+}
+
+Create_Symlinks(){
+	rm -f "$SCRIPT_WEB_DIR/"* 2>/dev/null
+	
+	ln -s "$SCRIPT_DIR/config"  "$SCRIPT_WEB_DIR/config.htm" 2>/dev/null
+}
+
+Download_File(){
+	/usr/sbin/curl -fsL --retry 3 "$1" -o "$2"
+}
+
+Get_WebUI_Page () {
+	for i in 1 2 3 4 5 6 7 8 9 10; do
+		page="$SCRIPT_WEBPAGE_DIR/user$i.asp"
+		if [ ! -f "$page" ] || [ "$(md5sum < "$1")" = "$(md5sum < "$page")" ]; then
+			MyPage="user$i.asp"
+			return
+		fi
+	done
+	MyPage="none"
+}
+
+Mount_WebUI(){
+	Get_WebUI_Page "$SCRIPT_DIR/YazFi_www.asp"
+	if [ "$MyPage" = "none" ]; then
+		Print_Output "true" "Unable to mount $YAZFI_NAME WebUI page, exiting" "$CRIT"
+		exit 1
+	fi
+	Print_Output "true" "Mounting $YAZFI_NAME WebUI page as $MyPage" "$PASS"
+	cp -f "$SCRIPT_DIR/YazFi_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
+	
+	umount /www/index_style.css 2>/dev/null
+	mount -o bind /tmp/index_style.css /www/index_style.css
+	
+	if [ ! -f "/tmp/menuTree.js" ]; then
+		cp -f "/www/require/modules/menuTree.js" "/tmp/"
+	fi
+	
+	sed -i "\\~$MyPage~d" /tmp/menuTree.js
+	
+	sed -i "/url: \"Guest_network.asp\", tabName:/a {url: \"$MyPage\", tabName: \"YazFi\"}," /tmp/menuTree.js
+	
+	umount /www/require/modules/menuTree.js 2>/dev/null
+	mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
+}
+
 Conf_Download(){
 	mkdir -p "/jffs/addons/$YAZFI_NAME.d"
-	/usr/sbin/curl -s --retry 3 "$YAZFI_REPO.config.example" -o "$1"
+	/usr/sbin/curl -s --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.config.example" -o "$1"
 	chmod 0644 "$1"
 	dos2unix "$1"
 	echo ""
@@ -1176,7 +1336,7 @@ Config_Networks(){
 	WIRELESSRESTART="false"
 	
 	if ! Conf_Exists; then
-		Conf_Download $YAZFI_CONF
+		Conf_Download "$YAZFI_CONF"
 		Clear_Lock
 		return 1
 	fi
@@ -1190,6 +1350,7 @@ Config_Networks(){
 	
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
+	Mount_WebUI
 	
 	DHCP_Conf initialise 2>/dev/null
 	
@@ -1347,7 +1508,6 @@ ScriptHeader(){
 }
 
 MainMenu(){
-	Shortcut_YazFi create
 	printf "1.    Apply %s settings\\n\\n" "$YAZFI_NAME"
 	printf "2.    Show connected clients using %s\\n\\n" "$YAZFI_NAME"
 	printf "3.    Edit %s config\\n" "$YAZFI_NAME"
@@ -1502,6 +1662,12 @@ Menu_Install(){
 		exit 1
 	fi
 	
+	if Firmware_Version_WebUI ; then
+		Update_File "YazFi_www.asp"
+	else
+		Print_Output "true" "WebUI is only support on Merlin 384.15 and later" "$WARN"
+	fi
+	
 	if ! Conf_Exists; then
 		Conf_Download "$YAZFI_CONF"
 	else
@@ -1510,6 +1676,8 @@ Menu_Install(){
 	fi
 	
 	Shortcut_YazFi create
+	Create_Dirs
+	Create_Symlinks
 	echo ""
 	echo ""
 	Print_Output "true" "You can access $YAZFI_NAME's menu via amtm (if installed) with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
@@ -1582,6 +1750,13 @@ Menu_Uninstall(){
 	Firewall_NVRAM deleteall "$IFACE" 2>/dev/null
 	Iface_Manage deleteall 2>/dev/null
 	DHCP_Conf deleteall 2>/dev/null
+	Get_WebUI_Page "$SCRIPT_DIR/YazFi_www.asp"
+		if [ -n "$MyPage" ] && [ "$MyPage" != "none" ] && [ -f "/tmp/menuTree.js" ]; then
+			sed -i "\\~$MyPage~d" /tmp/menuTree.js
+			umount /www/require/modules/menuTree.js
+			mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
+			rm -rf "{$SCRIPT_WEBPAGE_DIR:?}/$MyPage"
+		fi
 	while true; do
 		printf "\\n\\e[1mDo you want to delete %s configuration file(s)? (y/n)\\e[0m\\n" "$YAZFI_NAME"
 		read -r "confirm"
@@ -1857,7 +2032,6 @@ Menu_Diagnostics(){
 	ip rule show > "$DIAGPATH""/iprule.txt"
 	ip route show > "$DIAGPATH""/iproute.txt"
 	ip route show table all | grep "table" | sed 's/.*\(table.*\)/\1/g' | awk '{print $2}' | sort | uniq | grep ovpn > "$DIAGPATH""/routetables.txt"
-	#ip route show table ovpnc1 > "$DIAGPATH""/ebtables.txt"
 	ifconfig -a > "$DIAGPATH""/ifconfig.txt"
 	
 	cp "$YAZFI_CONF" "$DIAGPATH""/""$YAZFI_NAME"".conf"
@@ -1887,6 +2061,10 @@ if [ -z "$1" ]; then
 	fi
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
+	Shortcut_YazFi create
+	Create_Dirs
+	Create_Symlinks
+	Conf_FixBlanks
 	ScriptHeader
 	MainMenu
 	exit 0
@@ -1903,10 +2081,12 @@ case "$1" in
 			Check_Lock
 			Print_Output "true" "Firewall restarted - sleeping 60s before running $YAZFI_NAME" "$PASS"
 			sleep 60
-			Menu_RunNow
+			Config_Networks
+			Clear_Lock
 		else
 			Check_Lock
-			Menu_RunNow
+			Config_Networks
+			Clear_Lock
 		fi
 		
 		exit 0
@@ -1927,13 +2107,21 @@ case "$1" in
 		exit 0
 	;;
 	bounceclients)
-		if [ -z "$2" ] && [ -z "$3" ]; then
-			Check_Lock
-			Menu_BounceClients
-		elif [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
+		Check_Lock
+		Menu_BounceClients
+		exit 0;
+	;;
+	service_event)
+		if [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
 			Check_Lock
 			Print_Output "true" "Wireless restarted - sleeping 60s before running $YAZFI_NAME" "$PASS"
 			sleep 60
+			Config_Networks
+			Clear_Lock
+		elif [ "$2" = "start" ] && [ "$3" = "yazfi" ]; then
+			Check_Lock
+			Conf_FromSettings
+			Print_Output "true" "WebUI config updated - running $YAZFI_NAME" "$PASS"
 			Config_Networks
 			Clear_Lock
 		fi
