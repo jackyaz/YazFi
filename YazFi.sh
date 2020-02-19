@@ -788,9 +788,6 @@ Mount_WebUI(){
 	Print_Output "true" "Mounting $YAZFI_NAME WebUI page as $MyPage" "$PASS"
 	cp -f "$SCRIPT_DIR/YazFi_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
 	
-	umount /www/index_style.css 2>/dev/null
-	mount -o bind /tmp/index_style.css /www/index_style.css
-	
 	if [ ! -f "/tmp/menuTree.js" ]; then
 		cp -f "/www/require/modules/menuTree.js" "/tmp/"
 	fi
