@@ -26,7 +26,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly OLD_YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/addons/$YAZFI_NAME.d/config"
-readonly YAZFI_VERSION="v4.0.0"
+readonly YAZFI_VERSION="v4.0.1"
 readonly YAZFI_BRANCH="master"
 readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH"""
 readonly SCRIPT_DIR="/jffs/addons/$YAZFI_NAME.d"

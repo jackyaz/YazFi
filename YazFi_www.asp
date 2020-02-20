@@ -62,6 +62,7 @@ thead.collapsibleparent {
   color: white !important;
   padding: 4px !important;
   font-weight: bolder !important;
+  padding: 0px !important;
 }
 
 .SettingsTable td {
@@ -393,6 +394,12 @@ function BuildConfigTable(prefix,title){
 	charthtml+='<th>Guest Network 2</th>';
 	charthtml+='<th>Guest Network 3</th>';
 	charthtml+='</tr>';
+	charthtml+='<tr>';
+	charthtml+='<th>&nbsp;</th>';
+	charthtml+='<th>'+eval('document.form.'+prefix+'1_ssid.value')+'</th>';
+	charthtml+='<th>'+eval('document.form.'+prefix+'2_ssid.value')+'</th>';
+	charthtml+='<th>'+eval('document.form.'+prefix+'3_ssid.value')+'</th>';
+	charthtml+='</tr>'
 	charthtml+='</thead>';
 	
 	/* ENABLED */
@@ -571,6 +578,15 @@ $.fn.serializeObject = function(){
 <input type="hidden" name="firmver" value="<% nvram_get("firmver"); %>">
 <input type="hidden" name="lan_ipaddr" value="<% nvram_get("lan_ipaddr"); %>">
 <input type="hidden" name="lan_netmask" value="<% nvram_get("lan_netmask"); %>">
+<input type="hidden" name="wl01_ssid" value="<% nvram_get("wl0.1_ssid"); %>">
+<input type="hidden" name="wl02_ssid" value="<% nvram_get("wl0.2_ssid"); %>">
+<input type="hidden" name="wl03_ssid" value="<% nvram_get("wl0.3_ssid"); %>">
+<input type="hidden" name="wl11_ssid" value="<% nvram_get("wl1.1_ssid"); %>">
+<input type="hidden" name="wl12_ssid" value="<% nvram_get("wl1.2_ssid"); %>">
+<input type="hidden" name="wl13_ssid" value="<% nvram_get("wl1.3_ssid"); %>">
+<input type="hidden" name="wl21_ssid" value="<% nvram_get("wl2.1_ssid"); %>">
+<input type="hidden" name="wl22_ssid" value="<% nvram_get("wl2.2_ssid"); %>">
+<input type="hidden" name="wl23_ssid" value="<% nvram_get("wl2.3_ssid"); %>">
 <input type="hidden" name="amng_custom" id="amng_custom" value="">
 <table class="content" align="center" cellpadding="0" cellspacing="0">
 <tr>
