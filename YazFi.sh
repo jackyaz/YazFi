@@ -1334,6 +1334,9 @@ Config_Networks(){
 	Print_Output "true" "$YAZFI_NAME $YAZFI_VERSION starting up"
 	WIRELESSRESTART="false"
 	
+	Create_Dirs
+	Create_Symlinks
+	
 	if ! Conf_Exists; then
 		Conf_Download "$YAZFI_CONF"
 		Clear_Lock
@@ -1349,6 +1352,7 @@ Config_Networks(){
 	
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
+	
 	Mount_WebUI
 	
 	DHCP_Conf initialise 2>/dev/null
