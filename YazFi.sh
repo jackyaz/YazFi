@@ -221,6 +221,7 @@ Auto_Startup(){
 	esac
 }
 
+# shellcheck disable=SC2016
 Avahi_Conf(){
 	case $1 in
 		create)
