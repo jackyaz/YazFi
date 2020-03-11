@@ -221,6 +221,41 @@ Auto_Startup(){
 	esac
 }
 
+Avahi_Conf(){
+	case $1 in
+		create)
+			if [ -f /jffs/scripts/avahi-daemon.postconf ]; then
+				STARTUPLINECOUNT=$(grep -c "$YAZFI_NAME" /jffs/scripts/avahi-daemon.postconf)
+				
+				if [ "$STARTUPLINECOUNT" -eq 0 ]; then
+					{
+					echo ''
+					echo '"[reflector]" >> "$1" # '"$YAZFI_NAME"
+					echo '"enable-reflector=yes" >> "$1" # '"$YAZFI_NAME"
+					} >> /jffs/scripts/avahi-daemon.postconf
+				fi
+			else
+				{
+				echo '#!/bin/sh'
+				echo ''
+				echo '"[reflector]" >> "$1" # '"$YAZFI_NAME"
+				echo '"enable-reflector=yes" >> "$1" # '"$YAZFI_NAME"
+				} > /jffs/scripts/avahi-daemon.postconf
+				chmod 0755 /jffs/scripts/avahi-daemon.postconf
+			fi
+		;;
+		delete)
+			if [ -f /jffs/scripts/avahi-daemon.postconf ]; then
+				STARTUPLINECOUNT=$(grep -c "$YAZFI_NAME" /jffs/scripts/avahi-daemon.postconf)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e "$YAZFI_NAME"'/d' /jffs/scripts/avahi-daemon.postconf
+				fi
+			fi
+		;;
+	esac
+}
+
 ### Code for this function courtesy of https://github.com/decoderman- credit to @thelonelycoder ###
 Firmware_Version_Check(){
 	echo "$1" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'
@@ -1075,11 +1110,9 @@ Firewall_Rules(){
 		###
 		
 		### mDNS traffic ###
-		#   enable reflector in avahi
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_TWOWAYTOGUEST")" = "true" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ONEWAYTOGUEST")" = "true" ]; then
 			iptables "$ACTION" "$INPT" -i "$IFACE" -d 224.0.0.0/24 -j ACCEPT
 		fi
-		
 		###
 		
 		### End of IP firewall rules ###
@@ -1316,8 +1349,8 @@ DHCP_Conf(){
 			DHCP_Conf initialise 2>/dev/null
 			for IFACE in $IFACELIST; do
 				BEGIN="### Start of script-generated configuration for interface $IFACE ###"
-				END="### End of script-generated configuration for interface $2 ###"
-				if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
+				END="### End of script-generated configuration for interface $IFACE ###"
+				if grep -q "### Start of script-generated configuration for interface $IFACE ###" $TMPCONF; then
 					# shellcheck disable=SC1003
 					sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"" $TMPCONF
 				fi
@@ -1362,6 +1395,7 @@ Config_Networks(){
 	
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
+	Avahi_Conf create 2>/dev/null
 	
 	Mount_WebUI
 	
@@ -1756,6 +1790,7 @@ Menu_Uninstall(){
 	Print_Output "true" "Removing $YAZFI_NAME..." "$PASS"
 	Auto_Startup delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
+	Avahi_Conf delete 2>/dev/null
 	Routing_NVRAM deleteall 2>/dev/null
 	Routing_FWNAT deleteall 2>/dev/null
 	Routing_RPDB deleteall 2>/dev/null
@@ -2074,6 +2109,7 @@ if [ -z "$1" ]; then
 	fi
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
+	Avahi_Conf create 2>/dev/null
 	Shortcut_YazFi create
 	Create_Dirs
 	Create_Symlinks
