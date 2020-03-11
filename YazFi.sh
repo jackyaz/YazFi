@@ -230,7 +230,7 @@ Avahi_Conf(){
 				
 				if [ "$STARTUPLINECOUNT" -eq 0 ]; then
 					{
-					echo ''
+					echo 'echo "" >> "$1"'
 					echo 'echo "[reflector]" >> "$1" # '"$YAZFI_NAME"
 					echo 'echo "enable-reflector=yes" >> "$1" # '"$YAZFI_NAME"
 					} >> /jffs/scripts/avahi-daemon.postconf
@@ -238,7 +238,7 @@ Avahi_Conf(){
 			else
 				{
 				echo '#!/bin/sh'
-				echo ''
+				echo 'echo "" >> "$1"'
 				echo 'echo "[reflector]" >> "$1" # '"$YAZFI_NAME"
 				echo 'echo "enable-reflector=yes" >> "$1" # '"$YAZFI_NAME"
 				} > /jffs/scripts/avahi-daemon.postconf
