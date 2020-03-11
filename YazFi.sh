@@ -866,7 +866,7 @@ Firewall_Chains(){
 							iptables -I "$LGRJT" -j REJECT
 							
 							# Optional rule to log all rejected packets to syslog
-							#iptables -I $LGRJT -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
+							iptables -I $LGRJT -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
 						;;
 					esac
 				fi
@@ -1072,6 +1072,14 @@ Firewall_Rules(){
 				iptables -t nat -D "$DNSFLTR" "$RULENO"
 			done
 		fi
+		###
+		
+		### mDNS traffic ###
+		#   enable reflector in avahi
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_TWOWAYTOGUEST")" = "true" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ONEWAYTOGUEST")" = "true" ]; then
+			iptables "$ACTION" "$INPT" -i "$IFACE" -d 224.0.0.0/24 -j ACCEPT
+		fi
+		
 		###
 		
 		### End of IP firewall rules ###
