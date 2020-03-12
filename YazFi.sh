@@ -234,6 +234,7 @@ Avahi_Conf(){
 					echo 'echo "[reflector]" >> "$1" # '"$YAZFI_NAME"
 					echo 'echo "enable-reflector=yes" >> "$1" # '"$YAZFI_NAME"
 					} >> /jffs/scripts/avahi-daemon.postconf
+					service restart_mdns >/dev/null 2>&1
 				fi
 			else
 				{
@@ -243,6 +244,7 @@ Avahi_Conf(){
 				echo 'echo "enable-reflector=yes" >> "$1" # '"$YAZFI_NAME"
 				} > /jffs/scripts/avahi-daemon.postconf
 				chmod 0755 /jffs/scripts/avahi-daemon.postconf
+				service restart_mdns >/dev/null 2>&1
 			fi
 		;;
 		delete)
@@ -251,6 +253,7 @@ Avahi_Conf(){
 				
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e "$YAZFI_NAME"'/d' /jffs/scripts/avahi-daemon.postconf
+					service restart_mdns >/dev/null 2>&1
 				fi
 			fi
 		;;
