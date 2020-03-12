@@ -1112,7 +1112,7 @@ Firewall_Rules(){
 		
 		### mDNS traffic ###
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_TWOWAYTOGUEST")" = "true" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ONEWAYTOGUEST")" = "true" ]; then
-			iptables "$ACTION" "$INPT" -i "$IFACE" -d 224.0.0.0/24 -j ACCEPT
+			iptables "$ACTION" "$INPT" -i "$IFACE" -d 224.0.0.0/4 -j ACCEPT
 		fi
 		###
 		
