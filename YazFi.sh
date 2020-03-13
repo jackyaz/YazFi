@@ -1713,6 +1713,9 @@ Menu_Install(){
 		exit 1
 	fi
 	
+	Create_Dirs
+	Create_Symlinks
+	
 	if Firmware_Version_WebUI ; then
 		Update_File "YazFi_www.asp"
 	else
@@ -1727,8 +1730,6 @@ Menu_Install(){
 	fi
 	
 	Shortcut_YazFi create
-	Create_Dirs
-	Create_Symlinks
 	echo ""
 	echo ""
 	Print_Output "true" "You can access $YAZFI_NAME's menu via amtm (if installed) with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
