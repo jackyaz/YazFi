@@ -26,7 +26,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly OLD_YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/addons/$YAZFI_NAME.d/config"
-readonly YAZFI_VERSION="v4.0.1"
+readonly YAZFI_VERSION="v4.0.2"
 readonly YAZFI_BRANCH="master"
 readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH"""
 readonly SCRIPT_DIR="/jffs/addons/$YAZFI_NAME.d"
@@ -215,6 +215,45 @@ Auto_Startup(){
 				
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
+				fi
+			fi
+		;;
+	esac
+}
+
+# shellcheck disable=SC2016
+Avahi_Conf(){
+	case $1 in
+		create)
+			if [ -f /jffs/scripts/avahi-daemon.postconf ]; then
+				STARTUPLINECOUNT=$(grep -c "$YAZFI_NAME" /jffs/scripts/avahi-daemon.postconf)
+				
+				if [ "$STARTUPLINECOUNT" -eq 0 ]; then
+					{
+					echo 'echo "" >> "$1"'
+					echo 'echo "[reflector]" >> "$1" # '"$YAZFI_NAME"
+					echo 'echo "enable-reflector=yes" >> "$1" # '"$YAZFI_NAME"
+					} >> /jffs/scripts/avahi-daemon.postconf
+					service restart_mdns >/dev/null 2>&1
+				fi
+			else
+				{
+				echo '#!/bin/sh'
+				echo 'echo "" >> "$1"'
+				echo 'echo "[reflector]" >> "$1" # '"$YAZFI_NAME"
+				echo 'echo "enable-reflector=yes" >> "$1" # '"$YAZFI_NAME"
+				} > /jffs/scripts/avahi-daemon.postconf
+				chmod 0755 /jffs/scripts/avahi-daemon.postconf
+				service restart_mdns >/dev/null 2>&1
+			fi
+		;;
+		delete)
+			if [ -f /jffs/scripts/avahi-daemon.postconf ]; then
+				STARTUPLINECOUNT=$(grep -c "$YAZFI_NAME" /jffs/scripts/avahi-daemon.postconf)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e "$YAZFI_NAME"'/d' /jffs/scripts/avahi-daemon.postconf
+					service restart_mdns >/dev/null 2>&1
 				fi
 			fi
 		;;
@@ -866,7 +905,7 @@ Firewall_Chains(){
 							iptables -I "$LGRJT" -j REJECT
 							
 							# Optional rule to log all rejected packets to syslog
-							#iptables -I $LGRJT -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
+							# iptables -I $LGRJT -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
 						;;
 					esac
 				fi
@@ -1071,6 +1110,12 @@ Firewall_Rules(){
 			for RULENO in $RULES; do
 				iptables -t nat -D "$DNSFLTR" "$RULENO"
 			done
+		fi
+		###
+		
+		### mDNS traffic ###
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_TWOWAYTOGUEST")" = "true" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ONEWAYTOGUEST")" = "true" ]; then
+			iptables "$ACTION" "$INPT" -i "$IFACE" -d 224.0.0.0/4 -j ACCEPT
 		fi
 		###
 		
@@ -1308,8 +1353,8 @@ DHCP_Conf(){
 			DHCP_Conf initialise 2>/dev/null
 			for IFACE in $IFACELIST; do
 				BEGIN="### Start of script-generated configuration for interface $IFACE ###"
-				END="### End of script-generated configuration for interface $2 ###"
-				if grep -q "### Start of script-generated configuration for interface $2 ###" $TMPCONF; then
+				END="### End of script-generated configuration for interface $IFACE ###"
+				if grep -q "### Start of script-generated configuration for interface $IFACE ###" $TMPCONF; then
 					# shellcheck disable=SC1003
 					sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"" $TMPCONF
 				fi
@@ -1339,6 +1384,12 @@ Config_Networks(){
 	Create_Dirs
 	Create_Symlinks
 	
+	Auto_Startup create 2>/dev/null
+	Auto_ServiceEvent create 2>/dev/null
+	Avahi_Conf create 2>/dev/null
+	
+	Mount_WebUI
+	
 	if ! Conf_Exists; then
 		Conf_Download "$YAZFI_CONF"
 		Clear_Lock
@@ -1351,11 +1402,6 @@ Config_Networks(){
 	fi
 	
 	. $YAZFI_CONF
-	
-	Auto_Startup create 2>/dev/null
-	Auto_ServiceEvent create 2>/dev/null
-	
-	Mount_WebUI
 	
 	DHCP_Conf initialise 2>/dev/null
 	
@@ -1667,6 +1713,9 @@ Menu_Install(){
 		exit 1
 	fi
 	
+	Create_Dirs
+	Create_Symlinks
+	
 	if Firmware_Version_WebUI ; then
 		Update_File "YazFi_www.asp"
 	else
@@ -1681,8 +1730,6 @@ Menu_Install(){
 	fi
 	
 	Shortcut_YazFi create
-	Create_Dirs
-	Create_Symlinks
 	echo ""
 	echo ""
 	Print_Output "true" "You can access $YAZFI_NAME's menu via amtm (if installed) with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
@@ -1748,6 +1795,7 @@ Menu_Uninstall(){
 	Print_Output "true" "Removing $YAZFI_NAME..." "$PASS"
 	Auto_Startup delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
+	Avahi_Conf delete 2>/dev/null
 	Routing_NVRAM deleteall 2>/dev/null
 	Routing_FWNAT deleteall 2>/dev/null
 	Routing_RPDB deleteall 2>/dev/null
@@ -2066,6 +2114,7 @@ if [ -z "$1" ]; then
 	fi
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
+	Avahi_Conf create 2>/dev/null
 	Shortcut_YazFi create
 	Create_Dirs
 	Create_Symlinks
