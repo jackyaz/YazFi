@@ -1384,6 +1384,12 @@ Config_Networks(){
 	Create_Dirs
 	Create_Symlinks
 	
+	Auto_Startup create 2>/dev/null
+	Auto_ServiceEvent create 2>/dev/null
+	Avahi_Conf create 2>/dev/null
+	
+	Mount_WebUI
+	
 	if ! Conf_Exists; then
 		Conf_Download "$YAZFI_CONF"
 		Clear_Lock
@@ -1396,12 +1402,6 @@ Config_Networks(){
 	fi
 	
 	. $YAZFI_CONF
-	
-	Auto_Startup create 2>/dev/null
-	Auto_ServiceEvent create 2>/dev/null
-	Avahi_Conf create 2>/dev/null
-	
-	Mount_WebUI
 	
 	DHCP_Conf initialise 2>/dev/null
 	
