@@ -523,7 +523,7 @@ Validate_String(){
 Conf_FromSettings(){
 	SETTINGSFILE="/jffs/addons/custom_settings.txt"
 	TMPFILE="/tmp/yazfi_settings.txt"
-	if [ -f "/jffs/addons/custom_settings.txt" ]; then
+	if [ -f "$SETTINGSFILE" ]; then
 		if [ "$(grep -c "yazfi_" $SETTINGSFILE)" -gt 0 ]; then
 			Print_Output "true" "Updated settings from WebUI found, merging into $YAZFI_CONF" "$PASS"
 			cp -a "$YAZFI_CONF" "$YAZFI_CONF.bak"
