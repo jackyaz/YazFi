@@ -1732,7 +1732,8 @@ Menu_Install(){
 	Shortcut_YazFi create
 	echo ""
 	echo ""
-	Print_Output "true" "You can access $YAZFI_NAME's menu via amtm (if installed) with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
+	Print_Output "true" "You can access $YAZFI_NAME's configuration via the Guest Networks section of the WebUI"
+	Print_Output "true" "Alternativey, use $YAZFI_NAME's menu via amtm (if installed), with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
 	PressEnter
 	Clear_Lock
 }
