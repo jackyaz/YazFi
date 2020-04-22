@@ -252,7 +252,7 @@ Avahi_Conf(){
 				STARTUPLINECOUNT=$(grep -c "$YAZFI_NAME" /jffs/scripts/avahi-daemon.postconf)
 				
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
-					sed -i -e "$YAZFI_NAME"'/d' /jffs/scripts/avahi-daemon.postconf
+					sed -i -e '/# '"$YAZFI_NAME"'/d' /jffs/scripts/avahi-daemon.postconf
 					service restart_mdns >/dev/null 2>&1
 				fi
 			fi
