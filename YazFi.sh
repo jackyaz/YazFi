@@ -26,9 +26,9 @@
 readonly YAZFI_NAME="YazFi"
 readonly OLD_YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/addons/$YAZFI_NAME.d/config"
-readonly YAZFI_VERSION="v4.0.2"
-readonly YAZFI_BRANCH="master"
-readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/YazFi/""$YAZFI_BRANCH"""
+readonly YAZFI_VERSION="v4.0.3"
+readonly YAZFI_BRANCH="develop"
+readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$YAZFI_NAME/$YAZFI_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$YAZFI_NAME.d"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
 readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$YAZFI_NAME"
@@ -1380,13 +1380,13 @@ DHCP_Conf(){
 Config_Networks(){
 	Print_Output "true" "$YAZFI_NAME $YAZFI_VERSION starting up"
 	WIRELESSRESTART="false"
+	GUESTLANENABLED="false"
 	
 	Create_Dirs
 	Create_Symlinks
 	
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
-	Avahi_Conf create 2>/dev/null
 	
 	Mount_WebUI
 	
@@ -1458,6 +1458,10 @@ Config_Networks(){
 				fi
 			fi
 			
+			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ONEWAYTOGUEST")" = "true" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_TWOWAYTOGUEST")" = "true" ]; then
+				GUESTLANENABLED="true"
+			fi
+			
 			#Routing_RPDB_LAN create "$IFACE" 2>/dev/null
 			
 			DHCP_Conf create "$IFACE" 2>/dev/null
@@ -1497,6 +1501,14 @@ Config_Networks(){
 	Routing_NVRAM save 2>/dev/null
 	
 	DHCP_Conf save 2>/dev/null
+		
+	if [ "$GUESTLANENABLED" = "true" ]; then
+		Avahi_Conf create
+		Clear_Lock
+	else
+		Avahi_Conf delete
+		Clear_Lock
+	fi
 	
 	if [ "$WIRELESSRESTART" = "true" ]; then
 		nvram commit
@@ -2115,7 +2127,6 @@ if [ -z "$1" ]; then
 	fi
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
-	Avahi_Conf create 2>/dev/null
 	Shortcut_YazFi create
 	Create_Dirs
 	Create_Symlinks
@@ -2184,6 +2195,20 @@ case "$1" in
 	;;
 	status)
 		Menu_Status
+		exit 0
+	;;
+	develop)
+		Check_Lock
+		sed -i 's/^readonly YAZFI_BRANCH.*$/readonly YAZFI_BRANCH="develop"/' "/jffs/scripts/$YAZFI_NAME"
+		Clear_Lock
+		exec "$0" "update"
+		exit 0
+	;;
+	stable)
+		Check_Lock
+		sed -i 's/^readonly YAZFI_BRANCH.*$/readonly YAZFI_BRANCH="master"/' "/jffs/scripts/$YAZFI_NAME"
+		Clear_Lock
+		exec "$0" "update"
 		exit 0
 	;;
 	*)
