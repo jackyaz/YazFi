@@ -149,7 +149,11 @@ Iface_BounceClients(){
 	
 	for IFACE in $IFACELIST; do
 		wl -i "$IFACE" radio off >/dev/null 2>&1
-		sleep 10
+	done
+	
+	sleep 10
+	
+	for IFACE in $IFACELIST; do
 		wl -i "$IFACE" radio on >/dev/null 2>&1
 	done
 }
