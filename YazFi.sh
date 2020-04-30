@@ -148,7 +148,9 @@ Iface_BounceClients(){
 	Print_Output "true" "Forcing $YAZFI_NAME Guest WiFi clients to reauthenticate" "$PASS"
 	
 	for IFACE in $IFACELIST; do
-		wl -i "$IFACE" deauthenticate >/dev/null 2>&1
+		wl -i "$IFACE" radio off >/dev/null 2>&1
+		sleep 10
+		wl -i "$IFACE" radio on >/dev/null 2>&1
 	done
 }
 
