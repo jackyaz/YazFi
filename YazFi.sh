@@ -273,7 +273,7 @@ Firmware_Version_Check(){
 ############################################################################
 
 Firmware_Version_WebUI(){
-	if [ "$(uname -o)" = "ASUSWRT-Merlin" ] && nvram get rc_support | grep -qF "am_addons"; then
+	if [ "$(/bin/uname -o)" = "ASUSWRT-Merlin" ] && nvram get rc_support | grep -qF "am_addons"; then
 		return 0
 	else
 		return 1
@@ -1284,7 +1284,7 @@ Routing_NVRAM(){
 					Print_Output "true" "VPN Client $COUNTER client list has changed, restarting VPN Client $COUNTER"
 					
 					# shellcheck disable=SC2140
-					if [ "$(uname -m)" = "aarch64" ]; then
+					if [ "$(/bin/uname -m)" = "aarch64" ]; then
 						fullstring="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
 						nvram set "vpn_client""$COUNTER""_clientlist"="$(echo "$fullstring" | cut -c0-255)"
 						nvram set "vpn_client""$COUNTER""_clientlist1"="$(echo "$fullstring" | cut -c256-510)"
