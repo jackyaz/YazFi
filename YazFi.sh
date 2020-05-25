@@ -854,7 +854,7 @@ Conf_Download(){
 	dos2unix "$1"
 	echo ""
 	echo ""
-	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings using option 2 from the $YAZFI_NAME menu."
+	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings using option 3 from the $YAZFI_NAME menu."
 	sleep 1
 	echo ""
 	Print_Output "false" "When finished, run $YAZFI_NAME using option 1 from the $YAZFI_NAME menu."
