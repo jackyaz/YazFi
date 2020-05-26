@@ -194,6 +194,39 @@ Auto_ServiceEvent(){
 	esac
 }
 
+Auto_ServiceStart(){
+	case $1 in
+		create)
+			if [ -f /jffs/scripts/services-start ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME" /jffs/scripts/services-start)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME startup &"' # '"$YAZFI_NAME" /jffs/scripts/services-start)
+				
+				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
+					sed -i -e '/# '"$YAZFI_NAME"'/d' /jffs/scripts/services-start
+				fi
+				
+				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
+					echo "/jffs/scripts/$YAZFI_NAME startup &"' # '"$YAZFI_NAME" >> /jffs/scripts/services-start
+				fi
+			else
+				echo "#!/bin/sh" > /jffs/scripts/services-start
+				echo "" >> /jffs/scripts/services-start
+				echo "/jffs/scripts/$YAZFI_NAME startup &"' # '"$YAZFI_NAME" >> /jffs/scripts/services-start
+				chmod 0755 /jffs/scripts/services-start
+			fi
+		;;
+		delete)
+			if [ -f /jffs/scripts/services-start ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME" /jffs/scripts/services-start)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e '/# '"$YAZFI_NAME"'/d' /jffs/scripts/services-start
+				fi
+			fi
+		;;
+	esac
+}
+
 Auto_Startup(){
 	case $1 in
 		create)
@@ -1393,8 +1426,7 @@ Config_Networks(){
 	
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
-	
-	Mount_WebUI
+	Auto_ServiceStart create 2>/dev/null
 	
 	if ! Conf_Exists; then
 		Conf_Download "$YAZFI_CONF"
@@ -1800,6 +1832,10 @@ Menu_RunNow(){
 	Clear_Lock
 }
 
+Menu_Startup(){
+	Mount_WebUI
+}
+
 Menu_Update(){
 	Update_Version
 	Clear_Lock
@@ -1814,6 +1850,7 @@ Menu_Uninstall(){
 	Print_Output "true" "Removing $YAZFI_NAME..." "$PASS"
 	Auto_Startup delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
+	Auto_ServiceStart delete 2>/dev/null
 	Avahi_Conf delete 2>/dev/null
 	Routing_NVRAM deleteall 2>/dev/null
 	Routing_FWNAT deleteall 2>/dev/null
@@ -2133,6 +2170,7 @@ if [ -z "$1" ]; then
 	fi
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
+	Auto_ServiceStart create 2>/dev/null
 	Shortcut_YazFi create
 	Create_Dirs
 	Create_Symlinks
@@ -2161,6 +2199,12 @@ case "$1" in
 			Clear_Lock
 		fi
 		
+		exit 0
+	;;
+	startup)
+		Check_Lock
+		sleep 7
+		Menu_Startup
 		exit 0
 	;;
 	update)
