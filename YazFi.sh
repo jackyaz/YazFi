@@ -2234,6 +2234,32 @@ case "$1" in
 			sleep 60
 			Config_Networks
 			Clear_Lock
+		elif [ "$(echo "$2" | grep -c "start")" -gt 0 ] && [ "$(echo "$3" | grep -c "vpnclient")" -gt 0 ]; then
+			Check_Lock
+			Print_Output "true" "VPN client (re)started - sleeping 15s before running $YAZFI_NAME" "$PASS"
+			sleep 15
+			
+			if ! Conf_Exists; then
+				Clear_Lock
+				return 1
+			fi
+			
+			if ! Conf_Validate; then
+				Clear_Lock
+				return 1
+			fi
+			
+			. $YAZFI_CONF
+			
+			for IFACE in $IFACELIST; do
+				VPNCLIENTNO=$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_VPNCLIENTNUMBER")
+				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
+					if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_REDIRECTALLTOVPN")" = "true" ]; then
+						Routing_RPDB create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
+					fi
+				fi
+			done
+			Clear_Lock
 		elif [ "$2" = "start" ] && [ "$3" = "yazfi" ]; then
 			Check_Lock
 			Conf_FromSettings
