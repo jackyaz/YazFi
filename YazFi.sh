@@ -1522,9 +1522,21 @@ Config_Networks(){
 		service restart_wireless >/dev/null 2>&1
 	fi
 	
+	Execute_CustomScript
+	
 	Iface_BounceClients
 	
 	Print_Output "true" "$YAZFI_NAME $YAZFI_VERSION completed successfully" "$PASS"
+}
+
+Execute_CustomScript(){
+	# TODO: Evaluate to incorporate this variable in the config file
+	CUSTOM_SCRIPT_LOCATION="/replace/by/custom/script/location"
+
+	if [ ! -z $CUSTOM_SCRIPT_LOCATION ]; then
+		Print_Output "true" "Executing custom script: $CUSTOM_SCRIPT_LOCATION"
+		sh $CUSTOM_SCRIPT_LOCATION
+	fi
 }
 
 Shortcut_YazFi(){
