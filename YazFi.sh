@@ -30,6 +30,7 @@ readonly YAZFI_VERSION="v4.0.5"
 readonly YAZFI_BRANCH="develop"
 readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$YAZFI_NAME/$YAZFI_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$YAZFI_NAME.d"
+readonly USER_SCRIPT_DIR="$SCRIPT_DIR/userscripts.d"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
 readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$YAZFI_NAME"
 ### End of script variables ###
@@ -829,6 +830,10 @@ Create_Dirs(){
 		mkdir -p "$SCRIPT_DIR"
 	fi
 	
+	if [ ! -d "$USER_SCRIPT_DIR" ]; then
+		mkdir -p "$USER_SCRIPT_DIR"
+	fi
+	
 	if [ ! -d "$SCRIPT_WEBPAGE_DIR" ]; then
 		mkdir -p "$SCRIPT_WEBPAGE_DIR"
 	fi
@@ -1554,21 +1559,21 @@ Config_Networks(){
 		service restart_wireless >/dev/null 2>&1
 	fi
 	
-	Execute_CustomScript
+	Execute_UserScripts
 	
 	Iface_BounceClients
 	
 	Print_Output "true" "$YAZFI_NAME $YAZFI_VERSION completed successfully" "$PASS"
 }
 
-Execute_CustomScript(){
-	# TODO: Evaluate to incorporate this variable in the config file
-	CUSTOM_SCRIPT_LOCATION="/replace/by/custom/script/location"
-
-	if [ ! -z $CUSTOM_SCRIPT_LOCATION ]; then
-		Print_Output "true" "Executing custom script: $CUSTOM_SCRIPT_LOCATION"
-		sh $CUSTOM_SCRIPT_LOCATION
-	fi
+Execute_UserScripts(){
+	FILES="$USER_SCRIPT_DIR/*.sh"
+	for f in $FILES; do
+		if [ -f "$f" ]; then
+			Print_Output "true" "Executing user script: $f"
+			sh "$f"
+		fi
+	done
 }
 
 Shortcut_YazFi(){
@@ -2283,6 +2288,10 @@ case "$1" in
 	;;
 	status)
 		Menu_Status
+		exit 0
+	;;
+	userscripts)
+		Execute_UserScripts
 		exit 0
 	;;
 	develop)
