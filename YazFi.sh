@@ -1851,6 +1851,7 @@ Menu_RunNow(){
 
 Menu_Startup(){
 	Mount_WebUI
+	Clear_Lock
 }
 
 Menu_Update(){
