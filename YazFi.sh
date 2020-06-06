@@ -26,10 +26,11 @@
 readonly YAZFI_NAME="YazFi"
 readonly OLD_YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/addons/$YAZFI_NAME.d/config"
-readonly YAZFI_VERSION="v4.0.4"
+readonly YAZFI_VERSION="v4.0.5"
 readonly YAZFI_BRANCH="master"
 readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$YAZFI_NAME/$YAZFI_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$YAZFI_NAME.d"
+readonly USER_SCRIPT_DIR="$SCRIPT_DIR/userscripts.d"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
 readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$YAZFI_NAME"
 ### End of script variables ###
@@ -194,6 +195,39 @@ Auto_ServiceEvent(){
 	esac
 }
 
+Auto_ServiceStart(){
+	case $1 in
+		create)
+			if [ -f /jffs/scripts/services-start ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME" /jffs/scripts/services-start)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME startup &"' # '"$YAZFI_NAME" /jffs/scripts/services-start)
+				
+				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
+					sed -i -e '/# '"$YAZFI_NAME"'/d' /jffs/scripts/services-start
+				fi
+				
+				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
+					echo "/jffs/scripts/$YAZFI_NAME startup &"' # '"$YAZFI_NAME" >> /jffs/scripts/services-start
+				fi
+			else
+				echo "#!/bin/sh" > /jffs/scripts/services-start
+				echo "" >> /jffs/scripts/services-start
+				echo "/jffs/scripts/$YAZFI_NAME startup &"' # '"$YAZFI_NAME" >> /jffs/scripts/services-start
+				chmod 0755 /jffs/scripts/services-start
+			fi
+		;;
+		delete)
+			if [ -f /jffs/scripts/services-start ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME" /jffs/scripts/services-start)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e '/# '"$YAZFI_NAME"'/d' /jffs/scripts/services-start
+				fi
+			fi
+		;;
+	esac
+}
+
 Auto_Startup(){
 	case $1 in
 		create)
@@ -273,7 +307,7 @@ Firmware_Version_Check(){
 ############################################################################
 
 Firmware_Version_WebUI(){
-	if [ "$(uname -o)" = "ASUSWRT-Merlin" ] && nvram get rc_support | grep -qF "am_addons"; then
+	if [ "$(/bin/uname -o)" = "ASUSWRT-Merlin" ] && nvram get rc_support | grep -qF "am_addons"; then
 		return 0
 	else
 		return 1
@@ -796,6 +830,10 @@ Create_Dirs(){
 		mkdir -p "$SCRIPT_DIR"
 	fi
 	
+	if [ ! -d "$USER_SCRIPT_DIR" ]; then
+		mkdir -p "$USER_SCRIPT_DIR"
+	fi
+	
 	if [ ! -d "$SCRIPT_WEBPAGE_DIR" ]; then
 		mkdir -p "$SCRIPT_WEBPAGE_DIR"
 	fi
@@ -854,7 +892,7 @@ Conf_Download(){
 	dos2unix "$1"
 	echo ""
 	echo ""
-	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings using option 2 from the $YAZFI_NAME menu."
+	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings using option 3 from the $YAZFI_NAME menu."
 	sleep 1
 	echo ""
 	Print_Output "false" "When finished, run $YAZFI_NAME using option 1 from the $YAZFI_NAME menu."
@@ -1284,7 +1322,7 @@ Routing_NVRAM(){
 					Print_Output "true" "VPN Client $COUNTER client list has changed, restarting VPN Client $COUNTER"
 					
 					# shellcheck disable=SC2140
-					if [ "$(uname -m)" = "aarch64" ]; then
+					if [ "$(/bin/uname -m)" = "aarch64" ]; then
 						fullstring="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
 						nvram set "vpn_client""$COUNTER""_clientlist"="$(echo "$fullstring" | cut -c0-255)"
 						nvram set "vpn_client""$COUNTER""_clientlist1"="$(echo "$fullstring" | cut -c256-510)"
@@ -1393,8 +1431,7 @@ Config_Networks(){
 	
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
-	
-	Mount_WebUI
+	Auto_ServiceStart create 2>/dev/null
 	
 	if ! Conf_Exists; then
 		Conf_Download "$YAZFI_CONF"
@@ -1522,9 +1559,21 @@ Config_Networks(){
 		service restart_wireless >/dev/null 2>&1
 	fi
 	
+	Execute_UserScripts
+	
 	Iface_BounceClients
 	
 	Print_Output "true" "$YAZFI_NAME $YAZFI_VERSION completed successfully" "$PASS"
+}
+
+Execute_UserScripts(){
+	FILES="$USER_SCRIPT_DIR/*.sh"
+	for f in $FILES; do
+		if [ -f "$f" ]; then
+			Print_Output "true" "Executing user script: $f"
+			sh "$f"
+		fi
+	done
 }
 
 Shortcut_YazFi(){
@@ -1800,6 +1849,11 @@ Menu_RunNow(){
 	Clear_Lock
 }
 
+Menu_Startup(){
+	Mount_WebUI
+	Clear_Lock
+}
+
 Menu_Update(){
 	Update_Version
 	Clear_Lock
@@ -1814,6 +1868,7 @@ Menu_Uninstall(){
 	Print_Output "true" "Removing $YAZFI_NAME..." "$PASS"
 	Auto_Startup delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
+	Auto_ServiceStart delete 2>/dev/null
 	Avahi_Conf delete 2>/dev/null
 	Routing_NVRAM deleteall 2>/dev/null
 	Routing_FWNAT deleteall 2>/dev/null
@@ -2133,6 +2188,7 @@ if [ -z "$1" ]; then
 	fi
 	Auto_Startup create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
+	Auto_ServiceStart create 2>/dev/null
 	Shortcut_YazFi create
 	Create_Dirs
 	Create_Symlinks
@@ -2163,6 +2219,12 @@ case "$1" in
 		
 		exit 0
 	;;
+	startup)
+		Check_Lock
+		sleep 7
+		Menu_Startup
+		exit 0
+	;;
 	update)
 		Check_Lock
 		Menu_Update
@@ -2190,6 +2252,32 @@ case "$1" in
 			sleep 60
 			Config_Networks
 			Clear_Lock
+		elif [ "$(echo "$2" | grep -c "start")" -gt 0 ] && [ "$(echo "$3" | grep -c "vpnclient")" -gt 0 ]; then
+			Check_Lock
+			Print_Output "true" "VPN client (re)started - sleeping 15s before running $YAZFI_NAME" "$PASS"
+			sleep 15
+			
+			if ! Conf_Exists; then
+				Clear_Lock
+				return 1
+			fi
+			
+			if ! Conf_Validate; then
+				Clear_Lock
+				return 1
+			fi
+			
+			. $YAZFI_CONF
+			
+			for IFACE in $IFACELIST; do
+				VPNCLIENTNO=$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_VPNCLIENTNUMBER")
+				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
+					if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_REDIRECTALLTOVPN")" = "true" ]; then
+						Routing_RPDB create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
+					fi
+				fi
+			done
+			Clear_Lock
 		elif [ "$2" = "start" ] && [ "$3" = "yazfi" ]; then
 			Check_Lock
 			Conf_FromSettings
@@ -2201,6 +2289,10 @@ case "$1" in
 	;;
 	status)
 		Menu_Status
+		exit 0
+	;;
+	userscripts)
+		Execute_UserScripts
 		exit 0
 	;;
 	develop)
