@@ -1851,7 +1851,6 @@ Menu_RunNow(){
 
 Menu_Startup(){
 	Mount_WebUI
-	Clear_Lock
 }
 
 Menu_Update(){
@@ -2220,7 +2219,6 @@ case "$1" in
 		exit 0
 	;;
 	startup)
-		Check_Lock
 		sleep 12
 		Menu_Startup
 		exit 0
