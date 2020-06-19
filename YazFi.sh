@@ -26,7 +26,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly OLD_YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/addons/$YAZFI_NAME.d/config"
-readonly YAZFI_VERSION="v4.0.5"
+readonly YAZFI_VERSION="v4.1.0"
 readonly YAZFI_BRANCH="master"
 readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$YAZFI_NAME/$YAZFI_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$YAZFI_NAME.d"
@@ -256,6 +256,25 @@ Auto_Startup(){
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
 				fi
+			fi
+		;;
+	esac
+}
+
+Auto_Cron(){
+	case $1 in
+		create)
+			STARTUPLINECOUNT=$(cru l | grep -c "$YAZFI_NAME")
+			
+			if [ "$STARTUPLINECOUNT" -eq 0 ]; then
+				cru a "$YAZFI_NAME" "*/10 * * * * /jffs/scripts/$YAZFI_NAME check"
+			fi
+		;;
+		delete)
+			STARTUPLINECOUNT=$(cru l | grep -c "$YAZFI_NAME")
+			
+			if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+				cru d "$YAZFI_NAME"
 			fi
 		;;
 	esac
@@ -1430,6 +1449,7 @@ Config_Networks(){
 	Create_Symlinks
 	
 	Auto_Startup create 2>/dev/null
+	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Auto_ServiceStart create 2>/dev/null
 	
@@ -1866,6 +1886,7 @@ Menu_ForceUpdate(){
 Menu_Uninstall(){
 	Print_Output "true" "Removing $YAZFI_NAME..." "$PASS"
 	Auto_Startup delete 2>/dev/null
+	Auto_Cron delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
 	Auto_ServiceStart delete 2>/dev/null
 	Avahi_Conf delete 2>/dev/null
@@ -2186,6 +2207,7 @@ if [ -z "$1" ]; then
 		rm -rf "/jffs/configs/$YAZFI_NAME"
 	fi
 	Auto_Startup create 2>/dev/null
+	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Auto_ServiceStart create 2>/dev/null
 	Shortcut_YazFi create
@@ -2204,18 +2226,20 @@ case "$1" in
 		exit 0
 	;;
 	runnow)
-		if [ -z "$2" ]; then
+		Check_Lock
+		Print_Output "true" "Firewall restarted - sleeping 30s before running $YAZFI_NAME" "$PASS"
+		sleep 30
+		Config_Networks
+		Clear_Lock
+		exit 0
+	;;
+	check)
+		if ! iptables -L | grep -q "YazFi"; then
 			Check_Lock
-			Print_Output "true" "Firewall restarted - sleeping 60s before running $YAZFI_NAME" "$PASS"
-			sleep 60
-			Config_Networks
-			Clear_Lock
-		else
-			Check_Lock
+			Print_Output "true" "$SCRIPT_NAME firewall rules not detected during persistence check, re-applying rules" "$WARN"
 			Config_Networks
 			Clear_Lock
 		fi
-		
 		exit 0
 	;;
 	startup)
@@ -2246,12 +2270,11 @@ case "$1" in
 	service_event)
 		if [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
 			Check_Lock
-			Print_Output "true" "Wireless restarted - sleeping 60s before running $YAZFI_NAME" "$PASS"
-			sleep 60
+			Print_Output "true" "Wireless restarted - sleeping 30s before running $YAZFI_NAME" "$PASS"
+			sleep 30
 			Config_Networks
 			Clear_Lock
 		elif [ "$(echo "$2" | grep -c "start")" -gt 0 ] && [ "$(echo "$3" | grep -c "vpnclient")" -gt 0 ]; then
-			Check_Lock
 			Print_Output "true" "VPN client (re)started - sleeping 15s before running $YAZFI_NAME" "$PASS"
 			sleep 15
 			
@@ -2275,7 +2298,6 @@ case "$1" in
 					fi
 				fi
 			done
-			Clear_Lock
 		elif [ "$2" = "start" ] && [ "$3" = "yazfi" ]; then
 			Check_Lock
 			Conf_FromSettings
