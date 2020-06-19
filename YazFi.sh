@@ -261,6 +261,25 @@ Auto_Startup(){
 	esac
 }
 
+Auto_Cron(){
+	case $1 in
+		create)
+			STARTUPLINECOUNT=$(cru l | grep -c "$YAZFI_NAME")
+			
+			if [ "$STARTUPLINECOUNT" -eq 0 ]; then
+				cru a "$YAZFI_NAME" "*/10 * * * * /jffs/scripts/$YAZFI_NAME check"
+			fi
+		;;
+		delete)
+			STARTUPLINECOUNT=$(cru l | grep -c "$YAZFI_NAME")
+			
+			if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+				cru d "$YAZFI_NAME"
+			fi
+		;;
+	esac
+}
+
 # shellcheck disable=SC2016
 Avahi_Conf(){
 	case $1 in
@@ -1430,6 +1449,7 @@ Config_Networks(){
 	Create_Symlinks
 	
 	Auto_Startup create 2>/dev/null
+	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Auto_ServiceStart create 2>/dev/null
 	
@@ -1866,6 +1886,7 @@ Menu_ForceUpdate(){
 Menu_Uninstall(){
 	Print_Output "true" "Removing $YAZFI_NAME..." "$PASS"
 	Auto_Startup delete 2>/dev/null
+	Auto_Cron delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
 	Auto_ServiceStart delete 2>/dev/null
 	Avahi_Conf delete 2>/dev/null
@@ -2186,6 +2207,7 @@ if [ -z "$1" ]; then
 		rm -rf "/jffs/configs/$YAZFI_NAME"
 	fi
 	Auto_Startup create 2>/dev/null
+	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Auto_ServiceStart create 2>/dev/null
 	Shortcut_YazFi create
@@ -2211,7 +2233,10 @@ case "$1" in
 		Clear_Lock
 		exit 0
 	;;
+	check)
+		if ! iptables -L | grep -q "YazFi"; then
 			Check_Lock
+			Print_Output "true" "$SCRIPT_NAME firewall rules not detected during persistence check, re-applying rules" "$WARN"
 			Config_Networks
 			Clear_Lock
 		fi
