@@ -2215,7 +2215,6 @@ case "$1" in
 			Config_Networks
 			Clear_Lock
 		fi
-		
 		exit 0
 	;;
 	startup)
@@ -2246,8 +2245,8 @@ case "$1" in
 	service_event)
 		if [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
 			Check_Lock
-			Print_Output "true" "Wireless restarted - sleeping 60s before running $YAZFI_NAME" "$PASS"
-			sleep 60
+			Print_Output "true" "Wireless restarted - sleeping 30s before running $YAZFI_NAME" "$PASS"
+			sleep 30
 			Config_Networks
 			Clear_Lock
 		elif [ "$(echo "$2" | grep -c "start")" -gt 0 ] && [ "$(echo "$3" | grep -c "vpnclient")" -gt 0 ]; then
