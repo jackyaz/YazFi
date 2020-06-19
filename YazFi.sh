@@ -2204,13 +2204,13 @@ case "$1" in
 		exit 0
 	;;
 	runnow)
-		if [ -z "$2" ]; then
-			Check_Lock
-			Print_Output "true" "Firewall restarted - sleeping 60s before running $YAZFI_NAME" "$PASS"
-			sleep 60
-			Config_Networks
-			Clear_Lock
-		else
+		Check_Lock
+		Print_Output "true" "Firewall restarted - sleeping 30s before running $YAZFI_NAME" "$PASS"
+		sleep 30
+		Config_Networks
+		Clear_Lock
+		exit 0
+	;;
 			Check_Lock
 			Config_Networks
 			Clear_Lock
