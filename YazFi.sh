@@ -2251,7 +2251,6 @@ case "$1" in
 			Config_Networks
 			Clear_Lock
 		elif [ "$(echo "$2" | grep -c "start")" -gt 0 ] && [ "$(echo "$3" | grep -c "vpnclient")" -gt 0 ]; then
-			Check_Lock
 			Print_Output "true" "VPN client (re)started - sleeping 15s before running $YAZFI_NAME" "$PASS"
 			sleep 15
 			
@@ -2275,7 +2274,6 @@ case "$1" in
 					fi
 				fi
 			done
-			Clear_Lock
 		elif [ "$2" = "start" ] && [ "$3" = "yazfi" ]; then
 			Check_Lock
 			Conf_FromSettings
