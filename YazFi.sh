@@ -2111,7 +2111,7 @@ Menu_Status(){
 			printf "\\e[1mSSID: %-20s\\e[0m\\n\\n" "$(nvram get "$IFACE""_ssid")"
 			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
 			if [ "$IFACE_MACS" != "" ]; then
-				printf "\\e[1m%-20s%-20s%-20s\\e[0m\\n" "HOSTNAME" "IP ADDRESS" "MAC"
+				printf "\\e[1m%-30s%-20s%-20s\\e[0m\\n" "HOSTNAME" "IP ADDRESS" "MAC"
 				# shellcheck disable=SC2039
 				IFS=$'\n'
 				for GUEST_MAC in $IFACE_MACS; do
@@ -2127,7 +2127,7 @@ Menu_Status(){
 					fi
 					
 					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
-					printf "%-20s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
+					printf "%-30s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
 				done
 				unset IFS
 			else
