@@ -915,17 +915,20 @@ Mount_WebUI(){
 	fi
 	Print_Output "true" "Mounting $YAZFI_NAME WebUI page as $MyPage" "$PASS"
 	cp -f "$SCRIPT_DIR/YazFi_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
+	echo "YazFi" > "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
 	
-	if [ ! -f "/tmp/menuTree.js" ]; then
-		cp -f "/www/require/modules/menuTree.js" "/tmp/"
+	if [ "$(uname -o)" = "ASUSWRT-Merlin" ]; then
+		if [ ! -f "/tmp/menuTree.js" ]; then
+			cp -f "/www/require/modules/menuTree.js" "/tmp/"
+		fi
+		
+		sed -i "\\~$MyPage~d" /tmp/menuTree.js
+		
+		sed -i "/url: \"Guest_network.asp\", tabName:/a {url: \"$MyPage\", tabName: \"YazFi\"}," /tmp/menuTree.js
+		
+		umount /www/require/modules/menuTree.js 2>/dev/null
+		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 	fi
-	
-	sed -i "\\~$MyPage~d" /tmp/menuTree.js
-	
-	sed -i "/url: \"Guest_network.asp\", tabName:/a {url: \"$MyPage\", tabName: \"YazFi\"}," /tmp/menuTree.js
-	
-	umount /www/require/modules/menuTree.js 2>/dev/null
-	mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 }
 
 Conf_Download(){
