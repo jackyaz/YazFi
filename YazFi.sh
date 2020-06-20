@@ -2119,7 +2119,7 @@ Menu_Status(){
 					GUEST_ARPINFO="$(echo "$ARPDUMP" | grep "$IFACE" | grep -i "$GUEST_MACADDR")"
 					GUEST_HOST="$(echo "$GUEST_ARPINFO" | awk '{print $1}' | cut -f1 -d ".")"
 					if [ "$GUEST_HOST" = "?" ]; then
-						GUEST_HOST=$(grep "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
+						GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
 					fi
 					
 					if [ "$GUEST_HOST" = "?" ] || [ "${#GUEST_HOST}" -le 1 ]; then
