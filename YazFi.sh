@@ -350,7 +350,7 @@ Firmware_Version_Check(){
 ############################################################################
 
 Firmware_Version_WebUI(){
-	if [ "$(/bin/uname -o)" = "ASUSWRT-Merlin" ] && nvram get rc_support | grep -qF "am_addons"; then
+	if nvram get rc_support | grep -qF "am_addons"; then
 		return 0
 	else
 		return 1
