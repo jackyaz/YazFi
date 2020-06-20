@@ -157,6 +157,30 @@ Iface_BounceClients(){
 	for IFACE in $IFACELIST; do
 		wl -i "$IFACE" radio on >/dev/null 2>&1
 	done
+	
+	ARPDUMP="$(arp -a)"
+	for IFACE in $IFACELIST; do
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
+			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
+			if [ "$IFACE_MACS" != "" ]; then
+				# shellcheck disable=SC2039
+				IFS=$'\n'
+				for GUEST_MAC in $IFACE_MACS; do
+					GUEST_MACADDR="${GUEST_MAC#* }"
+					GUEST_ARPINFO="$(arp -a | grep -i "$GUEST_MACADDR")"
+					for ARP_ENTRY in $GUEST_ARPINFO; do
+						GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
+						arp -d "$GUEST_IPADDR"
+					done
+				done
+				unset IFS
+			fi
+		fi
+	done
+	
+	ip -s -s neigh flush all >/dev/null 2>&1
+	killall networkmap
+	sleep 5
 }
 
 Auto_ServiceEvent(){
@@ -1926,6 +1950,7 @@ Menu_Uninstall(){
 }
 
 Menu_BounceClients(){
+	. "$YAZFI_CONF"
 	Iface_BounceClients
 	Clear_Lock
 }
