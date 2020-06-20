@@ -603,8 +603,9 @@ $.fn.serializeObject = function(){
 <tr>
 <td bgcolor="#4D595D" colspan="3" valign="top">
 <div>&nbsp;</div>
-<div class="formfonttitle">YazFi Configuration</div>
+<div class="formfonttitle" id="scripttitle" style="text-align:center;">YazFi - v4.1.1</div>
 <div style="margin:10px 0 10px 5px;" class="splitLine"></div>
+<div class="formfontdesc">Feature expansion of guest WiFi networks on AsusWRT-Merlin.</div>
 <table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons">
 <tr class="apply_gen" valign="top" height="35px">
 <td style="background-color:rgb(77, 89, 93);border:0px;">
