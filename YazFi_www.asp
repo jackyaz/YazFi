@@ -96,17 +96,19 @@ thead.collapsibleparent {
   background-color: darkred !important;
 }
 </style>
-<script language="JavaScript" type="text/javascript" src="/js/jquery.js"></script>
+<script language="JavaScript" type="text/javascript" src="/ext/shared-jy/jquery.js"></script>
 <script language="JavaScript" type="text/javascript" src="/state.js"></script>
 <script language="JavaScript" type="text/javascript" src="/general.js"></script>
 <script language="JavaScript" type="text/javascript" src="/popup.js"></script>
 <script language="JavaScript" type="text/javascript" src="/help.js"></script>
+<script language="JavaScript" type="text/javascript" src="/ext/shared-jy/detect.js"></script>
 <script language="JavaScript" type="text/javascript" src="/tmhist.js"></script>
 <script language="JavaScript" type="text/javascript" src="/tmmenu.js"></script>
 <script language="JavaScript" type="text/javascript" src="/client_function.js"></script>
-<script language="JavaScript" type="text/javascript" src="/validator.js"></script>
+<script language="JavaScript" type="text/javascript" src="/ext/shared-jy/validator.js"></script>
 <script language="JavaScript" type="text/javascript" src="/base64.js"></script>
 <script>
+var $j=jQuery.noConflict();
 var custom_settings;
 var bands = 0;
 
@@ -148,7 +150,7 @@ function Validate_IP(forminput,iptype){
 	if(/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(inputvalue)){
 		if(iptype != "DNS"){
 			var fixedip = inputvalue.substring(0,inputvalue.lastIndexOf("."))+".0";
-			$(forminput).val(fixedip);
+			$j(forminput).val(fixedip);
 			if (/(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)/.test(fixedip)){
 				if(! checkIPConflict("LAN",fixedip,"255.255.255.0",document.form.lan_ipaddr.value,document.form.lan_netmask.value).state){
 					matchfound=false;
@@ -162,31 +164,31 @@ function Validate_IP(forminput,iptype){
 						}
 					}
 					if(matchfound){
-						$(forminput).addClass("invalid");
+						$j(forminput).addClass("invalid");
 						return false;
 					}
 					else{
-						$(forminput).removeClass("invalid");
+						$j(forminput).removeClass("invalid");
 						return true;
 					}
 				}
 				else{
-					$(forminput).addClass("invalid");
+					$j(forminput).addClass("invalid");
 					return false;
 				}
 			}
 			else{
-				$(forminput).addClass("invalid");
+				$j(forminput).addClass("invalid");
 				return false;
 			}
 		}
 		else{
-			$(forminput).removeClass("invalid");
+			$j(forminput).removeClass("invalid");
 			return true;
 		}
 	}
 	else{
-		$(forminput).addClass("invalid");
+		$j(forminput).addClass("invalid");
 		return false;
 	}
 }
@@ -199,32 +201,32 @@ function Validate_DHCP(forminput){
 	(inputname.indexOf("start") != -1) ? startend = "start" : startend = "end";
 	if(startend == "start"){
 		if(inputvalue >= eval("document.form."+inputname.substring(0,inputname.indexOf("start"))+"end.value")*1){
-			$(forminput).addClass("invalid");
+			$j(forminput).addClass("invalid");
 			return false;
 		}
 		else{
 			if(inputvalue > 254 || inputvalue < 2){
-				$(forminput).addClass("invalid");
+				$j(forminput).addClass("invalid");
 				return false;
 			}
 			else{
-				$(forminput).removeClass("invalid");
+				$j(forminput).removeClass("invalid");
 				return true;
 			}
 		}
 	}
 	else {
 		if(inputvalue <= eval("document.form."+inputname.substring(0,inputname.indexOf("end"))+"start.value")*1){
-			$(forminput).addClass("invalid");
+			$j(forminput).addClass("invalid");
 			return false;
 		}
 		else{
 			if(inputvalue > 254 || inputvalue < 2){
-				$(forminput).addClass("invalid");
+				$j(forminput).addClass("invalid");
 				return false;
 			}
 			else{
-				$(forminput).removeClass("invalid");
+				$j(forminput).removeClass("invalid");
 				return true;
 			}
 		}
@@ -236,11 +238,11 @@ function Validate_VPNClientNo(forminput){
 	var inputvalue = forminput.value*1;
 	
 	if(inputvalue > 5 || inputvalue < 1){
-		$(forminput).addClass("invalid");
+		$j(forminput).addClass("invalid");
 		return false;
 	}
 	else{
-		$(forminput).removeClass("invalid");
+		$j(forminput).removeClass("invalid");
 		return true;
 	}
 }
@@ -285,7 +287,7 @@ function Validate_All(){
 }
 
 function get_conf_file(){
-	$.ajax({
+	$j.ajax({
 		url: '/ext/YazFi/config.htm',
 		dataType: 'text',
 		error: function(xhr){
@@ -305,17 +307,17 @@ function get_conf_file(){
 				var setting=settings[i].split("=");
 				window["yazfi_settings"].unshift(setting);
 				}
-				if(wl_info.band2g_support){$("#table_buttons").before(BuildConfigTable("wl0","2.4GHz Guest Networks"));bands = bands + 1;}
-				if(wl_info.band5g_support){$("#table_buttons").before(BuildConfigTable("wl1","5GHz-1 Guest Networks"));bands = bands + 1;}
-				if(wl_info.band5g_2_support){$("#table_buttons").before(BuildConfigTable("wl2","5GHz-2 Guest Networks"));bands = bands + 1;}
+				if(wl_info.band2g_support){$j("#table_buttons").before(BuildConfigTable("wl0","2.4GHz Guest Networks"));bands = bands + 1;}
+				if(wl_info.band5g_support){$j("#table_buttons").before(BuildConfigTable("wl1","5GHz-1 Guest Networks"));bands = bands + 1;}
+				if(wl_info.band5g_2_support){$j("#table_buttons").before(BuildConfigTable("wl2","5GHz-2 Guest Networks"));bands = bands + 1;}
 				var totalbands = bands*12*3;
 				for (var i = 0; i < totalbands; i++) {
 					eval("document.form.yazfi_"+window["yazfi_settings"][i][0].toLowerCase()).value = window["yazfi_settings"][i][1];
 				}
 				
 				if(productid == "RT-AX88U"){
-					$("input[name*=clientisolation][value=false]").prop("checked",true);
-					$("input[name*=clientisolation]").attr('disabled',true);
+					$j("input[name*=clientisolation][value=false]").prop("checked",true);
+					$j("input[name*=clientisolation]").attr('disabled',true);
 				}
 				
 				AddEventHandlers();
@@ -349,12 +351,14 @@ function reload() {
 function applyRule() {
 	if(Validate_All()){
 		if(productid == "RT-AX88U"){
-			$("input[name*=clientisolation]").attr('disabled',false);
+			$j("input[name*=clientisolation]").attr('disabled',false);
 		}
-		document.getElementById('amng_custom').value = JSON.stringify($('form').serializeObject())
+		document.getElementById('amng_custom').value = JSON.stringify($j('form').serializeObject())
 		var action_script_tmp = "start_yazfi";
 		document.form.action_script.value = action_script_tmp;
-		var restart_time = document.form.action_wait.value*1;
+		document.form.action_script.value = action_script_tmp;
+		var restart_time = 30;
+		document.form.action_wait.value = restart_time;
 		showLoading();
 		document.form.submit();
 	}
@@ -543,10 +547,10 @@ function AddEventHandlers(){
 	}
 }
 
-$.fn.serializeObject = function(){
+$j.fn.serializeObject = function(){
 	var o = custom_settings;
 	var a = this.serializeArray();
-	$.each(a, function() {
+	$j.each(a, function() {
 		if (o[this.name] !== undefined && this.name.indexOf("yazfi") != -1) {
 			if (!o[this.name].push) {
 				o[this.name] = [o[this.name]];
@@ -570,7 +574,7 @@ $.fn.serializeObject = function(){
 <input type="hidden" name="next_page" value="">
 <input type="hidden" name="modified" value="0">
 <input type="hidden" name="action_mode" value="apply">
-<input type="hidden" name="action_wait" value="10">
+<input type="hidden" name="action_wait" value="30">
 <input type="hidden" name="first_time" value="">
 <input type="hidden" name="SystemCmd" value="">
 <input type="hidden" name="action_script" value="start_yazfi">
@@ -603,8 +607,9 @@ $.fn.serializeObject = function(){
 <tr>
 <td bgcolor="#4D595D" colspan="3" valign="top">
 <div>&nbsp;</div>
-<div class="formfonttitle">YazFi Configuration</div>
+<div class="formfonttitle" id="scripttitle" style="text-align:center;">YazFi - v4.1.1</div>
 <div style="margin:10px 0 10px 5px;" class="splitLine"></div>
+<div class="formfontdesc">Feature expansion of guest WiFi networks on AsusWRT-Merlin.</div>
 <table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons">
 <tr class="apply_gen" valign="top" height="35px">
 <td style="background-color:rgb(77, 89, 93);border:0px;">

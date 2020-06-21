@@ -26,13 +26,16 @@
 readonly YAZFI_NAME="YazFi"
 readonly OLD_YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/addons/$YAZFI_NAME.d/config"
-readonly YAZFI_VERSION="v4.1.0"
+readonly YAZFI_VERSION="v4.1.1"
 readonly YAZFI_BRANCH="master"
 readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$YAZFI_NAME/$YAZFI_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$YAZFI_NAME.d"
 readonly USER_SCRIPT_DIR="$SCRIPT_DIR/userscripts.d"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
 readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$YAZFI_NAME"
+readonly SHARED_DIR="/jffs/addons/shared-jy"
+readonly SHARED_REPO="https://raw.githubusercontent.com/jackyaz/shared-jy/master"
+readonly SHARED_WEB_DIR="$SCRIPT_WEBPAGE_DIR/shared-jy"
 ### End of script variables ###
 
 ### Start of output format variables ###
@@ -157,6 +160,30 @@ Iface_BounceClients(){
 	for IFACE in $IFACELIST; do
 		wl -i "$IFACE" radio on >/dev/null 2>&1
 	done
+	
+	ARPDUMP="$(arp -a)"
+	for IFACE in $IFACELIST; do
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
+			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
+			if [ "$IFACE_MACS" != "" ]; then
+				# shellcheck disable=SC2039
+				IFS=$'\n'
+				for GUEST_MAC in $IFACE_MACS; do
+					GUEST_MACADDR="${GUEST_MAC#* }"
+					GUEST_ARPINFO="$(arp -a | grep -i "$GUEST_MACADDR")"
+					for ARP_ENTRY in $GUEST_ARPINFO; do
+						GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
+						arp -d "$GUEST_IPADDR"
+					done
+				done
+				unset IFS
+			fi
+		fi
+	done
+	
+	ip -s -s neigh flush all >/dev/null 2>&1
+	killall networkmap
+	sleep 5
 }
 
 Auto_ServiceEvent(){
@@ -326,7 +353,7 @@ Firmware_Version_Check(){
 ############################################################################
 
 Firmware_Version_WebUI(){
-	if [ "$(/bin/uname -o)" = "ASUSWRT-Merlin" ] && nvram get rc_support | grep -qF "am_addons"; then
+	if nvram get rc_support | grep -qF "am_addons"; then
 		return 0
 	else
 		return 1
@@ -386,8 +413,9 @@ Update_Version(){
 		
 		if Firmware_Version_WebUI ; then
 			Update_File "YazFi_www.asp"
+			Update_File "shared-jy.tar.gz"
 		else
-			Print_Output "true" "WebUI is only supported on Merlin 384.15 and later" "$WARN"
+			Print_Output "true" "WebUI is only supported on firmware versions with addon support" "$WARN"
 		fi
 		
 		if [ "$doupdate" != "false" ]; then
@@ -410,6 +438,7 @@ Update_Version(){
 			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
 			if Firmware_Version_WebUI ; then
 				Update_File "YazFi_www.asp"
+				Update_File "shared-jy.tar.gz"
 			else
 				Print_Output "true" "WebUI is only supported on Merlin 384.15 and later" "$WARN"
 			fi
@@ -436,6 +465,24 @@ Update_File(){
 			Mount_WebUI
 		fi
 		rm -f "$tmpfile"
+	elif [ "$1" = "shared-jy.tar.gz" ]; then
+		if [ ! -f "$SHARED_DIR/$1.md5" ]; then
+			Download_File "$SHARED_REPO/$1" "$SHARED_DIR/$1"
+			Download_File "$SHARED_REPO/$1.md5" "$SHARED_DIR/$1.md5"
+			tar -xzf "$SHARED_DIR/$1" -C "$SHARED_DIR"
+			rm -f "$SHARED_DIR/$1"
+			Print_Output "true" "New version of $1 downloaded" "$PASS"
+		else
+			localmd5="$(cat "$SHARED_DIR/$1.md5")"
+			remotemd5="$(curl -fsL --retry 3 "$SHARED_REPO/$1.md5")"
+			if [ "$localmd5" != "$remotemd5" ]; then
+				Download_File "$SHARED_REPO/$1" "$SHARED_DIR/$1"
+				Download_File "$SHARED_REPO/$1.md5" "$SHARED_DIR/$1.md5"
+				tar -xzf "$SHARED_DIR/$1" -C "$SHARED_DIR"
+				rm -f "$SHARED_DIR/$1"
+				Print_Output "true" "New version of $1 downloaded" "$PASS"
+			fi
+		fi
 	else
 		return 1
 	fi
@@ -860,12 +907,20 @@ Create_Dirs(){
 	if [ ! -d "$SCRIPT_WEB_DIR" ]; then
 		mkdir -p "$SCRIPT_WEB_DIR"
 	fi
+	
+	if [ ! -d "$SHARED_DIR" ]; then
+		mkdir -p "$SHARED_DIR"
+	fi
 }
 
 Create_Symlinks(){
 	rm -f "$SCRIPT_WEB_DIR/"* 2>/dev/null
 	
 	ln -s "$SCRIPT_DIR/config"  "$SCRIPT_WEB_DIR/config.htm" 2>/dev/null
+	
+	if [ ! -d "$SHARED_WEB_DIR" ]; then
+		ln -s "$SHARED_DIR" "$SHARED_WEB_DIR" 2>/dev/null
+	fi
 }
 
 Download_File(){
@@ -891,17 +946,20 @@ Mount_WebUI(){
 	fi
 	Print_Output "true" "Mounting $YAZFI_NAME WebUI page as $MyPage" "$PASS"
 	cp -f "$SCRIPT_DIR/YazFi_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
+	echo "YazFi" > "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
 	
-	if [ ! -f "/tmp/menuTree.js" ]; then
-		cp -f "/www/require/modules/menuTree.js" "/tmp/"
+	if [ "$(uname -o)" = "ASUSWRT-Merlin" ]; then
+		if [ ! -f "/tmp/menuTree.js" ]; then
+			cp -f "/www/require/modules/menuTree.js" "/tmp/"
+		fi
+		
+		sed -i "\\~$MyPage~d" /tmp/menuTree.js
+		
+		sed -i "/url: \"Guest_network.asp\", tabName:/a {url: \"$MyPage\", tabName: \"YazFi\"}," /tmp/menuTree.js
+		
+		umount /www/require/modules/menuTree.js 2>/dev/null
+		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 	fi
-	
-	sed -i "\\~$MyPage~d" /tmp/menuTree.js
-	
-	sed -i "/url: \"Guest_network.asp\", tabName:/a {url: \"$MyPage\", tabName: \"YazFi\"}," /tmp/menuTree.js
-	
-	umount /www/require/modules/menuTree.js 2>/dev/null
-	mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 }
 
 Conf_Download(){
@@ -1805,8 +1863,9 @@ Menu_Install(){
 	
 	if Firmware_Version_WebUI ; then
 		Update_File "YazFi_www.asp"
+		Update_File "shared-jy.tar.gz"
 	else
-		Print_Output "true" "WebUI is only support on Merlin 384.15 and later" "$WARN"
+		Print_Output "true" "WebUI is only support on firmware versions with addon support" "$WARN"
 	fi
 	
 	if ! Conf_Exists; then
@@ -1926,6 +1985,7 @@ Menu_Uninstall(){
 }
 
 Menu_BounceClients(){
+	. "$YAZFI_CONF"
 	Iface_BounceClients
 	Clear_Lock
 }
@@ -2102,6 +2162,8 @@ Menu_Status(){
 	ScriptHeader
 	printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
 	
+	ARPDUMP="$(arp -a)"
+	
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
 			printf "%75s\\n\\n" "" |tr " " "-"
@@ -2109,15 +2171,15 @@ Menu_Status(){
 			printf "\\e[1mSSID: %-20s\\e[0m\\n\\n" "$(nvram get "$IFACE""_ssid")"
 			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
 			if [ "$IFACE_MACS" != "" ]; then
-				printf "\\e[1m%-20s%-20s%-20s\\e[0m\\n" "HOSTNAME" "IP ADDRESS" "MAC"
+				printf "\\e[1m%-30s%-20s%-20s\\e[0m\\n" "HOSTNAME" "IP ADDRESS" "MAC"
 				# shellcheck disable=SC2039
 				IFS=$'\n'
 				for GUEST_MAC in $IFACE_MACS; do
 					GUEST_MACADDR="${GUEST_MAC#* }"
-					GUEST_ARPINFO="$(arp -a | grep "$IFACE" | grep -i "$GUEST_MACADDR")"
+					GUEST_ARPINFO="$(echo "$ARPDUMP" | grep "$IFACE" | grep -i "$GUEST_MACADDR")"
 					GUEST_HOST="$(echo "$GUEST_ARPINFO" | awk '{print $1}' | cut -f1 -d ".")"
 					if [ "$GUEST_HOST" = "?" ]; then
-						GUEST_HOST=$(grep "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
+						GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
 					fi
 					
 					if [ "$GUEST_HOST" = "?" ] || [ "${#GUEST_HOST}" -le 1 ]; then
@@ -2125,7 +2187,7 @@ Menu_Status(){
 					fi
 					
 					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
-					printf "%-20s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
+					printf "%-30s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
 				done
 				unset IFS
 			else
