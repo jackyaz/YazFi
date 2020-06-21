@@ -33,6 +33,9 @@ readonly SCRIPT_DIR="/jffs/addons/$YAZFI_NAME.d"
 readonly USER_SCRIPT_DIR="$SCRIPT_DIR/userscripts.d"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
 readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$YAZFI_NAME"
+readonly SHARED_DIR="/jffs/addons/shared-jy"
+readonly SHARED_REPO="https://raw.githubusercontent.com/jackyaz/shared-jy/master"
+readonly SHARED_WEB_DIR="$SCRIPT_WEBPAGE_DIR/shared-jy"
 ### End of script variables ###
 
 ### Start of output format variables ###
@@ -410,8 +413,9 @@ Update_Version(){
 		
 		if Firmware_Version_WebUI ; then
 			Update_File "YazFi_www.asp"
+			Update_File "shared-jy.tar.gz"
 		else
-			Print_Output "true" "WebUI is only supported on Merlin 384.15 and later" "$WARN"
+			Print_Output "true" "WebUI is only supported on firmware versions with addon support" "$WARN"
 		fi
 		
 		if [ "$doupdate" != "false" ]; then
@@ -434,6 +438,7 @@ Update_Version(){
 			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
 			if Firmware_Version_WebUI ; then
 				Update_File "YazFi_www.asp"
+				Update_File "shared-jy.tar.gz"
 			else
 				Print_Output "true" "WebUI is only supported on Merlin 384.15 and later" "$WARN"
 			fi
@@ -460,6 +465,24 @@ Update_File(){
 			Mount_WebUI
 		fi
 		rm -f "$tmpfile"
+	elif [ "$1" = "shared-jy.tar.gz" ]; then
+		if [ ! -f "$SHARED_DIR/$1.md5" ]; then
+			Download_File "$SHARED_REPO/$1" "$SHARED_DIR/$1"
+			Download_File "$SHARED_REPO/$1.md5" "$SHARED_DIR/$1.md5"
+			tar -xzf "$SHARED_DIR/$1" -C "$SHARED_DIR"
+			rm -f "$SHARED_DIR/$1"
+			Print_Output "true" "New version of $1 downloaded" "$PASS"
+		else
+			localmd5="$(cat "$SHARED_DIR/$1.md5")"
+			remotemd5="$(curl -fsL --retry 3 "$SHARED_REPO/$1.md5")"
+			if [ "$localmd5" != "$remotemd5" ]; then
+				Download_File "$SHARED_REPO/$1" "$SHARED_DIR/$1"
+				Download_File "$SHARED_REPO/$1.md5" "$SHARED_DIR/$1.md5"
+				tar -xzf "$SHARED_DIR/$1" -C "$SHARED_DIR"
+				rm -f "$SHARED_DIR/$1"
+				Print_Output "true" "New version of $1 downloaded" "$PASS"
+			fi
+		fi
 	else
 		return 1
 	fi
@@ -884,12 +907,20 @@ Create_Dirs(){
 	if [ ! -d "$SCRIPT_WEB_DIR" ]; then
 		mkdir -p "$SCRIPT_WEB_DIR"
 	fi
+	
+	if [ ! -d "$SHARED_DIR" ]; then
+		mkdir -p "$SHARED_DIR"
+	fi
 }
 
 Create_Symlinks(){
 	rm -f "$SCRIPT_WEB_DIR/"* 2>/dev/null
 	
 	ln -s "$SCRIPT_DIR/config"  "$SCRIPT_WEB_DIR/config.htm" 2>/dev/null
+	
+	if [ ! -d "$SHARED_WEB_DIR" ]; then
+		ln -s "$SHARED_DIR" "$SHARED_WEB_DIR" 2>/dev/null
+	fi
 }
 
 Download_File(){
@@ -1832,8 +1863,9 @@ Menu_Install(){
 	
 	if Firmware_Version_WebUI ; then
 		Update_File "YazFi_www.asp"
+		Update_File "shared-jy.tar.gz"
 	else
-		Print_Output "true" "WebUI is only support on Merlin 384.15 and later" "$WARN"
+		Print_Output "true" "WebUI is only support on firmware versions with addon support" "$WARN"
 	fi
 	
 	if ! Conf_Exists; then
