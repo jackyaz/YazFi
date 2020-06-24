@@ -50,7 +50,7 @@ readonly LAN="$(nvram get lan_ipaddr)"
 [ -z "$(nvram get odmpid)" ] && ROUTER_MODEL=$(nvram get productid) || ROUTER_MODEL=$(nvram get odmpid)
 readonly IFACELIST_FULL="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
 readonly IFACELIST="$(echo "$(nvram get wl0_vifnames) $(nvram get wl1_vifnames) $(nvram get wl2_vifnames)" | awk '{$1=$1;print}')"
-[ -z "$(nvram get wl2_vifnames)" && GHZ2=false || GHZ2=true
+[ -z "$(nvram get wl2_vifnames)" ] && GHZ2=false || GHZ2=true
 ### End of router environment variables ###
 
 ### Start of path variables ###
