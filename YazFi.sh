@@ -2169,6 +2169,7 @@ Menu_GuestConfig(){
 						#don't know where to find that interface IP address
 						bdlimiter "on" "$selectediface" "$downloadlimit" "$uploadlimit" "$IP" #IP Missing
 					fi
+					changesmade="true"
 					downloadlimit=""
 					uploadlimit=""
 				;;
