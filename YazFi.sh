@@ -1673,6 +1673,36 @@ Shortcut_YazFi(){
 	esac
 }
 
+bdlimiter() {
+
+### need to save down/up limiter on config file. save as 0 if off
+### need to check if "TC" exists and install it if not
+#$1 - on/off
+#$2 - interface (syntax eth0, etc...)
+#$3 - download
+#$4 - upload
+#$5 - ip
+TC=/sbin/tc
+IF="$2"
+DNLD="${3}Mbit" #in Mbit"
+UPLD="${4]}Mbit" #in Mbit"
+IP="$5"
+U32="$TC filter add dev $IF protocol ip parent 1:0 prio 1 u32"
+
+	case $1 in
+		on)
+			$TC qdisc add dev $IF root handle 1: htb default 30
+			$TC class add dev $IF parent 1: classid 1:1 htb rate $DNLD
+			$TC class add dev $IF parent 1: classid 1:2 htb rate $UPLD
+			$U32 match ip dst $IP/24 flowid 1:1
+			$U32 match ip src $IP/24 flowid 1:2
+		;;
+		off)
+		    $TC qdisc del dev $IF root
+		;;
+	esac
+}			
+
 PressEnter(){
 	while true; do
 		printf "Press enter to continue..."
@@ -2054,6 +2084,7 @@ Menu_GuestConfig(){
 			printf "\\e[1mAvailable options:\\e[0m\\n\\n"
 			printf "1.    Set SSID (current: %s)\\n" "$(nvram get "$selectediface""_ssid")"
 			printf "2.    Set passphrase (current: %s)\\n" "$(nvram get "$selectediface""_wpa_psk")"
+			printf "3.    Set download/upload limit\\n"
 			printf "\\ne.    Go back\\n"
 			printf "\\n\\e[1mChoose an option:\\e[0m    "
 			read -r "guestoption"
@@ -2126,6 +2157,20 @@ Menu_GuestConfig(){
 							;;
 						esac
 					done
+				;;
+				3)
+					printf "\\n\\e[1mPlease enter download limit in Mbit (set 0 to off):\\e[0m    "
+					read -r "downloadlimit"
+					[ "$downloadlimit" != "0" ] && printf "\\n\\e[1mPlease enter upload limit in Mbit (set 0 to off):\\e[0m    " && read -r "uploadlimit"
+					#need to validate if is correct number (syntax: XX.XX)
+					if [ "$downloadlimit" = "0" ] || [ "$uploadlimit" = "0" ]; then
+						bdlimiter "off" "$selectediface"
+					else
+						#don't know where to find that interface IP address
+						bdlimiter "on" "$selectediface" "$downloadlimit" "$uploadlimit" "$IP" #IP Missing
+					fi
+					downloadlimit=""
+					uploadlimit=""
 				;;
 				e)
 					if [ "$changesmade" = "true" ]; then
