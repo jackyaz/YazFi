@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.com/jackyaz/YazFi.svg?branch=master)](https://travis-ci.com/jackyaz/YazFi)
 
 ## v4.1.1
-### Updated on 2020-06-20
+### Updated on 2020-06-27
 ## About
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
 
