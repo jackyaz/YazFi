@@ -105,7 +105,7 @@ thead.collapsibleparent {
 <script language="JavaScript" type="text/javascript" src="/tmhist.js"></script>
 <script language="JavaScript" type="text/javascript" src="/tmmenu.js"></script>
 <script language="JavaScript" type="text/javascript" src="/client_function.js"></script>
-<script language="JavaScript" type="text/javascript" src="/ext/shared-jy/validator.js"></script>
+<script language="JavaScript" type="text/javascript" src="/validator.js"></script>
 <script language="JavaScript" type="text/javascript" src="/base64.js"></script>
 <script>
 var $j=jQuery.noConflict();
