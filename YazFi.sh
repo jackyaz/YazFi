@@ -185,7 +185,7 @@ Iface_BounceClients(){
 	killall networkmap
 	sleep 5
 	if [ -z "$(pidof networkmap)" ]; then
-		networkmap & >/dev/null 2>&1
+		networkmap >/dev/null 2>&1 &
 	fi
 }
 
