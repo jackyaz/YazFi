@@ -26,7 +26,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly OLD_YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/addons/$YAZFI_NAME.d/config"
-readonly YAZFI_VERSION="v4.1.1"
+readonly YAZFI_VERSION="v4.1.2"
 readonly YAZFI_BRANCH="master"
 readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$YAZFI_NAME/$YAZFI_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$YAZFI_NAME.d"
@@ -185,7 +185,7 @@ Iface_BounceClients(){
 	killall networkmap
 	sleep 5
 	if [ -z "$(pidof networkmap)" ]; then
-		networkmap &
+		networkmap >/dev/null 2>&1 &
 	fi
 }
 
@@ -1357,7 +1357,12 @@ Routing_NVRAM(){
 		;;
 		create)
 			VPN_NVRAM="$(Get_Guest_Name "$2")"
-			VPN_IFACE_NVRAM="<$VPN_NVRAM>$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").0/24>0.0.0.0>VPN"
+			VPN_IFACE_NVRAM=""
+			if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 384.18)" ]; then
+				VPN_IFACE_NVRAM="<$VPN_NVRAM>$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").0/24>0.0.0.0>VPN"
+			else
+				VPN_IFACE_NVRAM="<$VPN_NVRAM>$(eval echo '$'"$(Get_Iface_Var "$2")""_IPADDR" | cut -f1-3 -d".").0/24>>VPN"
+			fi
 			VPN_IFACE_NVRAM_SAFE="$(echo "$VPN_IFACE_NVRAM" | sed -e 's/\//\\\//g;s/\./\\./g;s/ /\\ /g')"
 			
 			# Check if guest network has already been added to policy routing for VPN client. If not, append to list.

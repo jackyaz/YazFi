@@ -12,20 +12,10 @@
 <link rel="stylesheet" type="text/css" href="form_style.css">
 <style>
 p {
-font-weight: bolder;
+  font-weight: bolder;
 }
 
 thead.collapsible {
-  color: white;
-  padding: 0px;
-  width: 100%;
-  border: none;
-  text-align: left;
-  outline: none;
-  cursor: pointer;
-}
-
-thead.collapsibleparent {
   color: white;
   padding: 0px;
   width: 100%;
@@ -65,6 +55,10 @@ thead.collapsibleparent {
   padding: 0px !important;
 }
 
+.SettingsTable th.bss {
+  color: red !important;
+}
+
 .SettingsTable td {
   padding: 4px !important;
   word-wrap: break-word !important;
@@ -95,6 +89,11 @@ thead.collapsibleparent {
 .SettingsTable .invalid {
   background-color: darkred !important;
 }
+
+.SettingsTable .disabled {
+  background-color: #CCCCCC !important;
+  color: #888888 !important;
+}
 </style>
 <script language="JavaScript" type="text/javascript" src="/ext/shared-jy/jquery.js"></script>
 <script language="JavaScript" type="text/javascript" src="/state.js"></script>
@@ -117,7 +116,7 @@ function LoadCustomSettings(){
 	for (var prop in custom_settings) {
 		if (Object.prototype.hasOwnProperty.call(custom_settings, prop)) {
 			if(prop.indexOf("yazfi") != -1){
-				eval("delete custom_settings."+prop)
+				eval("delete custom_settings."+prop);
 			}
 		}
 	}
@@ -142,6 +141,68 @@ function YazHint(hintid) {
 	if(hintid == 11) hinttext="Should LAN be able to initiate connections to Guest Network clients (but not the opposite)? Cannot be enabled if _TWOWAYTOGUEST is enabled";
 	if(hintid == 12) hinttext="Should Guest Network radio prevent clients from talking to each other?";
 	return overlib(hinttext, HAUTO, VAUTO);
+}
+
+function OptionsEnableDisable(forminput){
+	var inputname = forminput.name;
+	var inputvalue = forminput.value;
+	var prefix = inputname.substring(0,inputname.lastIndexOf('_'));
+	
+	if(inputvalue == "false"){
+		$j('input[name='+prefix+'_ipaddr]').addClass("disabled");
+		$j('input[name='+prefix+'_ipaddr]').prop("disabled",true);
+		$j('input[name='+prefix+'_dhcpstart]').addClass("disabled");
+		$j('input[name='+prefix+'_dhcpstart]').prop("disabled",true);
+		$j('input[name='+prefix+'_dhcpend]').addClass("disabled");
+		$j('input[name='+prefix+'_dhcpend]').prop("disabled",true);
+		$j('input[name='+prefix+'_dns1]').addClass("disabled");
+		$j('input[name='+prefix+'_dns1]').prop("disabled",true);
+		$j('input[name='+prefix+'_dns2]').addClass("disabled");
+		$j('input[name='+prefix+'_dns2]').prop("disabled",true);
+		$j('input[name='+prefix+'_forcedns]').prop("disabled",true);
+		$j('input[name='+prefix+'_redirectalltovpn]').prop("disabled",true);
+		$j('input[name='+prefix+'_vpnclientnumber]').addClass("disabled");
+		$j('input[name='+prefix+'_vpnclientnumber]').prop("disabled",true);
+		$j('input[name='+prefix+'_onewaytoguest]').prop("disabled",true);
+		$j('input[name='+prefix+'_twowaytoguest]').prop("disabled",true);
+		$j('input[name='+prefix+'_clientisolation]').prop("disabled",true);
+	}
+	else if(inputvalue == "true"){
+		$j('input[name='+prefix+'_ipaddr]').removeClass("disabled");
+		$j('input[name='+prefix+'_ipaddr]').prop("disabled",false);
+		$j('input[name='+prefix+'_dhcpstart]').removeClass("disabled");
+		$j('input[name='+prefix+'_dhcpstart]').prop("disabled",false);
+		$j('input[name='+prefix+'_dhcpend]').removeClass("disabled");
+		$j('input[name='+prefix+'_dhcpend]').prop("disabled",false);
+		$j('input[name='+prefix+'_dns1]').removeClass("disabled");
+		$j('input[name='+prefix+'_dns1]').prop("disabled",false);
+		$j('input[name='+prefix+'_dns2]').removeClass("disabled");
+		$j('input[name='+prefix+'_dns2]').prop("disabled",false);
+		$j('input[name='+prefix+'_forcedns]').prop("disabled",false);
+		$j('input[name='+prefix+'_redirectalltovpn]').prop("disabled",false);
+		$j('input[name='+prefix+'_vpnclientnumber]').removeClass("disabled");
+		$j('input[name='+prefix+'_vpnclientnumber]').prop("disabled",false);
+		$j('input[name='+prefix+'_onewaytoguest]').prop("disabled",false);
+		$j('input[name='+prefix+'_twowaytoguest]').prop("disabled",false);
+		$j('input[name='+prefix+'_clientisolation]').prop("disabled",false);
+	}
+}
+
+function VPNOptionsEnableDisable(forminput){
+	var inputname = forminput.name;
+	var inputvalue = forminput.value;
+	var prefix = inputname.substring(0,inputname.lastIndexOf('_'));
+	
+	if(eval("document.form."+prefix+"_enabled").value == "true"){
+		if(inputvalue == "false"){
+			$j('input[name='+prefix+'_vpnclientnumber]').addClass("disabled");
+			$j('input[name='+prefix+'_vpnclientnumber]').prop("disabled",true);
+		}
+		else if(inputvalue == "true"){
+			$j('input[name='+prefix+'_vpnclientnumber]').removeClass("disabled");
+			$j('input[name='+prefix+'_vpnclientnumber]').prop("disabled",false);
+		}
+	}
 }
 
 function Validate_IP(forminput,iptype){
@@ -302,26 +363,38 @@ function get_conf_file(){
 			for (var i = 0; i < settingcount; i++) {
 				var commentstart=settings[i].indexOf("#");
 				if (commentstart != -1){
-					continue
+					continue;
 				}
 				var setting=settings[i].split("=");
 				window["yazfi_settings"].unshift(setting);
-				}
-				if(wl_info.band2g_support){$j("#table_buttons").before(BuildConfigTable("wl0","2.4GHz Guest Networks"));bands = bands + 1;}
-				if(wl_info.band5g_support){$j("#table_buttons").before(BuildConfigTable("wl1","5GHz-1 Guest Networks"));bands = bands + 1;}
-				if(wl_info.band5g_2_support){$j("#table_buttons").before(BuildConfigTable("wl2","5GHz-2 Guest Networks"));bands = bands + 1;}
-				var totalbands = bands*12*3;
-				for (var i = 0; i < totalbands; i++) {
-					eval("document.form.yazfi_"+window["yazfi_settings"][i][0].toLowerCase()).value = window["yazfi_settings"][i][1];
-				}
-				
-				if(productid == "RT-AX88U"){
-					$j("input[name*=clientisolation][value=false]").prop("checked",true);
-					$j("input[name*=clientisolation]").attr('disabled',true);
-				}
-				
-				AddEventHandlers();
 			}
+			if(wl_info.band2g_support){$j("#table_buttons").before(BuildConfigTable("wl0","2.4GHz Guest Networks"));bands = bands + 1;}
+			if(wl_info.band5g_support){$j("#table_buttons").before(BuildConfigTable("wl1","5GHz-1 Guest Networks"));bands = bands + 1;}
+			if(wl_info.band5g_2_support){$j("#table_buttons").before(BuildConfigTable("wl2","5GHz-2 Guest Networks"));bands = bands + 1;}
+			var settingcount = bands*12*3;
+			for (var i = 0; i < settingcount; i++) {
+				var settingname = window["yazfi_settings"][i][0].toLowerCase();
+				var settingvalue = window["yazfi_settings"][i][1];
+				eval("document.form.yazfi_"+settingname).value = settingvalue;
+				if(settingname.indexOf("redirectalltovpn") != -1) VPNOptionsEnableDisable($j("#yazfi_"+settingname.replace("_redirectalltovpn","")+"_redir_"+settingvalue)[0]);
+				if(settingname.indexOf("enabled") != -1) OptionsEnableDisable($j("#yazfi_"+settingname.replace("_enabled","")+"_en_"+settingvalue)[0]);
+			}
+			
+			if(productid == "RT-AX88U"){
+				$j("input[name*=clientisolation][value=false]").prop("checked",true);
+				$j("input[name*=clientisolation]").attr('disabled',true);
+			}
+			
+			for (var i = 0; i < bands; i++) {
+				for (var i2 = 1; i2 < 4; i2++) {
+					if( eval('document.form.wl'+i+i2+'_bss_enabled').value == 0){
+						OptionsEnableDisable($j("#yazfi_wl"+i+i2+"_en_false")[0]);
+						$j('input[name=yazfi_wl'+i+i2+'_enabled]').prop("disabled",true);
+					}
+				}
+			}
+		AddEventHandlers();
+		}
 	});
 }
 
@@ -350,10 +423,8 @@ function reload() {
 
 function applyRule() {
 	if(Validate_All()){
-		if(productid == "RT-AX88U"){
-			$j("input[name*=clientisolation]").attr('disabled',false);
-		}
-		document.getElementById('amng_custom').value = JSON.stringify($j('form').serializeObject())
+		$j('[name*=yazfi_]').prop("disabled",false);
+		document.getElementById('amng_custom').value = JSON.stringify($j('form').serializeObject());
 		var action_script_tmp = "start_yazfi";
 		document.form.action_script.value = action_script_tmp;
 		document.form.action_script.value = action_script_tmp;
@@ -377,14 +448,14 @@ function initial(){
 function BuildConfigTable(prefix,title){
 	var charthtml = '<div style="line-height:10px;">&nbsp;</div>';
 	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_config_'+prefix+'">';
-	charthtml+='<thead class="collapsible expanded" id="'+prefix+'">';
+	charthtml+='<thead class="collapsible" id="'+prefix+'">';
 	charthtml+='<tr>';
 	charthtml+='<td colspan="2">'+title+' Configuration (click to expand/collapse)</td>';
 	charthtml+='</tr>';
 	charthtml+='</thead>';
+	charthtml+='<div class="collapsiblecontent">';
 	charthtml+='<tr>';
 	charthtml+='<td colspan="2" align="center" style="padding: 0px;">';
-	charthtml+='<div class="collapsiblecontent">';
 	
 	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable SettingsTable">';
 	charthtml+='<col style="width:130px;">';
@@ -404,13 +475,42 @@ function BuildConfigTable(prefix,title){
 	charthtml+='<th>'+eval('document.form.'+prefix+'2_ssid.value')+'</th>';
 	charthtml+='<th>'+eval('document.form.'+prefix+'3_ssid.value')+'</th>';
 	charthtml+='</tr>'
+	
+	var enabled1 = eval('document.form.'+prefix+'1_bss_enabled.value');
+	var enabled2 = eval('document.form.'+prefix+'2_bss_enabled.value');
+	var enabled3 = eval('document.form.'+prefix+'3_bss_enabled.value');
+	
+	if( enabled1 == 0 || enabled2 == 0 || enabled3 == 0){
+		charthtml+='<tr>';
+		charthtml+='<th>&nbsp;</th>';
+		if(enabled1 == 0){
+			charthtml+='<th class="bss">Disabled on Guest Network Tab</th>';
+		}
+		else{
+			charthtml+='<th>&nbsp;</th>';
+		}
+		if(enabled2 == 0){
+			charthtml+='<th class="bss">Disabled on Guest Network Tab</th>';
+		}
+		else{
+			charthtml+='<th>&nbsp;</th>';
+		}
+		if(enabled3 == 0){
+			charthtml+='<th class="bss">Disabled on Guest Network Tab</th>';
+		}
+		else{
+			charthtml+='<th>&nbsp;</th>';
+		}
+		charthtml+='</tr>'
+	}
+	
 	charthtml+='</thead>';
 	
 	/* ENABLED */
 	charthtml+='<tr>';
-	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(1);">Enabled</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_enabled" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_enabled" class="input" value="false" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_enabled" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_enabled" class="input" value="false" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_enabled" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_enabled" class="input" value="false" checked>No</td>';
+	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(1);">Enabled</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_enabled" id="yazfi_'+prefix+'1_en_true" onChange="OptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_enabled" id="yazfi_'+prefix+'1_en_false" onChange="OptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
+	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_enabled" id="yazfi_'+prefix+'2_en_true" onChange="OptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_enabled" id="yazfi_'+prefix+'2_en_false" onChange="OptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
+	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_enabled" id="yazfi_'+prefix+'3_en_true" onChange="OptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_enabled" id="yazfi_'+prefix+'3_en_false" onChange="OptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
 	charthtml+='</tr>';
 	
 	/* IPADDR */
@@ -457,9 +557,9 @@ function BuildConfigTable(prefix,title){
 	
 	/* REDIRECTALLTOVPN */
 	charthtml+='<tr>';
-	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(8);">Redirect all to VPN</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_redirectalltovpn" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_redirectalltovpn" class="input" value="false" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_redirectalltovpn" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_redirectalltovpn" class="input" value="false" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_redirectalltovpn" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_redirectalltovpn" class="input" value="false" checked>No</td>';
+	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(8);">Redirect all to VPN</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_redirectalltovpn" id="yazfi_'+prefix+'1_redir_true" onChange="VPNOptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_redirectalltovpn" id="yazfi_'+prefix+'1_redir_false" onChange="VPNOptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
+	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_redirectalltovpn" id="yazfi_'+prefix+'2_redir_true" onChange="VPNOptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_redirectalltovpn" id="yazfi_'+prefix+'2_redir_false" onChange="VPNOptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
+	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_redirectalltovpn" id="yazfi_'+prefix+'3_redir_true" onChange="VPNOptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_redirectalltovpn" id="yazfi_'+prefix+'3_redir_false" onChange="VPNOptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
 	charthtml+='</tr>';
 	
 	/* VPNCLIENTNUMBER */
@@ -491,60 +591,18 @@ function BuildConfigTable(prefix,title){
 	charthtml+='</tr>';
 	
 	charthtml+='</table>';
-	charthtml+='</div>';
 	charthtml+='</td>';
 	charthtml+='</tr>';
+	charthtml+='</div>';
 	charthtml+='</table>';
 	charthtml+='<div style="line-height:10px;">&nbsp;</div>';
 	return charthtml;
 }
 
 function AddEventHandlers(){
-	var coll = document.getElementsByClassName("collapsible");
-	var i;
-	var height = 0;
-
-	for (i = 0; i < coll.length; i++) {
-		coll[i].addEventListener("click", function() {
-			this.classList.toggle("active");
-			var content = this.nextElementSibling.firstElementChild.firstElementChild.firstElementChild;
-			if (content.style.maxHeight){
-					content.style.maxHeight = null;
-					SetCookie(this.id,"collapsed")
-			} else {
-					content.style.maxHeight = content.scrollHeight + "px";
-					this.parentElement.parentElement.style.maxHeight = (this.parentElement.parentElement.style.maxHeight.substring(0,this.parentElement.parentElement.style.maxHeight.length-2)*1) + content.scrollHeight + "px";
-					SetCookie(this.id,"expanded");
-				}
-		});
-		
-		if(GetCookie(coll[i].id) == "expanded" || GetCookie(coll[i].id) == ""){
-			coll[i].click();
-		}
-		height=(coll[i].nextElementSibling.firstElementChild.firstElementChild.firstElementChild.style.maxHeight.substring(0,coll[i].nextElementSibling.firstElementChild.firstElementChild.firstElementChild.style.maxHeight.length-2)*1) + height + 21 + 10 + 10 + 10 + 10 + 10;
-	}
-	
-	var coll = document.getElementsByClassName("collapsibleparent");
-	var i;
-	
-	for (i = 0; i < coll.length; i++) {
-		coll[i].addEventListener("click", function() {
-			this.classList.toggle("active");
-			var content = this.nextElementSibling.firstElementChild.firstElementChild.firstElementChild;
-			if (content.style.maxHeight){
-				content.style.maxHeight = null;
-				SetCookie(this.id,"collapsed");
-			} else {
-				content.style.maxHeight = content.scrollHeight + "px";
-				SetCookie(this.id,"expanded");
-			}
-		});
-		if(GetCookie(coll[i].id) == "expanded" || GetCookie(coll[i].id) == ""){
-			coll[i].nextElementSibling.firstElementChild.firstElementChild.firstElementChild.style.maxHeight = height + "px";
-		} else {
-			coll[i].nextElementSibling.firstElementChild.firstElementChild.firstElementChild.style.maxHeight = null;
-		}
-	}
+	$j("thead.collapsible").click(function(){
+		$j(this).siblings().toggle("fast");
+	})
 }
 
 $j.fn.serializeObject = function(){
@@ -591,6 +649,15 @@ $j.fn.serializeObject = function(){
 <input type="hidden" name="wl21_ssid" value="<% nvram_get("wl2.1_ssid"); %>">
 <input type="hidden" name="wl22_ssid" value="<% nvram_get("wl2.2_ssid"); %>">
 <input type="hidden" name="wl23_ssid" value="<% nvram_get("wl2.3_ssid"); %>">
+<input type="hidden" name="wl01_bss_enabled" value="<% nvram_get("wl0.1_bss_enabled"); %>">
+<input type="hidden" name="wl02_bss_enabled" value="<% nvram_get("wl0.2_bss_enabled"); %>">
+<input type="hidden" name="wl03_bss_enabled" value="<% nvram_get("wl0.3_bss_enabled"); %>">
+<input type="hidden" name="wl11_bss_enabled" value="<% nvram_get("wl1.1_bss_enabled"); %>">
+<input type="hidden" name="wl12_bss_enabled" value="<% nvram_get("wl1.2_bss_enabled"); %>">
+<input type="hidden" name="wl13_bss_enabled" value="<% nvram_get("wl1.3_bss_enabled"); %>">
+<input type="hidden" name="wl21_bss_enabled" value="<% nvram_get("wl2.1_bss_enabled"); %>">
+<input type="hidden" name="wl22_bss_enabled" value="<% nvram_get("wl2.2_bss_enabled"); %>">
+<input type="hidden" name="wl23_bss_enabled" value="<% nvram_get("wl2.3_bss_enabled"); %>">
 <input type="hidden" name="amng_custom" id="amng_custom" value="">
 <table class="content" align="center" cellpadding="0" cellspacing="0">
 <tr>
@@ -607,7 +674,7 @@ $j.fn.serializeObject = function(){
 <tr>
 <td bgcolor="#4D595D" colspan="3" valign="top">
 <div>&nbsp;</div>
-<div class="formfonttitle" id="scripttitle" style="text-align:center;">YazFi - v4.1.1</div>
+<div class="formfonttitle" id="scripttitle" style="text-align:center;">YazFi - v4.1.2</div>
 <div style="margin:10px 0 10px 5px;" class="splitLine"></div>
 <div class="formfontdesc">Feature expansion of guest WiFi networks on AsusWRT-Merlin.</div>
 <table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons">
