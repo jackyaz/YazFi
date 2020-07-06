@@ -2204,6 +2204,10 @@ Menu_Status(){
 						GUEST_HOST="$(dig +short +answer -x "$GUEST_IPADDR" '@'"$(nvram get lan_ipaddr)" | cut -f1 -d'.')"
 					fi
 					
+					if [ -z "$GUEST_HOST" ]; then
+						GUEST_HOST="Unknown"
+					fi
+					
 					printf "%-30s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
 				done
 				unset IFS
