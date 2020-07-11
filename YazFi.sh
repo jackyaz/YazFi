@@ -2171,8 +2171,10 @@ Menu_Status(){
 	printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
 	
 	if [ ! -f /opt/bin/dig ]; then
-		opkg update
-		opkg install bind-dig
+		if [ -f /opt/bin/opkg ]; then
+			opkg update
+			opkg install bind-dig
+		fi
 	fi
 	
 	ARPDUMP="$(arp -a)"
@@ -2200,8 +2202,10 @@ Menu_Status(){
 						GUEST_HOST="$(nvram get custom_clientlist | grep -ioE "<.*>$GUEST_MACADDR" | awk -F ">" '{print $(NF-1)}' | tr -d '<')" #thanks Adamm00
 					fi
 					
-					if [ -z "$GUEST_HOST" ]; then
-						GUEST_HOST="$(dig +short +answer -x "$GUEST_IPADDR" '@'"$(nvram get lan_ipaddr)" | cut -f1 -d'.')"
+					if [ -f /opt/bin/dig ]; then
+						if [ -z "$GUEST_HOST" ]; then
+							GUEST_HOST="$(dig +short +answer -x "$GUEST_IPADDR" '@'"$(nvram get lan_ipaddr)" | cut -f1 -d'.')"
+						fi
 					fi
 					
 					if [ -z "$GUEST_HOST" ]; then
