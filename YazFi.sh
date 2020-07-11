@@ -26,7 +26,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly OLD_YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/addons/$YAZFI_NAME.d/config"
-readonly YAZFI_VERSION="v4.1.2"
+readonly YAZFI_VERSION="v4.1.3"
 readonly YAZFI_BRANCH="master"
 readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$YAZFI_NAME/$YAZFI_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$YAZFI_NAME.d"
@@ -2170,6 +2170,13 @@ Menu_Status(){
 	ScriptHeader
 	printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
 	
+	if [ ! -f /opt/bin/dig ]; then
+		if [ -f /opt/bin/opkg ]; then
+			opkg update
+			opkg install bind-dig
+		fi
+	fi
+	
 	ARPDUMP="$(arp -a)"
 	
 	for IFACE in $IFACELIST; do
@@ -2185,16 +2192,26 @@ Menu_Status(){
 				for GUEST_MAC in $IFACE_MACS; do
 					GUEST_MACADDR="${GUEST_MAC#* }"
 					GUEST_ARPINFO="$(echo "$ARPDUMP" | grep "$IFACE" | grep -i "$GUEST_MACADDR")"
+					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
 					GUEST_HOST="$(echo "$GUEST_ARPINFO" | awk '{print $1}' | cut -f1 -d ".")"
 					if [ "$GUEST_HOST" = "?" ]; then
 						GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
 					fi
 					
 					if [ "$GUEST_HOST" = "?" ] || [ "${#GUEST_HOST}" -le 1 ]; then
+						GUEST_HOST="$(nvram get custom_clientlist | grep -ioE "<.*>$GUEST_MACADDR" | awk -F ">" '{print $(NF-1)}' | tr -d '<')" #thanks Adamm00
+					fi
+					
+					if [ -f /opt/bin/dig ]; then
+						if [ -z "$GUEST_HOST" ]; then
+							GUEST_HOST="$(dig +short +answer -x "$GUEST_IPADDR" '@'"$(nvram get lan_ipaddr)" | cut -f1 -d'.')"
+						fi
+					fi
+					
+					if [ -z "$GUEST_HOST" ]; then
 						GUEST_HOST="Unknown"
 					fi
 					
-					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
 					printf "%-30s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
 				done
 				unset IFS
@@ -2304,7 +2321,7 @@ case "$1" in
 		exit 0
 	;;
 	check)
-		if ! iptables -L | grep -q "YazFi"; then
+		if ! iptables -nL | grep -q "YazFi"; then
 			Check_Lock
 			Print_Output "true" "$SCRIPT_NAME firewall rules not detected during persistence check, re-applying rules" "$WARN"
 			Config_Networks
