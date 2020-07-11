@@ -2170,11 +2170,10 @@ Menu_Status(){
 	ScriptHeader
 	printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
 	
-	if [ ! -f /opt/bin/dig ]; then
-		if [ -f /opt/bin/opkg ]; then
-			opkg update
-			opkg install bind-dig
-		fi
+	if [ ! -f /opt/bin/dig ] && [ -f /opt/bin/opkg ]; then
+		opkg update
+		opkg install bind-dig
+		ScriptHeader
 	fi
 	
 	ARPDUMP="$(arp -a)"
