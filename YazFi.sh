@@ -2317,7 +2317,7 @@ case "$1" in
 		exit 0
 	;;
 	check)
-		if ! iptables -L | grep -q "YazFi"; then
+		if ! iptables -nL | grep -q "YazFi"; then
 			Check_Lock
 			Print_Output "true" "$SCRIPT_NAME firewall rules not detected during persistence check, re-applying rules" "$WARN"
 			Config_Networks
