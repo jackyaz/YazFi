@@ -2167,15 +2167,14 @@ Menu_Status(){
 	### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
 	. "$YAZFI_CONF"
 	
-	ScriptHeader
-	printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
-	
 	if [ ! -f /opt/bin/dig ] && [ -f /opt/bin/opkg ]; then
 		opkg update
 		opkg install bind-dig
-		ScriptHeader
 	fi
 	
+	ScriptHeader
+	printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
+		
 	ARPDUMP="$(arp -a)"
 	
 	for IFACE in $IFACELIST; do
