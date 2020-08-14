@@ -19,13 +19,13 @@ wl01_ENABLED=false
 wl01_IPADDR=192.168.2.0
 wl01_DHCPSTART=2
 wl01_DHCPEND=254
-wl01_DNS1=8.8.8.8
-wl01_DNS2=8.8.4.4
-wl01_FORCEDNS=true
-wl01_REDIRECTALLTOVPN=true
-wl01_VPNCLIENTNUMBER=2
+wl01_DNS1=192.168.2.1
+wl01_DNS2=192.168.2.1
+wl01_FORCEDNS=false
+wl01_REDIRECTALLTOVPN=false
+wl01_VPNCLIENTNUMBER=1
 wl01_TWOWAYTOGUEST=false
-wl01_ONEWAYTOGUEST=true
+wl01_ONEWAYTOGUEST=false
 wl01_CLIENTISOLATION=false
 ####################################################################
 ######                 Guest Network 2 (wl0.2)                 #####
@@ -39,7 +39,7 @@ wl02_DNS2=8.8.4.4
 wl02_FORCEDNS=false
 wl02_REDIRECTALLTOVPN=false
 wl02_VPNCLIENTNUMBER=1
-wl02_TWOWAYTOGUEST=true
+wl02_TWOWAYTOGUEST=false
 wl02_ONEWAYTOGUEST=false
 wl02_CLIENTISOLATION=false
 ####################################################################
