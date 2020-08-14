@@ -930,15 +930,17 @@ Download_File(){
 	/usr/sbin/curl -fsL --retry 3 "$1" -o "$2"
 }
 
-Get_WebUI_Page () {
+Get_WebUI_Page(){
+	MyPage="none"
 	for i in 1 2 3 4 5 6 7 8 9 10; do
-		page="$SCRIPT_WEBPAGE_DIR/user$i.asp"
-		if [ ! -f "$page" ] || [ "$(md5sum < "$1")" = "$(md5sum < "$page")" ]; then
+		page="/www/user/user$i.asp"
+		if [ -f "$page" ] && [ "$(md5sum < "$1")" = "$(md5sum < "$page")" ]; then
 			MyPage="user$i.asp"
 			return
+		elif [ "$MyPage" = "none" ] && [ ! -f "$page" ]; then
+			MyPage="user$i.asp"
 		fi
 	done
-	MyPage="none"
 }
 
 Mount_WebUI(){
