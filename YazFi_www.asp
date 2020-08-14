@@ -180,11 +180,14 @@ function OptionsEnableDisable(forminput){
 		$j('input[name='+prefix+'_dns2]').prop("disabled",false);
 		$j('input[name='+prefix+'_forcedns]').prop("disabled",false);
 		$j('input[name='+prefix+'_redirectalltovpn]').prop("disabled",false);
-		$j('input[name='+prefix+'_vpnclientnumber]').removeClass("disabled");
-		$j('input[name='+prefix+'_vpnclientnumber]').prop("disabled",false);
 		$j('input[name='+prefix+'_onewaytoguest]').prop("disabled",false);
 		$j('input[name='+prefix+'_twowaytoguest]').prop("disabled",false);
 		$j('input[name='+prefix+'_clientisolation]').prop("disabled",false);
+		
+		if(eval('document.form.'+prefix+'_redirectalltovpn').value == "true"){
+			$j('input[name='+prefix+'_vpnclientnumber]').removeClass("disabled");
+			$j('input[name='+prefix+'_vpnclientnumber]').prop("disabled",false);
+		}
 	}
 }
 
