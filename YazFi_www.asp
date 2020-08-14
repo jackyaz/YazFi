@@ -211,6 +211,11 @@ function VPNOptionsEnableDisable(forminput){
 function Validate_IP(forminput,iptype){
 	var inputvalue = forminput.value;
 	var inputname = forminput.name;
+	if(iptype == "DNS"){
+		if(inputvalue.substring(inputvalue.lastIndexOf(".")) == ".0"){
+			forminput.value = inputvalue.substring(0,inputvalue.lastIndexOf("."))+".1";
+		}
+	}
 	if(/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(inputvalue)){
 		if(iptype != "DNS"){
 			var fixedip = inputvalue.substring(0,inputvalue.lastIndexOf("."))+".0";
