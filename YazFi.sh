@@ -26,7 +26,7 @@
 readonly YAZFI_NAME="YazFi"
 readonly OLD_YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
 readonly YAZFI_CONF="/jffs/addons/$YAZFI_NAME.d/config"
-readonly YAZFI_VERSION="v4.1.3"
+readonly YAZFI_VERSION="v4.1.4"
 readonly YAZFI_BRANCH="master"
 readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$YAZFI_NAME/$YAZFI_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$YAZFI_NAME.d"
@@ -972,12 +972,7 @@ Conf_Download(){
 	/usr/sbin/curl -s --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.config.example" -o "$1"
 	chmod 0644 "$1"
 	dos2unix "$1"
-	echo ""
-	echo ""
-	Print_Output "false" "Please edit $YAZFI_CONF with your desired settings using option 3 from the $YAZFI_NAME menu."
 	sleep 1
-	echo ""
-	Print_Output "false" "When finished, run $YAZFI_NAME using option 1 from the $YAZFI_NAME menu."
 	Clear_Lock
 }
 
@@ -1886,9 +1881,12 @@ Menu_Install(){
 	fi
 	
 	Shortcut_YazFi create
-	echo ""
-	echo ""
-	Print_Output "true" "You can access $YAZFI_NAME's configuration via the Guest Networks section of the WebUI"
+	Auto_Startup create 2>/dev/null
+	Auto_Cron create 2>/dev/null
+	Auto_ServiceEvent create 2>/dev/null
+	Auto_ServiceStart create 2>/dev/null
+	
+	Print_Output "true" "You can access $YAZFI_NAME's configuration via the Guest Networks section of the WebUI" "$PASS"
 	Print_Output "true" "Alternativey, use $YAZFI_NAME's menu via amtm (if installed), with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
 	PressEnter
 	Clear_Lock
@@ -1967,12 +1965,12 @@ Menu_Uninstall(){
 	Iface_Manage deleteall 2>/dev/null
 	DHCP_Conf deleteall 2>/dev/null
 	Get_WebUI_Page "$SCRIPT_DIR/YazFi_www.asp"
-		if [ -n "$MyPage" ] && [ "$MyPage" != "none" ] && [ -f "/tmp/menuTree.js" ]; then
-			sed -i "\\~$MyPage~d" /tmp/menuTree.js
-			umount /www/require/modules/menuTree.js
-			mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
-			rm -rf "{$SCRIPT_WEBPAGE_DIR:?}/$MyPage"
-		fi
+	if [ -n "$MyPage" ] && [ "$MyPage" != "none" ] && [ -f "/tmp/menuTree.js" ]; then
+		sed -i "\\~$MyPage~d" /tmp/menuTree.js
+		umount /www/require/modules/menuTree.js
+		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
+		rm -f "$SCRIPT_WEBPAGE_DIR/$MyPage"
+	fi
 	while true; do
 		printf "\\n\\e[1mDo you want to delete %s configuration file(s)? (y/n)\\e[0m\\n" "$YAZFI_NAME"
 		read -r "confirm"
@@ -2293,14 +2291,16 @@ if [ -z "$1" ]; then
 		cp -a "/jffs/configs/$YAZFI_NAME/"* "/jffs/addons/$YAZFI_NAME.d/."
 		rm -rf "/jffs/configs/$YAZFI_NAME"
 	fi
+	
+	Create_Dirs
+	Create_Symlinks
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Auto_ServiceStart create 2>/dev/null
 	Shortcut_YazFi create
-	Create_Dirs
-	Create_Symlinks
 	Conf_FixBlanks
+	
 	ScriptHeader
 	MainMenu
 	exit 0

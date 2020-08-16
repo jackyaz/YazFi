@@ -180,11 +180,14 @@ function OptionsEnableDisable(forminput){
 		$j('input[name='+prefix+'_dns2]').prop("disabled",false);
 		$j('input[name='+prefix+'_forcedns]').prop("disabled",false);
 		$j('input[name='+prefix+'_redirectalltovpn]').prop("disabled",false);
-		$j('input[name='+prefix+'_vpnclientnumber]').removeClass("disabled");
-		$j('input[name='+prefix+'_vpnclientnumber]').prop("disabled",false);
 		$j('input[name='+prefix+'_onewaytoguest]').prop("disabled",false);
 		$j('input[name='+prefix+'_twowaytoguest]').prop("disabled",false);
 		$j('input[name='+prefix+'_clientisolation]').prop("disabled",false);
+		
+		if(eval('document.form.'+prefix+'_redirectalltovpn').value == "true"){
+			$j('input[name='+prefix+'_vpnclientnumber]').removeClass("disabled");
+			$j('input[name='+prefix+'_vpnclientnumber]').prop("disabled",false);
+		}
 	}
 }
 
@@ -208,6 +211,11 @@ function VPNOptionsEnableDisable(forminput){
 function Validate_IP(forminput,iptype){
 	var inputvalue = forminput.value;
 	var inputname = forminput.name;
+	if(iptype == "DNS"){
+		if(inputvalue.substring(inputvalue.lastIndexOf(".")) == ".0"){
+			forminput.value = inputvalue.substring(0,inputvalue.lastIndexOf("."))+".1";
+		}
+	}
 	if(/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(inputvalue)){
 		if(iptype != "DNS"){
 			var fixedip = inputvalue.substring(0,inputvalue.lastIndexOf("."))+".0";
@@ -674,7 +682,7 @@ $j.fn.serializeObject = function(){
 <tr>
 <td bgcolor="#4D595D" colspan="3" valign="top">
 <div>&nbsp;</div>
-<div class="formfonttitle" id="scripttitle" style="text-align:center;">YazFi - v4.1.3</div>
+<div class="formfonttitle" id="scripttitle" style="text-align:center;">YazFi - v4.1.4</div>
 <div style="margin:10px 0 10px 5px;" class="splitLine"></div>
 <div class="formfontdesc">Feature expansion of guest WiFi networks on AsusWRT-Merlin.</div>
 <table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons">
