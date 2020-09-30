@@ -161,7 +161,7 @@ Iface_BounceClients(){
 		wl -i "$IFACE" radio on >/dev/null 2>&1
 	done
 	
-	ARPDUMP="$(arp -a)"
+	ARPDUMP="$(arp -an)"
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
 			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
@@ -170,7 +170,7 @@ Iface_BounceClients(){
 				IFS=$'\n'
 				for GUEST_MAC in $IFACE_MACS; do
 					GUEST_MACADDR="${GUEST_MAC#* }"
-					GUEST_ARPINFO="$(arp -a | grep -i "$GUEST_MACADDR")"
+					GUEST_ARPINFO="$(arp -an | grep -i "$GUEST_MACADDR")"
 					for ARP_ENTRY in $GUEST_ARPINFO; do
 						GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
 						arp -d "$GUEST_IPADDR"
