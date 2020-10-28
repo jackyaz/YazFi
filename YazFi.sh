@@ -2175,7 +2175,7 @@ Menu_Status(){
 	ScriptHeader
 	printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
 		
-	ARPDUMP="$(arp -a)"
+	ARPDUMP="$(arp -an)"
 	
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_ENABLED")" = "true" ]; then
@@ -2191,7 +2191,7 @@ Menu_Status(){
 					GUEST_MACADDR="${GUEST_MAC#* }"
 					GUEST_ARPINFO="$(echo "$ARPDUMP" | grep "$IFACE" | grep -i "$GUEST_MACADDR")"
 					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
-					GUEST_HOST="$(echo "$GUEST_ARPINFO" | awk '{print $1}' | cut -f1 -d ".")"
+					GUEST_HOST="$(arp "$GUEST_IPADDR" | awk '{print $1}' | cut -f1 -d ".")"
 					if [ "$GUEST_HOST" = "?" ]; then
 						GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
 					fi
