@@ -2386,9 +2386,9 @@ case "$1" in
 				fi
 			done
 		elif [ "$2" = "start" ] && [ "$3" = "yazfi" ]; then
-			Check_Lock
 			Conf_FromSettings
 			Print_Output "true" "WebUI config updated - running $YAZFI_NAME" "$PASS"
+			Check_Lock
 			Config_Networks
 			Clear_Lock
 		fi
