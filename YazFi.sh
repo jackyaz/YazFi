@@ -296,7 +296,7 @@ Auto_OpenVPNEvent(){
 		create)
 			if [ -f /jffs/scripts/openvpn-event ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME" /jffs/scripts/openvpn-event)
-				# shellecheck disable=SC2016
+				# shellcheck disable=SC2016
 				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME openvpn "'$1 $script_type'" &"' # '"$YAZFI_NAME" /jffs/scripts/openvpn-event)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
@@ -304,13 +304,13 @@ Auto_OpenVPNEvent(){
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					# shellecheck disable=SC2016
+					# shellcheck disable=SC2016
 					sed -i '2 i /jffs/scripts/'"$YAZFI_NAME"' openvpn $1 $script_type & # '"$YAZFI_NAME" /jffs/scripts/openvpn-event
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/openvpn-event
 				echo "" >> /jffs/scripts/openvpn-event
-				# shellecheck disable=SC2016
+				# shellcheck disable=SC2016
 				echo "/jffs/scripts/$YAZFI_NAME openvpn "'$1 $script_type'" &"' # '"$YAZFI_NAME" >> /jffs/scripts/openvpn-event
 				chmod 0755 /jffs/scripts/openvpn-event
 			fi
