@@ -291,6 +291,7 @@ Auto_Startup(){
 	esac
 }
 
+# shellecheck disable=SC2016
 Auto_OpenVPNEvent(){
 	case $1 in
 		create)
