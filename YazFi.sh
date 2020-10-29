@@ -291,6 +291,39 @@ Auto_Startup(){
 	esac
 }
 
+Auto_OpenVPNEvent(){
+	case $1 in
+		create)
+			if [ -f /jffs/scripts/openvpn-event ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME" /jffs/scripts/openvpn-event)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME openvpn "'$1 $script_type'" &"' # '"$YAZFI_NAME" /jffs/scripts/openvpn-event)
+				
+				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
+					sed -i -e '/# '"$YAZFI_NAME"'/d' /jffs/scripts/openvpn-event
+				fi
+				
+				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
+					sed -i '2 i /jffs/scripts/'"$YAZFI_NAME"' openvpn $1 $script_type & # '"$YAZFI_NAME" /jffs/scripts/openvpn-event
+				fi
+			else
+				echo "#!/bin/sh" > /jffs/scripts/openvpn-event
+				echo "" >> /jffs/scripts/openvpn-event
+				echo "/jffs/scripts/$YAZFI_NAME openvpn "'$1 $script_type'" &"' # '"$YAZFI_NAME" >> /jffs/scripts/openvpn-event
+				chmod 0755 /jffs/scripts/openvpn-event
+			fi
+		;;
+		delete)
+			if [ -f /jffs/scripts/openvpn-event ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME" /jffs/scripts/openvpn-event)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e '/# '"$YAZFI_NAME"'/d' /jffs/scripts/openvpn-event
+				fi
+			fi
+		;;
+	esac
+}
+
 Auto_Cron(){
 	case $1 in
 		create)
@@ -1515,6 +1548,7 @@ Config_Networks(){
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Auto_ServiceStart create 2>/dev/null
+	Auto_OpenVPNEvent create 2>/dev/null
 	
 	if ! Conf_Exists; then
 		Conf_Download "$YAZFI_CONF"
@@ -1885,6 +1919,7 @@ Menu_Install(){
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Auto_ServiceStart create 2>/dev/null
+	Auto_OpenVPNEvent create 2>/dev/null
 	
 	Print_Output "true" "You can access $YAZFI_NAME's configuration via the Guest Networks section of the WebUI" "$PASS"
 	Print_Output "true" "Alternativey, use $YAZFI_NAME's menu via amtm (if installed), with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
@@ -1956,6 +1991,7 @@ Menu_Uninstall(){
 	Auto_Cron delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
 	Auto_ServiceStart delete 2>/dev/null
+	Auto_OpenVPNEvent delete 2>/dev/null
 	Avahi_Conf delete 2>/dev/null
 	Routing_NVRAM deleteall 2>/dev/null
 	Routing_FWNAT deleteall 2>/dev/null
@@ -2299,6 +2335,7 @@ if [ -z "$1" ]; then
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Auto_ServiceStart create 2>/dev/null
+	Auto_OpenVPNEvent create 2>/dev/null
 	Shortcut_YazFi create
 	Conf_FixBlanks
 	
@@ -2362,17 +2399,25 @@ case "$1" in
 			sleep 30
 			Config_Networks
 			Clear_Lock
-		elif [ "$(echo "$2" | grep -c "start")" -gt 0 ] && [ "$(echo "$3" | grep -c "vpnclient")" -gt 0 ]; then
-			Print_Output "true" "VPN client (re)started - sleeping 15s before running $YAZFI_NAME" "$PASS"
-			sleep 15
+		elif [ "$2" = "start" ] && [ "$3" = "yazfi" ]; then
+			Conf_FromSettings
+			Print_Output "true" "WebUI config updated - running $YAZFI_NAME" "$PASS"
+			Check_Lock
+			Config_Networks
+			Clear_Lock
+		fi
+		exit 0
+	;;
+	openvpn)
+		if echo "$2" | grep -q tun1 && [ "$3" = "route-up" ]; then
+			Print_Output "true" "VPN tunnel route just came up, running YazFi to fix RPDB routing" "$PASS"
+			sleep 5
 			
 			if ! Conf_Exists; then
-				Clear_Lock
 				return 1
 			fi
 			
 			if ! Conf_Validate; then
-				Clear_Lock
 				return 1
 			fi
 			
@@ -2386,14 +2431,7 @@ case "$1" in
 					fi
 				fi
 			done
-		elif [ "$2" = "start" ] && [ "$3" = "yazfi" ]; then
-			Conf_FromSettings
-			Print_Output "true" "WebUI config updated - running $YAZFI_NAME" "$PASS"
-			Check_Lock
-			Config_Networks
-			Clear_Lock
 		fi
-		exit 0
 	;;
 	status)
 		Menu_Status
