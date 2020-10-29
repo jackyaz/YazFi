@@ -2193,6 +2193,7 @@ Menu_Status(){
 					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
 					GUEST_HOST="$(arp "$GUEST_IPADDR" | grep "$IFACE" | awk '{print $1}' | cut -f1 -d ".")"
 					if [ "$GUEST_HOST" = "?" ]; then
+						# shellcheck disable=SC2063
 						GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | grep -v "*" | awk '{print $4}')
 					fi
 					
