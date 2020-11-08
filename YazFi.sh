@@ -403,8 +403,8 @@ Firmware_Version_WebUI(){
 Check_Lock(){
 	if [ -f "/tmp/$YAZFI_NAME.lock" ]; then
 		ageoflock=$(($(date +%s) - $(date +%s -r /tmp/$YAZFI_NAME.lock)))
-		if [ "$ageoflock" -gt 120 ]; then
-			Print_Output "true" "Stale lock file found (>120 seconds old) - purging lock" "$ERR"
+		if [ "$ageoflock" -gt 600 ]; then
+			Print_Output "true" "Stale lock file found (>600 seconds old) - purging lock" "$ERR"
 			kill "$(sed -n '1p' /tmp/$YAZFI_NAME.lock)" >/dev/null 2>&1
 			Clear_Lock
 			echo "$$" > "/tmp/$YAZFI_NAME.lock"
@@ -2034,7 +2034,6 @@ Menu_Uninstall(){
 Menu_BounceClients(){
 	. "$YAZFI_CONF"
 	Iface_BounceClients
-	Clear_Lock
 }
 
 Menu_GuestConfig(){
@@ -2391,7 +2390,6 @@ case "$1" in
 		exit 0
 	;;
 	bounceclients)
-		Check_Lock
 		Menu_BounceClients
 		exit 0;
 	;;
@@ -2445,23 +2443,17 @@ case "$1" in
 		exit 0
 	;;
 	develop)
-		Check_Lock
 		sed -i 's/^readonly YAZFI_BRANCH.*$/readonly YAZFI_BRANCH="develop"/' "/jffs/scripts/$YAZFI_NAME"
-		Clear_Lock
 		exec "$0" "update"
 		exit 0
 	;;
 	stable)
-		Check_Lock
 		sed -i 's/^readonly YAZFI_BRANCH.*$/readonly YAZFI_BRANCH="master"/' "/jffs/scripts/$YAZFI_NAME"
-		Clear_Lock
 		exec "$0" "update"
 		exit 0
 	;;
 	*)
-		Check_Lock
 		echo "Command not recognised, please try again"
-		Clear_Lock
 		exit 1
 	;;
 esac
