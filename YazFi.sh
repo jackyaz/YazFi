@@ -1062,7 +1062,9 @@ Firewall_Chains(){
 							iptables -I "$LGRJT" -j REJECT
 							
 							# Optional rule to log all rejected packets to syslog
-							# iptables -I $LGRJT -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
+							if [ -f "$SCRIPT_DIR/.rejectlogging" ]; then
+								iptables -I $LGRJT -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
+							fi
 						;;
 					esac
 				fi
@@ -2440,6 +2442,17 @@ case "$1" in
 	;;
 	userscripts)
 		Execute_UserScripts
+		exit 0
+	;;
+	rejectlogging)
+		if [ -f "$SCRIPT_DIR/.rejectlogging" ]; then
+			rm -f "$SCRIPT_DIR/.rejectlogging"
+		else
+			touch "$SCRIPT_DIR/.rejectlogging"
+		fi
+		Check_Lock
+		Config_Networks
+		Clear_Lock
 		exit 0
 	;;
 	develop)
