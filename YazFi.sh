@@ -2231,19 +2231,22 @@ Menu_Status(){
 					GUEST_MACADDR="${GUEST_MAC#* }"
 					GUEST_ARPINFO="$(echo "$ARPDUMP" | grep "$IFACE" | grep -i "$GUEST_MACADDR")"
 					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
-					GUEST_HOST="$(arp "$GUEST_IPADDR" | grep "$IFACE" | awk '{print $1}' | cut -f1 -d ".")"
-					if [ "$GUEST_HOST" = "?" ]; then
-						# shellcheck disable=SC2063
-						GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | grep -v "*" | awk '{print $4}')
-					fi
-					
-					if [ "$GUEST_HOST" = "?" ] || [ "${#GUEST_HOST}" -le 1 ]; then
-						GUEST_HOST="$(nvram get custom_clientlist | grep -ioE "<.*>$GUEST_MACADDR" | awk -F ">" '{print $(NF-1)}' | tr -d '<')" #thanks Adamm00
-					fi
-					
-					if [ -f /opt/bin/dig ]; then
-						if [ -z "$GUEST_HOST" ]; then
-							GUEST_HOST="$(dig +short +answer -x "$GUEST_IPADDR" '@'"$(nvram get lan_ipaddr)" | cut -f1 -d'.')"
+					GUEST_HOST=""
+					if [ -n "$GUEST_IPADDR" ]; then
+						GUEST_HOST="$(arp "$GUEST_IPADDR" | grep "$IFACE" | awk '{print $1}' | cut -f1 -d ".")"
+						if [ "$GUEST_HOST" = "?" ]; then
+							# shellcheck disable=SC2063
+							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | grep -v "*" | awk '{print $4}')
+						fi
+						
+						if [ "$GUEST_HOST" = "?" ] || [ "${#GUEST_HOST}" -le 1 ]; then
+							GUEST_HOST="$(nvram get custom_clientlist | grep -ioE "<.*>$GUEST_MACADDR" | awk -F ">" '{print $(NF-1)}' | tr -d '<')" #thanks Adamm00
+						fi
+						
+						if [ -f /opt/bin/dig ]; then
+							if [ -z "$GUEST_HOST" ]; then
+								GUEST_HOST="$(dig +short +answer -x "$GUEST_IPADDR" '@'"$(nvram get lan_ipaddr)" | cut -f1 -d'.')"
+							fi
 						fi
 					fi
 					
