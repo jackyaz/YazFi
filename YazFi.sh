@@ -2450,9 +2450,7 @@ case "$1" in
 		else
 			touch "$SCRIPT_DIR/.rejectlogging"
 		fi
-		Check_Lock
-		Config_Networks
-		Clear_Lock
+		service restart_firewall >/dev/null 2>&1
 		exit 0
 	;;
 	develop)
