@@ -23,16 +23,16 @@
 #####################################################
 
 ### Start of script variables ###
-readonly YAZFI_NAME="YazFi"
-readonly OLD_YAZFI_CONF="/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config"
-readonly YAZFI_CONF="/jffs/addons/$YAZFI_NAME.d/config"
+readonly SCRIPT_NAME="YazFi"
+readonly SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
 readonly YAZFI_VERSION="v4.1.5"
-readonly YAZFI_BRANCH="develop"
-readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$YAZFI_NAME/$YAZFI_BRANCH"
-readonly SCRIPT_DIR="/jffs/addons/$YAZFI_NAME.d"
+readonly SCRIPT_VERSION="v4.1.5"
+readonly SCRIPT_BRANCH="develop"
+readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
+readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
 readonly USER_SCRIPT_DIR="$SCRIPT_DIR/userscripts.d"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
-readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$YAZFI_NAME"
+readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$SCRIPT_NAME"
 readonly SHARED_DIR="/jffs/addons/shared-jy"
 readonly SHARED_REPO="https://raw.githubusercontent.com/jackyaz/shared-jy/master"
 readonly SHARED_WEB_DIR="$SCRIPT_WEBPAGE_DIR/shared-jy"
@@ -58,10 +58,10 @@ readonly TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
 ### End of path variables ###
 
 ### Start of firewall variables ###
-readonly INPT="$YAZFI_NAME""INPUT"
-readonly FWRD="$YAZFI_NAME""FORWARD"
-readonly LGRJT="$YAZFI_NAME""REJECT"
-readonly DNSFLTR="$YAZFI_NAME""DNSFILTER"
+readonly INPT="${SCRIPT_NAME}INPUT"
+readonly FWRD="${SCRIPT_NAME}FORWARD"
+readonly LGRJT="${SCRIPT_NAME}REJECT"
+readonly DNSFLTR="${SCRIPT_NAME}DNSFILTER"
 readonly CHAINS="$INPT $FWRD $LGRJT"
 readonly NATCHAINS="$DNSFLTR"
 ### End of firewall variables ###
@@ -82,16 +82,16 @@ VPN_IP_LIST_NEW_5=""
 # $1 = print to syslog, $2 = message to print, $3 = log level
 Print_Output(){
 	if [ "$1" = "true" ]; then
-		logger -t "$YAZFI_NAME" "$2"
-		printf "\\e[1m$3%s: $2\\e[0m\\n\\n" "$YAZFI_NAME"
+		logger -t "$SCRIPT_NAME" "$2"
+		printf "\\e[1m$3%s: $2\\e[0m\\n\\n" "$SCRIPT_NAME"
 	else
-		printf "\\e[1m$3%s: $2\\e[0m\\n\\n" "$YAZFI_NAME"
+		printf "\\e[1m$3%s: $2\\e[0m\\n\\n" "$SCRIPT_NAME"
 	fi
 }
 
 Generate_Random_String(){
 	PASSLENGTH=16
-	if Validate_Number "" "$1" "silent"; then
+	if Validate_Number "" "$1" silent; then
 		if [ "$1" -le 32 ] && [ "$1" -ge 8 ]; then
 			PASSLENGTH=$1
 		else
@@ -149,7 +149,7 @@ Iface_Manage(){
 }
 
 Iface_BounceClients(){
-	Print_Output "true" "Forcing $YAZFI_NAME Guest WiFi clients to reauthenticate" "$PASS"
+	Print_Output "true" "Forcing $SCRIPT_NAME Guest WiFi clients to reauthenticate" "$PASS"
 	
 	for IFACE in $IFACELIST; do
 		wl -i "$IFACE" radio off >/dev/null 2>&1
@@ -193,32 +193,32 @@ Auto_ServiceEvent(){
 	case $1 in
 		create)
 			if [ -f /jffs/scripts/service-event ]; then
-				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/service-event)
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/service-event)
 				# shellcheck disable=SC2016
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME service_event"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/service-event)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME service_event"' "$1" "$2" &'' # '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/service-event)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
-					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/service-event
+					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/service-event
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					# shellcheck disable=SC2016
-					echo "/jffs/scripts/$YAZFI_NAME service_event"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
+					echo "/jffs/scripts/$SCRIPT_NAME service_event"' "$1" "$2" &'' # '"$SCRIPT_NAME"' Guest Networks' >> /jffs/scripts/service-event
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/service-event
 				echo "" >> /jffs/scripts/service-event
 				# shellcheck disable=SC2016
-				echo "/jffs/scripts/$YAZFI_NAME service_event"' "$1" "$2" &'' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/service-event
+				echo "/jffs/scripts/$SCRIPT_NAME service_event"' "$1" "$2" &'' # '"$SCRIPT_NAME"' Guest Networks' >> /jffs/scripts/service-event
 				chmod 0755 /jffs/scripts/service-event
 			fi
 		;;
 		delete)
 			if [ -f /jffs/scripts/service-event ]; then
-				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/service-event)
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/service-event)
 				
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
-					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/service-event
+					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/service-event
 				fi
 			fi
 		;;
@@ -229,29 +229,29 @@ Auto_ServiceStart(){
 	case $1 in
 		create)
 			if [ -f /jffs/scripts/services-start ]; then
-				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME" /jffs/scripts/services-start)
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME startup &"' # '"$YAZFI_NAME" /jffs/scripts/services-start)
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/services-start)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME startup &"' # '"$SCRIPT_NAME" /jffs/scripts/services-start)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
-					sed -i -e '/# '"$YAZFI_NAME"'/d' /jffs/scripts/services-start
+					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/services-start
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					echo "/jffs/scripts/$YAZFI_NAME startup &"' # '"$YAZFI_NAME" >> /jffs/scripts/services-start
+					echo "/jffs/scripts/$SCRIPT_NAME startup &"' # '"$SCRIPT_NAME" >> /jffs/scripts/services-start
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/services-start
 				echo "" >> /jffs/scripts/services-start
-				echo "/jffs/scripts/$YAZFI_NAME startup &"' # '"$YAZFI_NAME" >> /jffs/scripts/services-start
+				echo "/jffs/scripts/$SCRIPT_NAME startup &"' # '"$SCRIPT_NAME" >> /jffs/scripts/services-start
 				chmod 0755 /jffs/scripts/services-start
 			fi
 		;;
 		delete)
 			if [ -f /jffs/scripts/services-start ]; then
-				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME" /jffs/scripts/services-start)
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/services-start)
 				
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
-					sed -i -e '/# '"$YAZFI_NAME"'/d' /jffs/scripts/services-start
+					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/services-start
 				fi
 			fi
 		;;
@@ -262,29 +262,29 @@ Auto_Startup(){
 	case $1 in
 		create)
 			if [ -f /jffs/scripts/firewall-start ]; then
-				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME runnow &"' # '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/firewall-start)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME runnow &"' # '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/firewall-start)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
-					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
+					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					echo "/jffs/scripts/$YAZFI_NAME runnow &"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
+					echo "/jffs/scripts/$SCRIPT_NAME runnow &"' # '"$SCRIPT_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/firewall-start
 				echo "" >> /jffs/scripts/firewall-start
-				echo "/jffs/scripts/$YAZFI_NAME runnow &"' # '"$YAZFI_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
+				echo "/jffs/scripts/$SCRIPT_NAME runnow &"' # '"$SCRIPT_NAME"' Guest Networks' >> /jffs/scripts/firewall-start
 				chmod 0755 /jffs/scripts/firewall-start
 			fi
 		;;
 		delete)
 			if [ -f /jffs/scripts/firewall-start ]; then
-				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME"' Guest Networks' /jffs/scripts/firewall-start)
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/firewall-start)
 				
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
-					sed -i -e '/# '"$YAZFI_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
+					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
 				fi
 			fi
 		;;
@@ -295,32 +295,32 @@ Auto_OpenVPNEvent(){
 	case $1 in
 		create)
 			if [ -f /jffs/scripts/openvpn-event ]; then
-				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME" /jffs/scripts/openvpn-event)
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/openvpn-event)
 				# shellcheck disable=SC2016
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$YAZFI_NAME openvpn "'$1 $script_type'" &"' # '"$YAZFI_NAME" /jffs/scripts/openvpn-event)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME openvpn "'$1 $script_type'" &"' # '"$SCRIPT_NAME" /jffs/scripts/openvpn-event)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
-					sed -i -e '/# '"$YAZFI_NAME"'/d' /jffs/scripts/openvpn-event
+					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/openvpn-event
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					# shellcheck disable=SC2016
-					sed -i '2 i /jffs/scripts/'"$YAZFI_NAME"' openvpn $1 $script_type & # '"$YAZFI_NAME" /jffs/scripts/openvpn-event
+					sed -i '2 i /jffs/scripts/'"$SCRIPT_NAME"' openvpn $1 $script_type & # '"$SCRIPT_NAME" /jffs/scripts/openvpn-event
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/openvpn-event
 				echo "" >> /jffs/scripts/openvpn-event
 				# shellcheck disable=SC2016
-				echo "/jffs/scripts/$YAZFI_NAME openvpn "'$1 $script_type'" &"' # '"$YAZFI_NAME" >> /jffs/scripts/openvpn-event
+				echo "/jffs/scripts/$SCRIPT_NAME openvpn "'$1 $script_type'" &"' # '"$SCRIPT_NAME" >> /jffs/scripts/openvpn-event
 				chmod 0755 /jffs/scripts/openvpn-event
 			fi
 		;;
 		delete)
 			if [ -f /jffs/scripts/openvpn-event ]; then
-				STARTUPLINECOUNT=$(grep -c '# '"$YAZFI_NAME" /jffs/scripts/openvpn-event)
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/openvpn-event)
 				
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
-					sed -i -e '/# '"$YAZFI_NAME"'/d' /jffs/scripts/openvpn-event
+					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/openvpn-event
 				fi
 			fi
 		;;
@@ -330,17 +330,17 @@ Auto_OpenVPNEvent(){
 Auto_Cron(){
 	case $1 in
 		create)
-			STARTUPLINECOUNT=$(cru l | grep -c "$YAZFI_NAME")
+			STARTUPLINECOUNT=$(cru l | grep -c "$SCRIPT_NAME")
 			
 			if [ "$STARTUPLINECOUNT" -eq 0 ]; then
-				cru a "$YAZFI_NAME" "*/10 * * * * /jffs/scripts/$YAZFI_NAME check"
+				cru a "$SCRIPT_NAME" "*/10 * * * * /jffs/scripts/$SCRIPT_NAME check"
 			fi
 		;;
 		delete)
-			STARTUPLINECOUNT=$(cru l | grep -c "$YAZFI_NAME")
+			STARTUPLINECOUNT=$(cru l | grep -c "$SCRIPT_NAME")
 			
 			if [ "$STARTUPLINECOUNT" -gt 0 ]; then
-				cru d "$YAZFI_NAME"
+				cru d "$SCRIPT_NAME"
 			fi
 		;;
 	esac
@@ -351,13 +351,13 @@ Avahi_Conf(){
 	case $1 in
 		create)
 			if [ -f /jffs/scripts/avahi-daemon.postconf ]; then
-				STARTUPLINECOUNT=$(grep -c "$YAZFI_NAME" /jffs/scripts/avahi-daemon.postconf)
+				STARTUPLINECOUNT=$(grep -c "$SCRIPT_NAME" /jffs/scripts/avahi-daemon.postconf)
 				
 				if [ "$STARTUPLINECOUNT" -eq 0 ]; then
 					{
 					echo 'echo "" >> "$1"'
-					echo 'echo "[reflector]" >> "$1" # '"$YAZFI_NAME"
-					echo 'echo "enable-reflector=yes" >> "$1" # '"$YAZFI_NAME"
+					echo 'echo "[reflector]" >> "$1" # '"$SCRIPT_NAME"
+					echo 'echo "enable-reflector=yes" >> "$1" # '"$SCRIPT_NAME"
 					} >> /jffs/scripts/avahi-daemon.postconf
 					service restart_mdns >/dev/null 2>&1
 				fi
@@ -365,8 +365,8 @@ Avahi_Conf(){
 				{
 				echo '#!/bin/sh'
 				echo 'echo "" >> "$1"'
-				echo 'echo "[reflector]" >> "$1" # '"$YAZFI_NAME"
-				echo 'echo "enable-reflector=yes" >> "$1" # '"$YAZFI_NAME"
+				echo 'echo "[reflector]" >> "$1" # '"$SCRIPT_NAME"
+				echo 'echo "enable-reflector=yes" >> "$1" # '"$SCRIPT_NAME"
 				} > /jffs/scripts/avahi-daemon.postconf
 				chmod 0755 /jffs/scripts/avahi-daemon.postconf
 				service restart_mdns >/dev/null 2>&1
@@ -374,10 +374,10 @@ Avahi_Conf(){
 		;;
 		delete)
 			if [ -f /jffs/scripts/avahi-daemon.postconf ]; then
-				STARTUPLINECOUNT=$(grep -c "$YAZFI_NAME" /jffs/scripts/avahi-daemon.postconf)
+				STARTUPLINECOUNT=$(grep -c "$SCRIPT_NAME" /jffs/scripts/avahi-daemon.postconf)
 				
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
-					sed -i -e '/# '"$YAZFI_NAME"'/d' /jffs/scripts/avahi-daemon.postconf
+					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/avahi-daemon.postconf
 					service restart_mdns >/dev/null 2>&1
 				fi
 			fi
@@ -401,13 +401,13 @@ Firmware_Version_WebUI(){
 
 ### Code for these functions inspired by https://github.com/Adamm00 - credit to @Adamm ###
 Check_Lock(){
-	if [ -f "/tmp/$YAZFI_NAME.lock" ]; then
-		ageoflock=$(($(date +%s) - $(date +%s -r /tmp/$YAZFI_NAME.lock)))
+	if [ -f "/tmp/$SCRIPT_NAME.lock" ]; then
+		ageoflock=$(($(date +%s) - $(date +%s -r /tmp/$SCRIPT_NAME.lock)))
 		if [ "$ageoflock" -gt 600 ]; then
 			Print_Output "true" "Stale lock file found (>600 seconds old) - purging lock" "$ERR"
-			kill "$(sed -n '1p' /tmp/$YAZFI_NAME.lock)" >/dev/null 2>&1
+			kill "$(sed -n '1p' /tmp/$SCRIPT_NAME.lock)" >/dev/null 2>&1
 			Clear_Lock
-			echo "$$" > "/tmp/$YAZFI_NAME.lock"
+			echo "$$" > "/tmp/$SCRIPT_NAME.lock"
 			return 0
 		else
 			Print_Output "true" "Lock file found (age: $ageoflock seconds) - stopping to prevent duplicate runs" "$ERR"
@@ -418,36 +418,36 @@ Check_Lock(){
 			fi
 		fi
 	else
-		echo "$$" > "/tmp/$YAZFI_NAME.lock"
+		echo "$$" > "/tmp/$SCRIPT_NAME.lock"
 		return 0
 	fi
 }
 
 Clear_Lock(){
-	rm -f "/tmp/$YAZFI_NAME.lock" 2>/dev/null
+	rm -f "/tmp/$SCRIPT_NAME.lock" 2>/dev/null
 	return 0
 }
 
 Update_Version(){
 	if [ -z "$1" ]; then
 		doupdate="false"
-		localver=$(grep "YAZFI_VERSION=" /jffs/scripts/$YAZFI_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-		/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; return 1; }
-		serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+		localver=$(grep "SCRIPT_VERSION=" /jffs/scripts/$SCRIPT_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+		/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep -qF "jackyaz" || { Print_Output "true" "404 error detected - stopping update" "$ERR"; return 1; }
+		serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 		if [ "$localver" != "$serverver" ]; then
 			doupdate="version"
 		else
-			localmd5="$(md5sum "/jffs/scripts/$YAZFI_NAME" | awk '{print $1}')"
-			remotemd5="$(curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" | md5sum | awk '{print $1}')"
+			localmd5="$(md5sum "/jffs/scripts/$SCRIPT_NAME" | awk '{print $1}')"
+			remotemd5="$(curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | md5sum | awk '{print $1}')"
 			if [ "$localmd5" != "$remotemd5" ]; then
 				doupdate="md5"
 			fi
 		fi
 		
 		if [ "$doupdate" = "version" ]; then
-			Print_Output "true" "New version of $YAZFI_NAME available - updating to $serverver" "$PASS"
+			Print_Output "true" "New version of $SCRIPT_NAME available - updating to $serverver" "$PASS"
 		elif [ "$doupdate" = "md5" ]; then
-			Print_Output "true" "MD5 hash of $YAZFI_NAME does not match - downloading updated $serverver" "$PASS"
+			Print_Output "true" "MD5 hash of $SCRIPT_NAME does not match - downloading updated $serverver" "$PASS"
 		fi
 		
 		if Firmware_Version_WebUI ; then
@@ -458,8 +458,8 @@ Update_Version(){
 		fi
 		
 		if [ "$doupdate" != "false" ]; then
-			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
-			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
+			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output "true" "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
+			chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
 			Clear_Lock
 			service restart_firewall >/dev/null 2>&1
 			exit 0
@@ -471,10 +471,10 @@ Update_Version(){
 	
 	case "$1" in
 		force)
-			serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" | grep "YAZFI_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-			Print_Output "true" "Downloading latest version ($serverver) of $YAZFI_NAME" "$PASS"
-			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.sh" -o "/jffs/scripts/$YAZFI_NAME" && Print_Output "true" "$YAZFI_NAME successfully updated - restarting firewall to apply update"
-			chmod 0755 "/jffs/scripts/$YAZFI_NAME"
+			serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+			Print_Output "true" "Downloading latest version ($serverver) of $SCRIPT_NAME" "$PASS"
+			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output "true" "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
+			chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
 			if Firmware_Version_WebUI ; then
 				Update_File "YazFi_www.asp"
 				Update_File "shared-jy.tar.gz"
@@ -670,32 +670,32 @@ Conf_FromSettings(){
 	TMPFILE="/tmp/yazfi_settings.txt"
 	if [ -f "$SETTINGSFILE" ]; then
 		if [ "$(grep -c "yazfi_" $SETTINGSFILE)" -gt 0 ]; then
-			Print_Output "true" "Updated settings from WebUI found, merging into $YAZFI_CONF" "$PASS"
-			cp -a "$YAZFI_CONF" "$YAZFI_CONF.bak"
+			Print_Output "true" "Updated settings from WebUI found, merging into $SCRIPT_CONF" "$PASS"
+			cp -a "$SCRIPT_CONF" "$SCRIPT_CONF.bak"
 			grep "yazfi_" "$SETTINGSFILE" > "$TMPFILE"
 			sed -i "s/yazfi_//g;s/ /=/g" "$TMPFILE"
 			while IFS='' read -r line || [ -n "$line" ]; do
 				SETTINGNAME="$(echo "$line" | cut -f1 -d'=' | awk 'BEGIN{FS="_"}{ print $1 "_" toupper($2) }')"
 				SETTINGVALUE="$(echo "$line" | cut -f2 -d'=')"
-				sed -i "s/$SETTINGNAME=.*/$SETTINGNAME=$SETTINGVALUE/" "$YAZFI_CONF"
+				sed -i "s/$SETTINGNAME=.*/$SETTINGNAME=$SETTINGVALUE/" "$SCRIPT_CONF"
 			done < "$TMPFILE"
 			sed -i "\\~yazfi_~d" "$SETTINGSFILE"
 			rm -f "$TMPFILE"
 			Print_Output "true" "Merge of updated settings from WebUI completed successfully" "$PASS"
 		else
-			Print_Output "false" "No updated settings from WebUI found, no merge into $YAZFI_CONF necessary" "$PASS"
+			Print_Output "false" "No updated settings from WebUI found, no merge into $SCRIPT_CONF necessary" "$PASS"
 		fi
 	fi
 }
 
 Conf_FixBlanks(){
 	if ! Conf_Exists; then
-		Conf_Download "$YAZFI_CONF"
+		Conf_Download "$SCRIPT_CONF"
 		Clear_Lock
 		return 1
 	fi
 	
-	cp -a "$YAZFI_CONF" "$YAZFI_CONF.bak"
+	cp -a "$SCRIPT_CONF" "$SCRIPT_CONF.bak"
 	
 	for IFACEBLANK in $IFACELIST_FULL; do
 		IFACETMPBLANK="$(Get_Iface_Var "$IFACEBLANK")"
@@ -705,73 +705,73 @@ Conf_FixBlanks(){
 			IPADDRTMPBLANK="192.168.0"
 			
 			COUNTER=0
-			until [ "$(grep -o "$IPADDRTMPBLANK" $YAZFI_CONF | wc -l)" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMPBLANK" | wc -l )" -eq 0 ]; do
+			until [ "$(grep -o "$IPADDRTMPBLANK" $SCRIPT_CONF | wc -l)" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMPBLANK" | wc -l )" -eq 0 ]; do
 				IPADDRTMPBLANK="192.168.""$COUNTER"
 				COUNTER=$((COUNTER + 1))
 			done
 			
-			sed -i -e "s/""$IFACETMPBLANK""_IPADDR=/""$IFACETMPBLANK""_IPADDR=""$IPADDRTMPBLANK"".0/" "$YAZFI_CONF"
+			sed -i -e "s/""$IFACETMPBLANK""_IPADDR=/""$IFACETMPBLANK""_IPADDR=""$IPADDRTMPBLANK"".0/" "$SCRIPT_CONF"
 			Print_Output "false" "$IFACETMPBLANK""_IPADDR is blank, setting to next available subnet" "$WARN"
 		fi
 		
 		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_DHCPSTART")" ]; then
-			sed -i -e "s/""$IFACETMPBLANK""_DHCPSTART=/""$IFACETMPBLANK""_DHCPSTART=2/" "$YAZFI_CONF"
+			sed -i -e "s/""$IFACETMPBLANK""_DHCPSTART=/""$IFACETMPBLANK""_DHCPSTART=2/" "$SCRIPT_CONF"
 			Print_Output "false" "$IFACETMPBLANK""_DHCPSTART is blank, setting to 2" "$WARN"
 		fi
 		
 		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_DHCPEND")" ]; then
-			sed -i -e "s/""$IFACETMPBLANK""_DHCPEND=/""$IFACETMPBLANK""_DHCPEND=254/" "$YAZFI_CONF"
+			sed -i -e "s/""$IFACETMPBLANK""_DHCPEND=/""$IFACETMPBLANK""_DHCPEND=254/" "$SCRIPT_CONF"
 			Print_Output "false" "$IFACETMPBLANK""_DHCPEND is blank, setting to 254" "$WARN"
 		fi
 		
 		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_DNS1")" ]; then
 			if [ -n "$(eval echo '$'"$IFACETMPBLANK""_IPADDR")" ]; then
-				sed -i -e "s/""$IFACETMPBLANK""_DNS1=/""$IFACETMPBLANK""_DNS1=$(eval echo '$'"$IFACETMPBLANK""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+				sed -i -e "s/""$IFACETMPBLANK""_DNS1=/""$IFACETMPBLANK""_DNS1=$(eval echo '$'"$IFACETMPBLANK""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$SCRIPT_CONF"
 				Print_Output "false" "$IFACETMPBLANK""_DNS1 is blank, setting to $(eval echo '$'"$IFACETMPBLANK""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
 			else
-				sed -i -e "s/""$IFACETMPBLANK""_DNS1=/""$IFACETMPBLANK""_DNS1=$IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+				sed -i -e "s/""$IFACETMPBLANK""_DNS1=/""$IFACETMPBLANK""_DNS1=$IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$SCRIPT_CONF"
 				Print_Output "false" "$IFACETMPBLANK""_DNS1 is blank, setting to $IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
 			fi
 		fi
 		
 		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_DNS2")" ]; then
 			if [ -n "$(eval echo '$'"$IFACETMPBLANK""_IPADDR")" ]; then
-				sed -i -e "s/""$IFACETMPBLANK""_DNS2=/""$IFACETMPBLANK""_DNS2=$(eval echo '$'"$IFACETMPBLANK""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+				sed -i -e "s/""$IFACETMPBLANK""_DNS2=/""$IFACETMPBLANK""_DNS2=$(eval echo '$'"$IFACETMPBLANK""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$SCRIPT_CONF"
 				Print_Output "false" "$IFACETMPBLANK""_DNS2 is blank, setting to $(eval echo '$'"$IFACETMPBLANK""_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
 			else
-				sed -i -e "s/""$IFACETMPBLANK""_DNS2=/""$IFACETMPBLANK""_DNS2=$IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$YAZFI_CONF"
+				sed -i -e "s/""$IFACETMPBLANK""_DNS2=/""$IFACETMPBLANK""_DNS2=$IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")/" "$SCRIPT_CONF"
 				Print_Output "false" "$IFACETMPBLANK""_DNS2 is blank, setting to $IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
 			fi
 		fi
 		
 		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_FORCEDNS")" ]; then
-			sed -i -e "s/""$IFACETMPBLANK""_FORCEDNS=/""$IFACETMPBLANK""_FORCEDNS=false/" "$YAZFI_CONF"
+			sed -i -e "s/""$IFACETMPBLANK""_FORCEDNS=/""$IFACETMPBLANK""_FORCEDNS=false/" "$SCRIPT_CONF"
 			Print_Output "false" "$IFACETMPBLANK""_FORCEDNS is blank, setting to false" "$WARN"
 		fi
 		
 		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_REDIRECTALLTOVPN")" ]; then
 			REDIRECTTMP="false"
-			sed -i -e "s/""$IFACETMPBLANK""_REDIRECTALLTOVPN=/""$IFACETMPBLANK""_REDIRECTALLTOVPN=false/" "$YAZFI_CONF"
+			sed -i -e "s/""$IFACETMPBLANK""_REDIRECTALLTOVPN=/""$IFACETMPBLANK""_REDIRECTALLTOVPN=false/" "$SCRIPT_CONF"
 			Print_Output "false" "$IFACETMPBLANK""_REDIRECTALLTOVPN is blank, setting to false" "$WARN"
 		fi
 		
 		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_VPNCLIENTNUMBER")" ]; then
-			sed -i -e "s/""$IFACETMPBLANK""_VPNCLIENTNUMBER=/""$IFACETMPBLANK""_VPNCLIENTNUMBER=1/" "$YAZFI_CONF"
+			sed -i -e "s/""$IFACETMPBLANK""_VPNCLIENTNUMBER=/""$IFACETMPBLANK""_VPNCLIENTNUMBER=1/" "$SCRIPT_CONF"
 			Print_Output "false" "$IFACETMPBLANK""_VPNCLIENTNUMBER is blank, setting to 1" "$WARN"
 		fi
 		
 		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_TWOWAYTOGUEST")" ]; then
-			sed -i -e "s/""$IFACETMPBLANK""_TWOWAYTOGUEST=/""$IFACETMPBLANK""_TWOWAYTOGUEST=false/" "$YAZFI_CONF"
+			sed -i -e "s/""$IFACETMPBLANK""_TWOWAYTOGUEST=/""$IFACETMPBLANK""_TWOWAYTOGUEST=false/" "$SCRIPT_CONF"
 			Print_Output "false" "$IFACETMPBLANK""_TWOWAYTOGUEST is blank, setting to false" "$WARN"
 		fi
 		
 		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_ONEWAYTOGUEST")" ]; then
-			sed -i -e "s/""$IFACETMPBLANK""_ONEWAYTOGUEST=/""$IFACETMPBLANK""_ONEWAYTOGUEST=false/" "$YAZFI_CONF"
+			sed -i -e "s/""$IFACETMPBLANK""_ONEWAYTOGUEST=/""$IFACETMPBLANK""_ONEWAYTOGUEST=false/" "$SCRIPT_CONF"
 			Print_Output "false" "$IFACETMPBLANK""_ONEWAYTOGUEST is blank, setting to false" "$WARN"
 		fi
 		
 		if [ -z "$(eval echo '$'"$IFACETMPBLANK""_CLIENTISOLATION")" ]; then
-			sed -i -e "s/""$IFACETMPBLANK""_CLIENTISOLATION=/""$IFACETMPBLANK""_CLIENTISOLATION=false/" "$YAZFI_CONF"
+			sed -i -e "s/""$IFACETMPBLANK""_CLIENTISOLATION=/""$IFACETMPBLANK""_CLIENTISOLATION=false/" "$SCRIPT_CONF"
 			Print_Output "false" "$IFACETMPBLANK""_CLIENTISOLATION is blank, setting to false" "$WARN"
 		fi
 	done
@@ -794,7 +794,7 @@ Conf_Validate(){
 		# Validate _ENABLED
 		if [ -z "$(eval echo '$'"$IFACETMP""_ENABLED")" ]; then
 			ENABLEDTMP="false"
-			sed -i -e "s/""$IFACETMP""_ENABLED=/""$IFACETMP""_ENABLED=false/" "$YAZFI_CONF"
+			sed -i -e "s/""$IFACETMP""_ENABLED=/""$IFACETMP""_ENABLED=false/" "$SCRIPT_CONF"
 			Print_Output "false" "$IFACETMP""_ENABLED is blank, setting to false" "$WARN"
 		elif ! Validate_TrueFalse "$IFACETMP""_ENABLED" "$(eval echo '$'"$IFACETMP""_ENABLED")"; then
 			ENABLEDTMP="false"
@@ -824,11 +824,11 @@ Conf_Validate(){
 						
 						# Set last octet to 0
 						if [ "$(eval echo '$'"$IFACETMP""_IPADDR" | cut -f4 -d".")" -ne 0 ]; then
-							sed -i -e "s/""$IFACETMP""_IPADDR=$(eval echo '$'"$IFACETMP""_IPADDR")/""$IFACETMP""_IPADDR=""$IPADDRTMP"".0/" "$YAZFI_CONF"
+							sed -i -e "s/""$IFACETMP""_IPADDR=$(eval echo '$'"$IFACETMP""_IPADDR")/""$IFACETMP""_IPADDR=""$IPADDRTMP"".0/" "$SCRIPT_CONF"
 							Print_Output "false" "$IFACETMP""_IPADDR setting last octet to 0" "$WARN"
 						fi
 						
-						if [ "$(grep -o "$IPADDRTMP".0 $YAZFI_CONF | wc -l )" -gt 1 ] || [ "$(ifconfig -a | grep -o "inet addr:$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")"  | sed 's/inet addr://' | wc -l )" -gt 1 ]; then
+						if [ "$(grep -o "$IPADDRTMP".0 $SCRIPT_CONF | wc -l )" -gt 1 ] || [ "$(ifconfig -a | grep -o "inet addr:$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")"  | sed 's/inet addr://' | wc -l )" -gt 1 ]; then
 							Print_Output "false" "$IFACETMP""_IPADDR ($(eval echo '$'"$IFACETMP""_IPADDR")) has been used for another interface already" "$ERR"
 							IFACE_PASS="false"
 						fi
@@ -900,7 +900,7 @@ Conf_Validate(){
 					
 					# Force _CLIENTISOLATION=false on AX88U
 					if [ "$ROUTER_MODEL" = "RT-AX88U" ]; then
-						sed -i -e "s/""$IFACETMP""_CLIENTISOLATION=true/""$IFACETMP""_CLIENTISOLATION=false/" "$YAZFI_CONF"
+						sed -i -e "s/""$IFACETMP""_CLIENTISOLATION=true/""$IFACETMP""_CLIENTISOLATION=false/" "$SCRIPT_CONF"
 					fi
 					
 					# Print success message
@@ -925,7 +925,7 @@ Conf_Validate(){
 			return 1
 		fi
 	else
-		Print_Output "true" "No $YAZFI_NAME guests are enabled in the configuration file!" "$CRIT"
+		Print_Output "true" "No $SCRIPT_NAME guests are enabled in the configuration file!" "$CRIT"
 		return 1
 	fi
 }
@@ -982,10 +982,10 @@ Get_WebUI_Page(){
 Mount_WebUI(){
 	Get_WebUI_Page "$SCRIPT_DIR/YazFi_www.asp"
 	if [ "$MyPage" = "none" ]; then
-		Print_Output "true" "Unable to mount $YAZFI_NAME WebUI page, exiting" "$CRIT"
+		Print_Output "true" "Unable to mount $SCRIPT_NAME WebUI page, exiting" "$CRIT"
 		exit 1
 	fi
-	Print_Output "true" "Mounting $YAZFI_NAME WebUI page as $MyPage" "$PASS"
+	Print_Output "true" "Mounting $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
 	cp -f "$SCRIPT_DIR/YazFi_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
 	echo "YazFi" > "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
 	
@@ -1004,8 +1004,8 @@ Mount_WebUI(){
 }
 
 Conf_Download(){
-	mkdir -p "/jffs/addons/$YAZFI_NAME.d"
-	/usr/sbin/curl -s --retry 3 "$SCRIPT_REPO/$YAZFI_NAME.config.example" -o "$1"
+	mkdir -p "/jffs/addons/$SCRIPT_NAME.d"
+	/usr/sbin/curl -s --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.config.example" -o "$1"
 	chmod 0644 "$1"
 	dos2unix "$1"
 	sleep 1
@@ -1013,30 +1013,30 @@ Conf_Download(){
 }
 
 Conf_Exists(){
-	if [ -d "/jffs/configs/$YAZFI_NAME" ]; then
-		mv "/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config" "/jffs/configs/$YAZFI_NAME/config"
-		mv "/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config.blank" "/jffs/configs/$YAZFI_NAME/config.blank"
-		mv "/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config.example" "/jffs/configs/$YAZFI_NAME/config.example"
-		mkdir -p "/jffs/addons/$YAZFI_NAME.d"
-		cp -a "/jffs/configs/$YAZFI_NAME/"* "/jffs/addons/$YAZFI_NAME.d/."
-		rm -rf "/jffs/configs/$YAZFI_NAME"
+	if [ -d "/jffs/configs/$SCRIPT_NAME" ]; then
+		mv "/jffs/configs/$SCRIPT_NAME/$SCRIPT_NAME.config" "/jffs/configs/$SCRIPT_NAME/config"
+		mv "/jffs/configs/$SCRIPT_NAME/$SCRIPT_NAME.config.blank" "/jffs/configs/$SCRIPT_NAME/config.blank"
+		mv "/jffs/configs/$SCRIPT_NAME/$SCRIPT_NAME.config.example" "/jffs/configs/$SCRIPT_NAME/config.example"
+		mkdir -p "/jffs/addons/$SCRIPT_NAME.d"
+		cp -a "/jffs/configs/$SCRIPT_NAME/"* "/jffs/addons/$SCRIPT_NAME.d/."
+		rm -rf "/jffs/configs/$SCRIPT_NAME"
 	fi
 	
-	if [ -f "$YAZFI_CONF" ]; then
-		dos2unix "$YAZFI_CONF"
-		chmod 0644 "$YAZFI_CONF"
-		if [ ! -f "$YAZFI_CONF.bak" ]; then
-			cp -a "$YAZFI_CONF" "$YAZFI_CONF.bak"
+	if [ -f "$SCRIPT_CONF" ]; then
+		dos2unix "$SCRIPT_CONF"
+		chmod 0644 "$SCRIPT_CONF"
+		if [ ! -f "$SCRIPT_CONF.bak" ]; then
+			cp -a "$SCRIPT_CONF" "$SCRIPT_CONF.bak"
 		fi
-		sed -i -e 's/_LANACCESS/_TWOWAYTOGUEST/g' "$YAZFI_CONF"
-		if ! grep -q "_ONEWAYTOGUEST" "$YAZFI_CONF" ; then
+		sed -i -e 's/_LANACCESS/_TWOWAYTOGUEST/g' "$SCRIPT_CONF"
+		if ! grep -q "_ONEWAYTOGUEST" "$SCRIPT_CONF" ; then
 			for CONFIFACE in $IFACELIST_FULL ; do
 				CONFIFACETMP="$(Get_Iface_Var "$CONFIFACE")"
-				sed -i "/^$CONFIFACETMP""_TWOWAYTOGUEST=/a $CONFIFACETMP""_ONEWAYTOGUEST=" "$YAZFI_CONF"
+				sed -i "/^$CONFIFACETMP""_TWOWAYTOGUEST=/a $CONFIFACETMP""_ONEWAYTOGUEST=" "$SCRIPT_CONF"
 			done
 		fi
-		sed -i -e 's/"//g' "$YAZFI_CONF"
-		. "$YAZFI_CONF"
+		sed -i -e 's/"//g' "$SCRIPT_CONF"
+		. "$SCRIPT_CONF"
 		return 0
 	else
 		return 1
@@ -1542,7 +1542,7 @@ DHCP_Conf(){
 }
 
 Config_Networks(){
-	Print_Output "true" "$YAZFI_NAME $YAZFI_VERSION starting up"
+	Print_Output "true" "$SCRIPT_NAME $SCRIPT_VERSION starting up"
 	WIRELESSRESTART="false"
 	GUESTLANENABLED="false"
 	
@@ -1556,7 +1556,7 @@ Config_Networks(){
 	Auto_OpenVPNEvent create 2>/dev/null
 	
 	if ! Conf_Exists; then
-		Conf_Download "$YAZFI_CONF"
+		Conf_Download "$SCRIPT_CONF"
 		Clear_Lock
 		return 1
 	fi
@@ -1566,7 +1566,7 @@ Config_Networks(){
 		return 1
 	fi
 	
-	. $YAZFI_CONF
+	. $SCRIPT_CONF
 	
 	DHCP_Conf initialise 2>/dev/null
 	
@@ -1685,7 +1685,7 @@ Config_Networks(){
 	
 	Iface_BounceClients
 	
-	Print_Output "true" "$YAZFI_NAME $YAZFI_VERSION completed successfully" "$PASS"
+	Print_Output "true" "$SCRIPT_NAME $SCRIPT_VERSION completed successfully" "$PASS"
 }
 
 Execute_UserScripts(){
@@ -1701,14 +1701,14 @@ Execute_UserScripts(){
 Shortcut_YazFi(){
 	case $1 in
 		create)
-			if [ -d "/opt/bin" ] && [ ! -f "/opt/bin/$YAZFI_NAME" ] && [ -f "/jffs/scripts/$YAZFI_NAME" ]; then
-				ln -s /jffs/scripts/$YAZFI_NAME /opt/bin
-				chmod 0755 /opt/bin/$YAZFI_NAME
+			if [ -d "/opt/bin" ] && [ ! -f "/opt/bin/$SCRIPT_NAME" ] && [ -f "/jffs/scripts/$SCRIPT_NAME" ]; then
+				ln -s /jffs/scripts/$SCRIPT_NAME /opt/bin
+				chmod 0755 /opt/bin/$SCRIPT_NAME
 			fi
 		;;
 		delete)
-			if [ -f "/opt/bin/$YAZFI_NAME" ]; then
-				rm -f /opt/bin/$YAZFI_NAME
+			if [ -f "/opt/bin/$SCRIPT_NAME" ]; then
+				rm -f /opt/bin/$SCRIPT_NAME
 			fi
 		;;
 	esac
@@ -1739,7 +1739,7 @@ ScriptHeader(){
 	printf "\\e[1m######        | || (_| | / / | |     | |       ######\\e[0m\\n"
 	printf "\\e[1m######        |_| \__,_|/___||_|     |_|       ######\\e[0m\\n"
 	printf "\\e[1m######                                         ######\\e[0m\\n"
-	printf "\\e[1m######           %s on %-9s           ######\\e[0m\\n" "$YAZFI_VERSION" "$ROUTER_MODEL"
+	printf "\\e[1m######           %s on %-9s           ######\\e[0m\\n" "$SCRIPT_VERSION" "$ROUTER_MODEL"
 	printf "\\e[1m######                                         ######\\e[0m\\n"
 	printf "\\e[1m######    https://github.com/jackyaz/YazFi/    ######\\e[0m\\n"
 	printf "\\e[1m######                                         ######\\e[0m\\n"
@@ -1748,15 +1748,15 @@ ScriptHeader(){
 }
 
 MainMenu(){
-	printf "1.    Apply %s settings\\n\\n" "$YAZFI_NAME"
-	printf "2.    Show connected clients using %s\\n\\n" "$YAZFI_NAME"
-	printf "3.    Edit %s config\\n" "$YAZFI_NAME"
+	printf "1.    Apply %s settings\\n\\n" "$SCRIPT_NAME"
+	printf "2.    Show connected clients using %s\\n\\n" "$SCRIPT_NAME"
+	printf "3.    Edit %s config\\n" "$SCRIPT_NAME"
 	printf "4.    Edit Guest Network config (SSID + passphrase)\\n\\n"
 	printf "u.    Check for updates\\n"
-	printf "uf.   Update %s with latest version (force update)\\n\\n" "$YAZFI_NAME"
-	printf "d.    Generate %s diagnostics\\n\\n" "$YAZFI_NAME"
-	printf "e.    Exit %s\\n\\n" "$YAZFI_NAME"
-	printf "z.    Uninstall %s\\n" "$YAZFI_NAME"
+	printf "uf.   Update %s with latest version (force update)\\n\\n" "$SCRIPT_NAME"
+	printf "d.    Generate %s diagnostics\\n\\n" "$SCRIPT_NAME"
+	printf "e.    Exit %s\\n\\n" "$SCRIPT_NAME"
+	printf "z.    Uninstall %s\\n" "$SCRIPT_NAME"
 	printf "\\n"
 	printf "\\e[1m#####################################################\\e[0m\\n"
 	printf "\\n"
@@ -1821,12 +1821,12 @@ MainMenu(){
 			;;
 			e)
 				ScriptHeader
-				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n\\n\\n" "$YAZFI_NAME"
+				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n\\n\\n" "$SCRIPT_NAME"
 				exit 0
 			;;
 			z)
 				while true; do
-					printf "\\n\\e[1mAre you sure you want to uninstall %s? (y/n)\\e[0m\\n" "$YAZFI_NAME"
+					printf "\\n\\e[1mAre you sure you want to uninstall %s? (y/n)\\e[0m\\n" "$SCRIPT_NAME"
 					read -r "confirm"
 					case "$confirm" in
 						y|Y)
@@ -1875,10 +1875,10 @@ Check_Requirements(){
 	
 	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 384.5)" ] && [ "$(Firmware_Version_Check "$(nvram get buildno)")" -ne "$(Firmware_Version_Check 374.43)" ]; then
 		Print_Output "true" "Older Merlin firmware detected - service-event requires 384.5 or later" "$WARN"
-		Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
+		Print_Output "true" "Please update to benefit from $SCRIPT_NAME detecting wireless restarts" "$WARN"
 	elif [ "$(Firmware_Version_Check "$(nvram get buildno)")" -eq "$(Firmware_Version_Check 374.43)" ]; then
 		Print_Output "true" "John's fork detected - service-event requires 374.43_32D6j9527 or later" "$WARN"
-		Print_Output "true" "Please update to benefit from $YAZFI_NAME detecting wireless restarts" "$WARN"
+		Print_Output "true" "Please update to benefit from $SCRIPT_NAME detecting wireless restarts" "$WARN"
 	fi
 	
 	if [ "$CHECKSFAILED" = "false" ]; then
@@ -1889,16 +1889,16 @@ Check_Requirements(){
 }
 
 Menu_Install(){
-	Print_Output "true" "Welcome to $YAZFI_NAME $YAZFI_VERSION, a script by JackYaz"
+	Print_Output "true" "Welcome to $SCRIPT_NAME $SCRIPT_VERSION, a script by JackYaz"
 	sleep 1
 	
-	Print_Output "true" "Checking your router meets the requirements for $YAZFI_NAME"
+	Print_Output "true" "Checking your router meets the requirements for $SCRIPT_NAME"
 	
 	if ! Check_Requirements; then
-		Print_Output "true" "Requirements for $YAZFI_NAME not met, please see above for the reason(s)" "$CRIT"
+		Print_Output "true" "Requirements for $SCRIPT_NAME not met, please see above for the reason(s)" "$CRIT"
 		PressEnter
 		Clear_Lock
-		rm -f "/jffs/scripts/$YAZFI_NAME" 2>/dev/null
+		rm -f "/jffs/scripts/$SCRIPT_NAME" 2>/dev/null
 		exit 1
 	fi
 	
@@ -1913,10 +1913,10 @@ Menu_Install(){
 	fi
 	
 	if ! Conf_Exists; then
-		Conf_Download "$YAZFI_CONF"
+		Conf_Download "$SCRIPT_CONF"
 	else
-		Print_Output "false" "Existing $YAZFI_CONF found. This will be kept by $YAZFI_NAME"
-		Conf_Download "$YAZFI_CONF.example"
+		Print_Output "false" "Existing $SCRIPT_CONF found. This will be kept by $SCRIPT_NAME"
+		Conf_Download "$SCRIPT_CONF.example"
 	fi
 	
 	Shortcut_YazFi create
@@ -1926,8 +1926,8 @@ Menu_Install(){
 	Auto_ServiceStart create 2>/dev/null
 	Auto_OpenVPNEvent create 2>/dev/null
 	
-	Print_Output "true" "You can access $YAZFI_NAME's configuration via the Guest Networks section of the WebUI" "$PASS"
-	Print_Output "true" "Alternativey, use $YAZFI_NAME's menu via amtm (if installed), with /jffs/scripts/$YAZFI_NAME or simply $YAZFI_NAME"
+	Print_Output "true" "You can access $SCRIPT_NAME's configuration via the Guest Networks section of the WebUI" "$PASS"
+	Print_Output "true" "Alternativey, use $SCRIPT_NAME's menu via amtm (if installed), with /jffs/scripts/$SCRIPT_NAME or simply $SCRIPT_NAME"
 	PressEnter
 	Clear_Lock
 }
@@ -1936,7 +1936,7 @@ Menu_Edit(){
 	texteditor=""
 	exitmenu="false"
 	if ! Conf_Exists; then
-		Conf_Download "$YAZFI_CONF"
+		Conf_Download "$SCRIPT_CONF"
 	fi
 	printf "\\n\\e[1mA choice of text editors is available:\\e[0m\\n"
 	printf "1.    nano (recommended for beginners)\\n"
@@ -1966,7 +1966,7 @@ Menu_Edit(){
 	done
 	
 	if [ "$exitmenu" != "true" ]; then
-		$texteditor $YAZFI_CONF
+		$texteditor $SCRIPT_CONF
 	fi
 	Clear_Lock
 }
@@ -1993,7 +1993,7 @@ Menu_ForceUpdate(){
 }
 
 Menu_Uninstall(){
-	Print_Output "true" "Removing $YAZFI_NAME..." "$PASS"
+	Print_Output "true" "Removing $SCRIPT_NAME..." "$PASS"
 	Auto_Startup delete 2>/dev/null
 	Auto_Cron delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
@@ -2015,11 +2015,11 @@ Menu_Uninstall(){
 		rm -f "$SCRIPT_WEBPAGE_DIR/$MyPage"
 	fi
 	while true; do
-		printf "\\n\\e[1mDo you want to delete %s configuration file(s)? (y/n)\\e[0m\\n" "$YAZFI_NAME"
+		printf "\\n\\e[1mDo you want to delete %s configuration file(s)? (y/n)\\e[0m\\n" "$SCRIPT_NAME"
 		read -r "confirm"
 		case "$confirm" in
 			y|Y)
-				rm -rf "/jffs/addons/$YAZFI_NAME.d" 2>/dev/null
+				rm -rf "/jffs/addons/$SCRIPT_NAME.d" 2>/dev/null
 				break
 			;;
 			*)
@@ -2028,7 +2028,7 @@ Menu_Uninstall(){
 		esac
 	done
 	Shortcut_YazFi delete
-	rm -f "/jffs/scripts/$YAZFI_NAME" 2>/dev/null
+	rm -f "/jffs/scripts/$SCRIPT_NAME" 2>/dev/null
 	Clear_Lock
 	Print_Output "true" "Restarting firewall to complete uninstall" "$PASS"
 	service restart_dnsmasq >/dev/null 2>&1
@@ -2036,7 +2036,7 @@ Menu_Uninstall(){
 }
 
 Menu_BounceClients(){
-	. "$YAZFI_CONF"
+	. "$SCRIPT_CONF"
 	Iface_BounceClients
 }
 
@@ -2207,7 +2207,7 @@ Menu_GuestConfig(){
 
 Menu_Status(){
 	### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
-	. "$YAZFI_CONF"
+	. "$SCRIPT_CONF"
 	
 	if [ ! -f /opt/bin/dig ] && [ -f /opt/bin/opkg ]; then
 		opkg update
@@ -2275,7 +2275,7 @@ Menu_Diagnostics(){
 	printf "\\n\\e[1mThis will collect the following. Files are encrypted with a unique random passphrase.\\e[0m\\n"
 	printf "\\n\\e[1m - iptables rules\\e[0m"
 	printf "\\n\\e[1m - ebtables rules\\e[0m"
-	printf "\\n\\e[1m - %s\\e[0m" "$YAZFI_CONF"
+	printf "\\n\\e[1m - %s\\e[0m" "$SCRIPT_CONF"
 	printf "\\n\\e[1m - %s\\e[0m" "$DNSCONF"
 	printf "\\n\\e[1m - /jffs/scripts/firewall-start\\e[0m"
 	printf "\\n\\e[1m - /jffs/scripts/service-event\\e[0m\\n\\n"
@@ -2296,9 +2296,9 @@ Menu_Diagnostics(){
 		esac
 	done
 	
-	printf "\\n\\n\\e[1mGenerating %s diagnostics...\\e[0m\\n\\n" "$YAZFI_NAME"
+	printf "\\n\\n\\e[1mGenerating %s diagnostics...\\e[0m\\n\\n" "$SCRIPT_NAME"
 	
-	DIAGPATH="/tmp/""$YAZFI_NAME""Diag"
+	DIAGPATH="/tmp/""$SCRIPT_NAME""Diag"
 	mkdir -p "$DIAGPATH"
 	
 	iptables-save > "$DIAGPATH""/iptables.txt"
@@ -2312,30 +2312,30 @@ Menu_Diagnostics(){
 	ip route show table all | grep "table" | sed 's/.*\(table.*\)/\1/g' | awk '{print $2}' | sort | uniq | grep ovpn > "$DIAGPATH""/routetables.txt"
 	ifconfig -a > "$DIAGPATH""/ifconfig.txt"
 	
-	cp "$YAZFI_CONF" "$DIAGPATH""/""$YAZFI_NAME"".conf"
+	cp "$SCRIPT_CONF" "$DIAGPATH""/""$SCRIPT_NAME"".conf"
 	cp "$DNSCONF" "$DIAGPATH""/dnsmasq.conf.add"
 	cp "/jffs/scripts/firewall-start" "$DIAGPATH""/firewall-start"
 	cp "/jffs/scripts/service-event" "$DIAGPATH""/service-event"
 	
 	SEC="$(Generate_Random_String 32)"
-	tar -czf "/tmp/$YAZFI_NAME.tar.gz" -C "$DIAGPATH" .
-	/usr/sbin/openssl enc -aes-256-cbc -k "$SEC" -e -in "/tmp/$YAZFI_NAME.tar.gz" -out "/tmp/$YAZFI_NAME.tar.gz.enc"
+	tar -czf "/tmp/$SCRIPT_NAME.tar.gz" -C "$DIAGPATH" .
+	/usr/sbin/openssl enc -aes-256-cbc -k "$SEC" -e -in "/tmp/$SCRIPT_NAME.tar.gz" -out "/tmp/$SCRIPT_NAME.tar.gz.enc"
 	
-	Print_Output "true" "Diagnostics saved to /tmp/$YAZFI_NAME.tar.gz.enc with passphrase $SEC" "$PASS"
+	Print_Output "true" "Diagnostics saved to /tmp/$SCRIPT_NAME.tar.gz.enc with passphrase $SEC" "$PASS"
 	
-	rm -f "/tmp/$YAZFI_NAME.tar.gz" 2>/dev/null
+	rm -f "/tmp/$SCRIPT_NAME.tar.gz" 2>/dev/null
 	rm -rf "$DIAGPATH" 2>/dev/null
 	SEC=""
 }
 
 if [ -z "$1" ]; then
-	if [ -d "/jffs/configs/$YAZFI_NAME" ]; then
-		mv "/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config" "/jffs/configs/$YAZFI_NAME/config"
-		mv "/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config.blank" "/jffs/configs/$YAZFI_NAME/config.blank"
-		mv "/jffs/configs/$YAZFI_NAME/$YAZFI_NAME.config.example" "/jffs/configs/$YAZFI_NAME/config.example"
-		mkdir -p "/jffs/addons/$YAZFI_NAME.d"
-		cp -a "/jffs/configs/$YAZFI_NAME/"* "/jffs/addons/$YAZFI_NAME.d/."
-		rm -rf "/jffs/configs/$YAZFI_NAME"
+	if [ -d "/jffs/configs/$SCRIPT_NAME" ]; then
+		mv "/jffs/configs/$SCRIPT_NAME/$SCRIPT_NAME.config" "/jffs/configs/$SCRIPT_NAME/config"
+		mv "/jffs/configs/$SCRIPT_NAME/$SCRIPT_NAME.config.blank" "/jffs/configs/$SCRIPT_NAME/config.blank"
+		mv "/jffs/configs/$SCRIPT_NAME/$SCRIPT_NAME.config.example" "/jffs/configs/$SCRIPT_NAME/config.example"
+		mkdir -p "/jffs/addons/$SCRIPT_NAME.d"
+		cp -a "/jffs/configs/$SCRIPT_NAME/"* "/jffs/addons/$SCRIPT_NAME.d/."
+		rm -rf "/jffs/configs/$SCRIPT_NAME"
 	fi
 	
 	Create_Dirs
@@ -2361,7 +2361,7 @@ case "$1" in
 	;;
 	runnow)
 		Check_Lock
-		Print_Output "true" "Firewall restarted - sleeping 30s before running $YAZFI_NAME" "$PASS"
+		Print_Output "true" "Firewall restarted - sleeping 30s before running $SCRIPT_NAME" "$PASS"
 		sleep 30
 		Config_Networks
 		Clear_Lock
@@ -2403,13 +2403,13 @@ case "$1" in
 	service_event)
 		if [ "$2" = "restart" ] && [ "$3" = "wireless" ]; then
 			Check_Lock
-			Print_Output "true" "Wireless restarted - sleeping 30s before running $YAZFI_NAME" "$PASS"
+			Print_Output "true" "Wireless restarted - sleeping 30s before running $SCRIPT_NAME" "$PASS"
 			sleep 30
 			Config_Networks
 			Clear_Lock
 		elif [ "$2" = "start" ] && [ "$3" = "yazfi" ]; then
 			Conf_FromSettings
-			Print_Output "true" "WebUI config updated - running $YAZFI_NAME" "$PASS"
+			Print_Output "true" "WebUI config updated - running $SCRIPT_NAME" "$PASS"
 			Check_Lock
 			Config_Networks
 			Clear_Lock
@@ -2429,7 +2429,7 @@ case "$1" in
 				return 1
 			fi
 			
-			. $YAZFI_CONF
+			. $SCRIPT_CONF
 			
 			for IFACE in $IFACELIST; do
 				VPNCLIENTNO=$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_VPNCLIENTNUMBER")
@@ -2459,12 +2459,12 @@ case "$1" in
 		exit 0
 	;;
 	develop)
-		sed -i 's/^readonly YAZFI_BRANCH.*$/readonly YAZFI_BRANCH="develop"/' "/jffs/scripts/$YAZFI_NAME"
+		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="develop"/' "/jffs/scripts/$SCRIPT_NAME"
 		exec "$0" "update"
 		exit 0
 	;;
 	stable)
-		sed -i 's/^readonly YAZFI_BRANCH.*$/readonly YAZFI_BRANCH="master"/' "/jffs/scripts/$YAZFI_NAME"
+		sed -i 's/^readonly SCRIPT_BRANCH.*$/readonly SCRIPT_BRANCH="master"/' "/jffs/scripts/$SCRIPT_NAME"
 		exec "$0" "update"
 		exit 0
 	;;
