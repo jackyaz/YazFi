@@ -1977,6 +1977,8 @@ Menu_RunNow(){
 }
 
 Menu_Startup(){
+	Create_Dirs
+	Create_Symlinks
 	Mount_WebUI
 }
 
