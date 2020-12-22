@@ -28,7 +28,6 @@ Love the script and want to support future development? Any and all donations gr
 ![Web UI](https://puu.sh/FbJeV/0f32c1da9d.png)
 
 ## Supported Models
-### Models
 All modes supported by [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/about). Models confirmed to work are below:
 *   RT-AC56U
 *   RT-AC66U
@@ -41,7 +40,7 @@ All modes supported by [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/about). Mod
 *   RT-AC5300
 *   RT-AX88U (clientisolation is not supported and is forced to false)
 
-### Firmware versions
+### Supported firmware versions
 #### Core YazFi features
 You must be running firmware no older than:
 *   [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/) 384.5
