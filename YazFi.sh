@@ -1453,6 +1453,8 @@ Routing_NVRAM(){
 					else
 						nvram set "vpn_client""$COUNTER""_clientlist"="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
 					fi
+					nvram set vpn_client"$COUNTER"_rgw=3
+					
 					nvram commit
 					service restart_vpnclient$COUNTER >/dev/null 2>&1
 				fi
