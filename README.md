@@ -40,15 +40,14 @@ All modes supported by [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/about). Mod
 *   RT-AC5300
 *   RT-AX88U (clientisolation is not supported and is forced to false)
 
-### Supported firmware versions
-#### Core YazFi features
+## Supported firmware versions
+### Core YazFi features
 You must be running firmware no older than:
 *   [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/) 384.5
 *   [john9527 fork](https://www.snbforums.com/threads/fork-asuswrt-merlin-374-43-lts-releases-v37ea.18914/) 374.43_32D6j9527
 
-#### WebUI page for YazFi
-You must be running firmware no older than:
-*   [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/) 384.15
+### WebUI page for YazFi
+You must be running firmware Merlin 384.15/384.13_4 or Fork 43E5 (or later) [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/)
 
 ## Installation
 Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:
