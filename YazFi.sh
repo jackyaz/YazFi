@@ -62,7 +62,8 @@ readonly INPT="${SCRIPT_NAME}INPUT"
 readonly FWRD="${SCRIPT_NAME}FORWARD"
 readonly LGRJT="${SCRIPT_NAME}REJECT"
 readonly DNSFLTR="${SCRIPT_NAME}DNSFILTER"
-readonly CHAINS="$INPT $FWRD $LGRJT"
+readonly DNSFLTR_DOT="${SCRIPT_NAME}DNSFILTER_DOT"
+readonly CHAINS="$INPT $FWRD $LGRJT $DNSFLTR_DOT"
 readonly NATCHAINS="$DNSFLTR"
 ### End of firewall variables ###
 
@@ -1066,6 +1067,9 @@ Firewall_Chains(){
 								iptables -I $LGRJT -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
 							fi
 						;;
+						$DNSFLTR_DOT)
+							iptables -I "$FWRDSTART" -p tcp -m tcp --dport 853 -j "$CHAIN"
+						;;
 					esac
 				fi
 			done
@@ -1091,10 +1095,13 @@ Firewall_Chains(){
 							iptables -D INPUT -j "$CHAIN"
 						;;
 						$FWRD)
-							iptables -D FORWARD "$((FWRDSTART+1))"
+							iptables -D FORWARD -j "$CHAIN"
 						;;
 						$LGRJT)
 							iptables -D "$LGRJT" -j REJECT
+						;;
+						$DNSFLTR_DOT)
+							iptables -D FORWARD -p tcp -m tcp --dport 853 -j "$CHAIN"
 						;;
 					esac
 					
@@ -1258,16 +1265,32 @@ Firewall_Rules(){
 				iptables -t nat -D "$DNSFLTR" "$RULENO"
 			done
 			
-			VPNDNS="$(nvram get "vpn_client""$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_VPNCLIENTNUMBER")""_adns")"
-			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_REDIRECTALLTOVPN")" = "true" ] && [ "$VPNDNS" -lt 3 ]; then
-				iptables -t nat "$ACTION" "$DNSFLTR" -i "$IFACE" -j DNAT --to-destination "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")"
-			elif [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_REDIRECTALLTOVPN")" = "false" ]; then
-				iptables -t nat "$ACTION" "$DNSFLTR" -i "$IFACE" -j DNAT --to-destination "$(eval echo '$'"$(Get_Iface_Var "$IFACE")""_DNS1")"
+			RULES=$(iptables -nvL $DNSFLTR_DOT --line-number | grep "$IFACE" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			for RULENO in $RULES; do
+				iptables -t nat -D "$DNSFLTR_DOT" "$RULENO"
+			done
+			
+			VPNDNS="$(nvram get vpn_client"$(eval echo '$'"$(Get_Iface_Var "$IFACE")_VPNCLIENTNUMBER")"_adns)"
+			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_REDIRECTALLTOVPN")" = "true" ] && [ "$VPNDNS" -lt 3 ]; then
+				iptables -t nat "$ACTION" "$DNSFLTR" -i "$IFACE" -j DNAT --to-destination "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")"
+				if [ "$(nvram get dnspriv_enable)" -eq 1 ]; then
+					iptables "$ACTION" "$DNSFLTR_DOT" -i "$IFACE" ! -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")" -j "$LGRJT"
+				fi
+			elif [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_REDIRECTALLTOVPN")" = "false" ]; then
+				iptables -t nat "$ACTION" "$DNSFLTR" -i "$IFACE" -j DNAT --to-destination "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")"
+				if [ "$(nvram get dnspriv_enable)" -eq 1 ]; then
+					iptables "$ACTION" "$DNSFLTR_DOT" -i "$IFACE" ! -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")" -j "$LGRJT"
+				fi
 			fi
 		else
 			RULES=$(iptables -t nat -nvL $DNSFLTR --line-number | grep "$IFACE" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES; do
 				iptables -t nat -D "$DNSFLTR" "$RULENO"
+			done
+			
+			RULES=$(iptables -nvL $DNSFLTR_DOT --line-number | grep "$IFACE" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			for RULENO in $RULES; do
+				iptables -t nat -D "$DNSFLTR_DOT" "$RULENO"
 			done
 		fi
 		###
