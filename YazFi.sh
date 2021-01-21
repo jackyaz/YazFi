@@ -1068,7 +1068,7 @@ Firewall_Chains(){
 							fi
 						;;
 						$DNSFLTR_DOT)
-							iptables -I "$FWRDSTART" -p tcp -m tcp --dport 853 -j "$CHAIN"
+							iptables -I FORWARD "$FWRDSTART" -p tcp -m tcp --dport 853 -j "$CHAIN"
 						;;
 					esac
 				fi
