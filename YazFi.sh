@@ -1990,7 +1990,7 @@ Menu_Edit(){
 	done
 	
 	if [ "$exitmenu" != "true" ]; then
-		"$texteditor" "$SCRIPT_CONF"
+		$texteditor "$SCRIPT_CONF"
 	fi
 	Clear_Lock
 }
