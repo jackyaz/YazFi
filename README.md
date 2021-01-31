@@ -76,13 +76,6 @@ Launch YazFi and select option u
 Please post about any issues and problems here: [YazFi on SNBForums](https://www.snbforums.com/threads/yazfi-enhanced-asuswrt-merlin-guest-wifi-networks.45924/)
 
 ## FAQs
-### I haven't used scripts before on AsusWRT-Merlin
-If this is the first time you are using scripts, don't panic! In your router's WebUI, go to the Administration area of the left menu, and then the System tab. Set Enable JFFS custom scripts and configs to Yes.
-
-Further reading about scripts is available here: [AsusWRT-Merlin User-scripts](https://github.com/RMerl/asuswrt-merlin/wiki/User-scripts)
-
-![WebUI enable scripts](https://puu.sh/A3wnG/00a43283ed.png)
-
 ### Explanation of YazFi settings
 #### wl01_ENABLED
 Enable YazFi for this Guest Network (true/false)
@@ -122,3 +115,31 @@ Cannot be enabled if _TWOWAYTOGUEST is enabled
 
 #### wl01_CLIENTISOLATION
 Should Guest Network radio prevent clients from talking to each other? (true/false)
+
+### Can I add my own firewall rules?
+Yes. YazFi supports calling custom scripts after setting up the guest network. To use a user script, create your script file the appropriate directory with a .sh extension. e.g.
+```sh
+/jffs/addons/YazFi.d/userscripts.d/myscript.sh
+```
+Remember to make it executable with
+```sh
+chmod +x /jffs/addons/YazFi.d/userscripts.d/myscript.sh
+```
+An example script to allow a guest on 2.4GHz guest 1 to talk to a specific IP address on the LAN:
+```sh
+#!/bin/sh
+iptables -I YazFiFORWARD -i wl0.1 -o br0 -d 192.168.1.50 -j ACCEPT
+```
+The above will work if "One way" access to the guest enabled. With no access enabled, the script would be:
+```sh
+#!/bin/sh
+iptables -I YazFiFORWARD -i wl0.1 -o br0 -d 192.168.1.50 -j ACCEPT
+iptables -I YazFiFORWARD -i br0 -o wl0.1 -s 192.168.1.50 -j ACCEPT
+```
+
+### I haven't used scripts before on AsusWRT-Merlin
+If this is the first time you are using scripts, don't panic! In your router's WebUI, go to the Administration area of the left menu, and then the System tab. Set Enable JFFS custom scripts and configs to Yes.
+
+Further reading about scripts is available here: [AsusWRT-Merlin User-scripts](https://github.com/RMerl/asuswrt-merlin/wiki/User-scripts)
+
+![WebUI enable scripts](https://puu.sh/A3wnG/00a43283ed.png)
