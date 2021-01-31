@@ -1651,6 +1651,12 @@ Config_Networks(){
 				GUESTLANENABLED="true"
 			fi
 			
+			#Set guest interface LAN access to allowed in f/w, prevent creating VLAN
+			if [ "$(nvram get "${IFACE}_lanaccess")" != "on" ]; then
+				nvram set "$IFACE"_lanaccess=on
+				WIRELESSRESTART="true"
+			fi
+			
 			#Routing_RPDB_LAN create "$IFACE" 2>/dev/null
 			
 			DHCP_Conf create "$IFACE" 2>/dev/null
