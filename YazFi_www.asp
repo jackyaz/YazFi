@@ -432,8 +432,7 @@ function SaveConfig() {
 	if(Validate_All()){
 		$j('[name*=yazfi_]').prop("disabled",false);
 		document.getElementById('amng_custom').value = JSON.stringify($j('form').serializeObject());
-		var action_script_tmp = "start_yazfi";
-		document.form.action_script.value = action_script_tmp;
+		var action_script_tmp = "start_YazFi";
 		document.form.action_script.value = action_script_tmp;
 		var restart_time = 30;
 		document.form.action_wait.value = restart_time;
@@ -641,7 +640,7 @@ $j.fn.serializeObject = function(){
 <input type="hidden" name="action_wait" value="30">
 <input type="hidden" name="first_time" value="">
 <input type="hidden" name="SystemCmd" value="">
-<input type="hidden" name="action_script" value="start_yazfi">
+<input type="hidden" name="action_script" value="start_YazFi">
 <input type="hidden" name="preferred_lang" id="preferred_lang" value="<% nvram_get("preferred_lang"); %>">
 <input type="hidden" name="firmver" value="<% nvram_get("firmver"); %>">
 <input type="hidden" name="lan_ipaddr" value="<% nvram_get("lan_ipaddr"); %>">
