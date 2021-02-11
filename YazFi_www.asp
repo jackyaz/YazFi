@@ -15,7 +15,7 @@ p {
   font-weight: bolder;
 }
 
-thead.collapsible {
+thead.collapsible-jquery {
   color: white;
   padding: 0px;
   width: 100%;
@@ -23,14 +23,6 @@ thead.collapsible {
   text-align: left;
   outline: none;
   cursor: pointer;
-}
-
-.collapsiblecontent {
-  padding: 0px;
-  max-height: 0;
-  overflow: hidden;
-  border: none;
-  transition: max-height 0.2s ease-out;
 }
 
 .SettingsTable {
@@ -94,6 +86,11 @@ thead.collapsible {
   background-color: #CCCCCC !important;
   color: #888888 !important;
 }
+
+label.settingvalue {
+  margin-right: 10px !important;
+  vertical-align: top !important;
+}
 </style>
 <script language="JavaScript" type="text/javascript" src="/ext/shared-jy/jquery.js"></script>
 <script language="JavaScript" type="text/javascript" src="/state.js"></script>
@@ -107,9 +104,7 @@ thead.collapsible {
 <script language="JavaScript" type="text/javascript" src="/validator.js"></script>
 <script language="JavaScript" type="text/javascript" src="/base64.js"></script>
 <script>
-var $j=jQuery.noConflict();
 var custom_settings;
-var bands = 0;
 
 function LoadCustomSettings(){
 	custom_settings = <% get_custom_settings(); %>;
@@ -121,6 +116,10 @@ function LoadCustomSettings(){
 		}
 	}
 }
+
+
+var $j=jQuery.noConflict();
+var bands = 0;
 
 function YazHint(hintid) {
 	var tag_name= document.getElementsByTagName('a');
@@ -429,7 +428,7 @@ function reload() {
 	location.reload(true);
 }
 
-function applyRule() {
+function SaveConfig() {
 	if(Validate_All()){
 		$j('[name*=yazfi_]').prop("disabled",false);
 		document.getElementById('amng_custom').value = JSON.stringify($j('form').serializeObject());
@@ -628,7 +627,6 @@ $j.fn.serializeObject = function(){
 	});
 	return o;
 };
-
 </script>
 </head>
 <body onload="initial();" onunload="return unload_body();">
@@ -688,7 +686,7 @@ $j.fn.serializeObject = function(){
 <table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons">
 <tr class="apply_gen" valign="top" height="35px">
 <td style="background-color:rgb(77, 89, 93);border:0px;">
-<input name="button" type="button" class="button_gen" onclick="applyRule();" value="Apply"/>
+<input name="button" type="button" class="button_gen" onclick="SaveConfig();" value="Apply"/>
 </td>
 </tr>
 </table>
