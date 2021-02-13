@@ -413,12 +413,11 @@ function initial(){
 function BuildConfigTable(prefix,title){
 	var charthtml = '<div style="line-height:10px;">&nbsp;</div>';
 	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_config_'+prefix+'">';
-	charthtml+='<thead class="collapsible" id="'+prefix+'">';
+	charthtml+='<thead class="collapsible-jquery" id="'+prefix+'">';
 	charthtml+='<tr>';
 	charthtml+='<td colspan="2">'+title+' Configuration (click to expand/collapse)</td>';
 	charthtml+='</tr>';
 	charthtml+='</thead>';
-	charthtml+='<div class="collapsiblecontent">';
 	charthtml+='<tr>';
 	charthtml+='<td colspan="2" align="center" style="padding: 0px;">';
 	
@@ -558,16 +557,31 @@ function BuildConfigTable(prefix,title){
 	charthtml+='</table>';
 	charthtml+='</td>';
 	charthtml+='</tr>';
-	charthtml+='</div>';
 	charthtml+='</table>';
 	charthtml+='<div style="line-height:10px;">&nbsp;</div>';
 	return charthtml;
 }
 
 function AddEventHandlers(){
-	$j("thead.collapsible").click(function(){
-		$j(this).siblings().toggle("fast");
-	})
+	$j(".collapsible-jquery").click(function(){
+		$j(this).siblings().toggle("fast",function(){
+			if($j(this).css("display") == "none"){
+				SetCookie($j(this).siblings()[0].id,"collapsed");
+			}
+			else{
+				SetCookie($j(this).siblings()[0].id,"expanded");
+			}
+		})
+	});
+	
+	$j(".collapsible-jquery").each(function(index,element){
+		if(GetCookie($j(this)[0].id,"string") == "collapsed"){
+			$j(this).siblings().toggle(false);
+		}
+		else{
+			$j(this).siblings().toggle(true);
+		}
+	});
 }
 
 $j.fn.serializeObject = function(){
