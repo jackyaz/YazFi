@@ -27,8 +27,8 @@ readonly SCRIPT_NAME="YazFi"
 readonly SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
 readonly YAZFI_VERSION="v4.1.5"
 readonly SCRIPT_VERSION="v4.1.5"
-readonly SCRIPT_BRANCH="develop"
-readonly SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
+SCRIPT_BRANCH="develop"
+SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
 readonly USER_SCRIPT_DIR="$SCRIPT_DIR/userscripts.d"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
@@ -1020,7 +1020,7 @@ Download_File(){
 
 Get_WebUI_Page(){
 	MyPage="none"
-	for i in 1 2 3 4 5 6 7 8 9 10; do
+	for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
 		page="/www/user/user$i.asp"
 		if [ -f "$page" ] && [ "$(md5sum < "$1")" = "$(md5sum < "$page")" ]; then
 			MyPage="user$i.asp"
@@ -1031,13 +1031,18 @@ Get_WebUI_Page(){
 	done
 }
 
+### locking mechanism code credit to Martineau (@MartineauUK) ###
 Mount_WebUI(){
+	LOCKFILE=/tmp/addonwebui.lock
+	FD=386
+	eval exec "$FD>$LOCKFILE"
+	flock -x "$FD"
 	Get_WebUI_Page "$SCRIPT_DIR/YazFi_www.asp"
 	if [ "$MyPage" = "none" ]; then
 		Print_Output true "Unable to mount $SCRIPT_NAME WebUI page, exiting" "$CRIT"
-		exit 1
+		flock -u "$FD"
+		return 1
 	fi
-	Print_Output true "Mounting $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
 	cp -f "$SCRIPT_DIR/YazFi_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
 	echo "YazFi" > "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
 	
@@ -1053,6 +1058,9 @@ Mount_WebUI(){
 		umount /www/require/modules/menuTree.js 2>/dev/null
 		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 	fi
+	
+	flock -u "$FD"
+	Print_Output true "Mounting $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
 }
 
 Conf_Download(){
