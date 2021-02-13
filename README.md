@@ -116,7 +116,7 @@ Cannot be enabled if _TWOWAYTOGUEST is enabled
 #### wl01_CLIENTISOLATION
 Should Guest Network radio prevent clients from talking to each other? (true/false)
 
-### Can I add my own firewall rules?
+### Custom firewall rules
 Yes. YazFi supports calling custom scripts after setting up the guest network. To use a user script, create your script file the appropriate directory with a .sh extension. e.g.
 ```sh
 /jffs/addons/YazFi.d/userscripts.d/myscript.sh
