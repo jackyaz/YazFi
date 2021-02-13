@@ -94,7 +94,7 @@ Generate_Random_String(){
 	PASSLENGTH=16
 	if Validate_Number "" "$1" silent; then
 		if [ "$1" -le 32 ] && [ "$1" -ge 8 ]; then
-			PASSLENGTH=$1
+			PASSLENGTH="$1"
 		else
 			printf "\\e[1mNumber is not between 8 and 32, using default of 16 characters\\e[0m\\n"
 		fi
@@ -430,40 +430,93 @@ Clear_Lock(){
 }
 ############################################################################
 
-Update_Version(){
-	if [ -z "$1" ]; then
-		doupdate="false"
-		localver=$(grep "SCRIPT_VERSION=" /jffs/scripts/$SCRIPT_NAME | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-		/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep -qF "jackyaz" || { Print_Output true "404 error detected - stopping update" "$ERR"; return 1; }
-		serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-		if [ "$localver" != "$serverver" ]; then
-			doupdate="version"
-		else
-			localmd5="$(md5sum "/jffs/scripts/$SCRIPT_NAME" | awk '{print $1}')"
-			remotemd5="$(curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | md5sum | awk '{print $1}')"
-			if [ "$localmd5" != "$remotemd5" ]; then
-				doupdate="md5"
+Set_Version_Custom_Settings(){
+	SETTINGSFILE=/jffs/addons/custom_settings.txt
+	case "$1" in
+		local)
+			if [ -f "$SETTINGSFILE" ]; then
+				if [ "$(grep -c "yazfi_version_local" $SETTINGSFILE)" -gt 0 ]; then
+					if [ "$SCRIPT_VERSION" != "$(grep "yazfi_version_local" /jffs/addons/custom_settings.txt | cut -f2 -d' ')" ]; then
+						sed -i "s/yazfi_version_local.*/yazfi_version_local $SCRIPT_VERSION/" "$SETTINGSFILE"
+					fi
+				else
+					echo "yazfi_version_local $SCRIPT_VERSION" >> "$SETTINGSFILE"
+				fi
+			else
+				echo "yazfi_version_local $SCRIPT_VERSION" >> "$SETTINGSFILE"
 			fi
+		;;
+		server)
+			if [ -f "$SETTINGSFILE" ]; then
+				if [ "$(grep -c "yazfi_version_server" $SETTINGSFILE)" -gt 0 ]; then
+					if [ "$2" != "$(grep "yazfi_version_server" /jffs/addons/custom_settings.txt | cut -f2 -d' ')" ]; then
+						sed -i "s/yazfi_version_server.*/yazfi_version_server $2/" "$SETTINGSFILE"
+					fi
+				else
+					echo "yazfi_version_server $2" >> "$SETTINGSFILE"
+				fi
+			else
+				echo "yazfi_version_server $2" >> "$SETTINGSFILE"
+			fi
+		;;
+	esac
+}
+
+Update_Check(){
+	echo 'var updatestatus = "InProgress";' > "$SCRIPT_WEB_DIR/detect_update.js"
+	doupdate="false"
+	localver=$(grep "SCRIPT_VERSION=" /jffs/scripts/"$SCRIPT_NAME" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+	/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep -qF "jackyaz" || { Print_Output true "404 error detected - stopping update" "$ERR"; return 1; }
+	serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+	if [ "$localver" != "$serverver" ]; then
+		doupdate="version"
+		Set_Version_Custom_Settings server "$serverver"
+		echo 'var updatestatus = "'"$serverver"'";'  > "$SCRIPT_WEB_DIR/detect_update.js"
+	else
+		localmd5="$(md5sum "/jffs/scripts/$SCRIPT_NAME" | awk '{print $1}')"
+		remotemd5="$(curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | md5sum | awk '{print $1}')"
+		if [ "$localmd5" != "$remotemd5" ]; then
+			doupdate="md5"
+			Set_Version_Custom_Settings server "$serverver-hotfix"
+			echo 'var updatestatus = "'"$serverver-hotfix"'";'  > "$SCRIPT_WEB_DIR/detect_update.js"
 		fi
+	fi
+	if [ "$doupdate" = "false" ]; then
+		echo 'var updatestatus = "None";'  > "$SCRIPT_WEB_DIR/detect_update.js"
+	fi
+	echo "$doupdate,$localver,$serverver"
+}
+
+Update_Version(){
+	if [ -z "$1" ] || [ "$1" = "unattended" ]; then
+		updatecheckresult="$(Update_Check)"
+		isupdate="$(echo "$updatecheckresult" | cut -f1 -d',')"
+		localver="$(echo "$updatecheckresult" | cut -f2 -d',')"
+		serverver="$(echo "$updatecheckresult" | cut -f3 -d',')"
 		
-		if [ "$doupdate" = "version" ]; then
+		if [ "$isupdate" = "version" ]; then
 			Print_Output true "New version of $SCRIPT_NAME available - updating to $serverver" "$PASS"
-		elif [ "$doupdate" = "md5" ]; then
+		elif [ "$isupdate" = "md5" ]; then
 			Print_Output true "MD5 hash of $SCRIPT_NAME does not match - downloading updated $serverver" "$PASS"
 		fi
 		
-		if Firmware_Version_WebUI ; then
-			Update_File YazFi_www.asp
-			Update_File shared-jy.tar.gz
-		else
-			Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
-		fi
-		
-		if [ "$doupdate" != "false" ]; then
+		if [ "$isupdate" != "false" ]; then
+			if Firmware_Version_WebUI ; then
+				Update_File YazFi_www.asp
+				Update_File shared-jy.tar.gz
+			else
+				Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
+			fi
+			
 			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
-			chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
+			chmod 0755 /jffs/scripts/"$SCRIPT_NAME"
 			Clear_Lock
 			service restart_firewall >/dev/null 2>&1
+			if [ -z "$1" ]; then
+				exec "$0" setversion
+			elif [ "$1" = "unattended" ]; then
+				exec "$0" setversion unattended
+			fi
 			exit 0
 		else
 			Print_Output true "No new version - latest is $localver" "$WARN"
@@ -471,23 +524,26 @@ Update_Version(){
 		fi
 	fi
 	
-	case "$1" in
-		force)
-			serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-			Print_Output true "Downloading latest version ($serverver) of $SCRIPT_NAME" "$PASS"
-			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
-			chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
-			if Firmware_Version_WebUI ; then
-				Update_File YazFi_www.asp
-				Update_File shared-jy.tar.gz
-			else
-				Print_Output true "WebUI is only supported on Merlin 384.15 and later" "$WARN"
-			fi
-			Clear_Lock
-			service restart_firewall >/dev/null 2>&1
-			exit 0
-		;;
-	esac
+	if [ "$1" = "force" ]; then
+		serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+		Print_Output true "Downloading latest version ($serverver) of $SCRIPT_NAME" "$PASS"
+		if Firmware_Version_WebUI ; then
+			Update_File YazFi_www.asp
+			Update_File shared-jy.tar.gz
+		else
+			Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
+		fi
+		/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
+		chmod 0755 /jffs/scripts/"$SCRIPT_NAME"
+		Clear_Lock
+		service restart_firewall >/dev/null 2>&1
+		if [ -z "$2" ]; then
+			exec "$0" setversion
+		elif [ "$2" = "unattended" ]; then
+			exec "$0" setversion unattended
+		fi
+		exit 0
+	fi
 }
 
 Update_File(){
@@ -1569,6 +1625,8 @@ Config_Networks(){
 	Create_Dirs
 	Create_Symlinks
 	
+	Set_Version_Custom_Settings local
+	
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
@@ -1946,6 +2004,7 @@ Menu_Install(){
 	fi
 	
 	Shortcut_Script create
+	Set_Version_Custom_Settings local
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
@@ -2355,17 +2414,9 @@ Menu_Diagnostics(){
 }
 
 if [ -z "$1" ]; then
-	if [ -d "/jffs/configs/$SCRIPT_NAME" ]; then
-		mv "/jffs/configs/$SCRIPT_NAME/$SCRIPT_NAME.config" "/jffs/configs/$SCRIPT_NAME/config"
-		mv "/jffs/configs/$SCRIPT_NAME/$SCRIPT_NAME.config.blank" "/jffs/configs/$SCRIPT_NAME/config.blank"
-		mv "/jffs/configs/$SCRIPT_NAME/$SCRIPT_NAME.config.example" "/jffs/configs/$SCRIPT_NAME/config.example"
-		mkdir -p "/jffs/addons/$SCRIPT_NAME.d"
-		cp -a "/jffs/configs/$SCRIPT_NAME/"* "/jffs/addons/$SCRIPT_NAME.d/."
-		rm -rf "/jffs/configs/$SCRIPT_NAME"
-	fi
-	
 	Create_Dirs
 	Create_Symlinks
+	Set_Version_Custom_Settings local
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
@@ -2406,18 +2457,6 @@ case "$1" in
 		Menu_Startup
 		exit 0
 	;;
-	update)
-		Menu_Update
-		exit 0
-	;;
-	forceupdate)
-		Menu_ForceUpdate
-		exit 0
-	;;
-	uninstall)
-		Menu_Uninstall
-		exit 0
-	;;
 	bounceclients)
 		Menu_BounceClients
 		exit 0;
@@ -2435,6 +2474,12 @@ case "$1" in
 			Check_Lock
 			Config_Networks
 			Clear_Lock
+		elif [ "$2" = "start" ] && [ "$3" = "${SCRIPT_NAME}checkupdate" ]; then
+			Update_Check
+			exit 0
+		elif [ "$2" = "start" ] && [ "$3" = "${SCRIPT_NAME}doupdate" ]; then
+			Update_Version force unattended
+			exit 0
 		fi
 		exit 0
 	;;
@@ -2478,6 +2523,30 @@ case "$1" in
 			touch "$SCRIPT_DIR/.rejectlogging"
 		fi
 		service restart_firewall >/dev/null 2>&1
+		exit 0
+	;;
+	update)
+		Update_Version unattended
+		exit 0
+	;;
+	forceupdate)
+		Update_Version force unattended
+		exit 0
+	;;
+	setversion)
+		Set_Version_Custom_Settings local
+		Set_Version_Custom_Settings server "$SCRIPT_VERSION"
+		if [ -z "$2" ]; then
+			exec "$0"
+		fi
+		exit 0
+	;;
+	checkupdate)
+		Update_Check
+		exit 0
+	;;
+	uninstall)
+		Menu_Uninstall
 		exit 0
 	;;
 	develop)

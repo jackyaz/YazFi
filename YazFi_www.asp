@@ -108,9 +108,9 @@ var custom_settings;
 
 function LoadCustomSettings(){
 	custom_settings = <% get_custom_settings(); %>;
-	for (var prop in custom_settings) {
-		if (Object.prototype.hasOwnProperty.call(custom_settings, prop)) {
-			if(prop.indexOf("yazfi") != -1){
+	for(var prop in custom_settings){
+		if (Object.prototype.hasOwnProperty.call(custom_settings, prop)){
+			if(prop.indexOf("yazfi") != -1 && prop.indexOf("yazfi_version") == -1){
 				eval("delete custom_settings."+prop);
 			}
 		}
@@ -121,9 +121,9 @@ function LoadCustomSettings(){
 var $j=jQuery.noConflict();
 var bands = 0;
 
-function YazHint(hintid) {
+function YazHint(hintid){
 	var tag_name= document.getElementsByTagName('a');
-	for (var i=0;i<tag_name.length;i++){
+	for(var i=0;i<tag_name.length;i++){
 		tag_name[i].onmouseout=nd;
 	}
 	hinttext="My text goes here";
@@ -283,7 +283,7 @@ function Validate_DHCP(forminput){
 			}
 		}
 	}
-	else {
+	else{
 		if(inputvalue <= eval("document.form."+inputname.substring(0,inputname.indexOf("end"))+"start.value")*1){
 			$j(forminput).addClass("invalid");
 			return false;
@@ -359,15 +359,15 @@ function get_conf_file(){
 		url: '/ext/YazFi/config.htm',
 		dataType: 'text',
 		error: function(xhr){
-			setTimeout("get_conf_file();", 1000);
+			setTimeout(get_conf_file, 1000);
 		},
 		success: function(data){
 			var settings=data.split("\n");
 			settings.reverse();
 			settings = settings.filter(Boolean);
 			var settingcount=settings.length;
-			window["yazfi_settings"] = new Array();
-			for (var i = 0; i < settingcount; i++) {
+			window["yazfi_settings"] = [];
+			for(var i = 0; i < settingcount; i++){
 				var commentstart=settings[i].indexOf("#");
 				if (commentstart != -1){
 					continue;
@@ -379,7 +379,7 @@ function get_conf_file(){
 			if(wl_info.band5g_support){$j("#table_buttons").before(BuildConfigTable("wl1","5GHz-1 Guest Networks"));bands = bands + 1;}
 			if(wl_info.band5g_2_support){$j("#table_buttons").before(BuildConfigTable("wl2","5GHz-2 Guest Networks"));bands = bands + 1;}
 			var settingcount = bands*12*3;
-			for (var i = 0; i < settingcount; i++) {
+			for(var i = 0; i < settingcount; i++){
 				var settingname = window["yazfi_settings"][i][0].toLowerCase();
 				var settingvalue = window["yazfi_settings"][i][1];
 				eval("document.form.yazfi_"+settingname).value = settingvalue;
@@ -387,36 +387,22 @@ function get_conf_file(){
 				if(settingname.indexOf("enabled") != -1) OptionsEnableDisable($j("#yazfi_"+settingname.replace("_enabled","")+"_en_"+settingvalue)[0]);
 			}
 			
-			if(productid == "RT-AX88U"){
+			if(productid == "RT-AX88U" || productid == "RT-AX3000"){
 				$j("input[name*=clientisolation][value=false]").prop("checked",true);
 				$j("input[name*=clientisolation]").attr('disabled',true);
 			}
 			
-			for (var i = 0; i < bands; i++) {
-				for (var i2 = 1; i2 < 4; i2++) {
-					if( eval('document.form.wl'+i+i2+'_bss_enabled').value == 0){
+			for(var i = 0; i < bands; i++){
+				for(var i2 = 1; i2 < 4; i2++){
+					if(eval('document.form.wl'+i+i2+'_bss_enabled').value == 0){
 						OptionsEnableDisable($j("#yazfi_wl"+i+i2+"_en_false")[0]);
 						$j('input[name=yazfi_wl'+i+i2+'_enabled]').prop("disabled",true);
 					}
 				}
 			}
-		AddEventHandlers();
+			AddEventHandlers();
 		}
 	});
-}
-
-function GetCookie(cookiename) {
-	var s;
-	if ((s = cookie.get("yazfi_"+cookiename)) != null) {
-		return cookie.get("yazfi_"+cookiename);
-	}
-	else {
-		return "";
-	}
-}
-
-function SetCookie(cookiename,cookievalue) {
-	cookie.set("yazfi_"+cookiename, cookievalue, 31);
 }
 
 function SetCurrentPage(){
@@ -424,17 +410,109 @@ function SetCurrentPage(){
 	document.form.current_page.value = window.location.pathname.substring(1);
 }
 
-function reload() {
-	location.reload(true);
+function ScriptUpdateLayout(){
+	var localver = GetVersionNumber("local");
+	var serverver = GetVersionNumber("server");
+	$j("#yazfi_version_local").text(localver);
+	
+	if(localver != serverver && serverver != "N/A"){
+		$j("#yazfi_version_server").text("Updated version available: "+serverver);
+		showhide("btnChkUpdate", false);
+		showhide("yazfi_version_server", true);
+		showhide("btnDoUpdate", true);
+	}
 }
 
-function SaveConfig() {
+function update_status(){
+	$j.ajax({
+		url: '/ext/YazFi/detect_update.js',
+		dataType: 'script',
+		timeout: 3000,
+		error: function(xhr){
+			setTimeout(update_status, 1000);
+		},
+		success: function(){
+			if (updatestatus == "InProgress"){
+				setTimeout(update_status, 1000);
+			}
+			else{
+				document.getElementById("imgChkUpdate").style.display = "none";
+				showhide("yazfi_version_server", true);
+				if(updatestatus != "None"){
+					$j("#yazfi_version_server").text("Updated version available: "+updatestatus);
+					showhide("btnChkUpdate", false);
+					showhide("btnDoUpdate", true);
+				}
+				else{
+					$j("#yazfi_version_server").text("No update available");
+					showhide("btnChkUpdate", true);
+					showhide("btnDoUpdate", false);
+				}
+			}
+		}
+	});
+}
+
+function CheckUpdate(){
+	showhide("btnChkUpdate", false);
+	document.formScriptActions.action_script.value="start_YazFicheckupdate"
+	document.formScriptActions.submit();
+	document.getElementById("imgChkUpdate").style.display = "";
+	setTimeout(update_status, 2000);
+}
+
+function DoUpdate(){
+	var action_script_tmp = "start_YazFidoupdate";
+	document.form.action_script.value = action_script_tmp;
+	var restart_time = 45;
+	document.form.action_wait.value = restart_time;
+	showLoading();
+	document.form.submit();
+}
+
+function GetVersionNumber(versiontype){
+	var versionprop;
+	if(versiontype == "local"){
+		versionprop = custom_settings.yazfi_version_local;
+	}
+	else if(versiontype == "server"){
+		versionprop = custom_settings.yazfi_version_server;
+	}
+	
+	if(typeof versionprop == 'undefined' || versionprop == null){
+		return "N/A";
+	}
+	else{
+		return versionprop;
+	}
+}
+
+function GetCookie(cookiename,returntype){
+	var s;
+	if ((s = cookie.get("yazfi_"+cookiename)) != null){
+		return cookie.get("yazfi_"+cookiename);
+	}
+	else{
+		if(returntype == "string"){
+			return "";
+		}
+		else if(returntype == "number"){
+			return 0;
+		}
+	}
+}
+
+function SetCookie(cookiename,cookievalue){
+	cookie.set("yazfi_"+cookiename, cookievalue, 31);
+}
+
+function SaveConfig(){
 	if(Validate_All()){
 		$j('[name*=yazfi_]').prop("disabled",false);
 		document.getElementById('amng_custom').value = JSON.stringify($j('form').serializeObject());
 		var action_script_tmp = "start_YazFi";
 		document.form.action_script.value = action_script_tmp;
-		var restart_time = 30;
+		var restart_time = 45;
 		document.form.action_wait.value = restart_time;
 		showLoading();
 		document.form.submit();
@@ -449,6 +527,7 @@ function initial(){
 	LoadCustomSettings();
 	show_menu();
 	get_conf_file();
+	ScriptUpdateLayout();
 }
 
 function BuildConfigTable(prefix,title){
@@ -614,13 +693,13 @@ function AddEventHandlers(){
 $j.fn.serializeObject = function(){
 	var o = custom_settings;
 	var a = this.serializeArray();
-	$j.each(a, function() {
-		if (o[this.name] !== undefined && this.name.indexOf("yazfi") != -1) {
-			if (!o[this.name].push) {
+	$j.each(a, function(){
+		if (o[this.name] !== undefined && this.name.indexOf("yazfi") != -1 && this.name.indexOf("version") == -1){
+			if (!o[this.name].push){
 				o[this.name] = [o[this.name]];
 			}
 			o[this.name].push(this.value || '');
-		} else if (this.name.indexOf("yazfi") != -1){
+		} else if (this.name.indexOf("yazfi") != -1 && this.name.indexOf("version") == -1){
 			o[this.name] = this.value || '';
 		}
 	});
@@ -679,9 +758,27 @@ $j.fn.serializeObject = function(){
 <tr>
 <td bgcolor="#4D595D" colspan="3" valign="top">
 <div>&nbsp;</div>
-<div class="formfonttitle" id="scripttitle" style="text-align:center;">YazFi - v4.1.4</div>
+<div class="formfonttitle" id="scripttitle" style="text-align:center;">YazFi</div>
 <div style="margin:10px 0 10px 5px;" class="splitLine"></div>
-<div class="formfontdesc">Feature expansion of guest WiFi networks on AsusWRT-Merlin.</div>
+<div class="formfontdesc">Feature expansion of guest WiFi networks on AsusWRT-Merlin, including SSID -> VPN, separate subnets per guest network, pinhole access to LAN resources (e.g. DNS) and more!</div>
+<table width="100%" border="1" align="center" cellpadding="2" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_utilities">
+<thead class="collapsible-jquery" id="scripttools">
+<tr><td colspan="2">Utilities (click to expand/collapse)</td></tr>
+</thead>
+<tr>
+<th width="20%">Version information</th>
+<td>
+<span id="yazfi_version_local" style="color:#FFFFFF;"></span>
+&nbsp;&nbsp;&nbsp;
+<span id="yazfi_version_server" style="display:none;">Update version</span>
+&nbsp;&nbsp;&nbsp;
+<input type="button" class="button_gen" onclick="CheckUpdate();" value="Check" id="btnChkUpdate">
+<img id="imgChkUpdate" style="display:none;vertical-align:middle;" src="images/InternetScan.gif"/>
+<input type="button" class="button_gen" onclick="DoUpdate();" value="Update" id="btnDoUpdate" style="display:none;">
+&nbsp;&nbsp;&nbsp;
+</td>
+</tr>
+</table>
 <table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons">
 <tr class="apply_gen" valign="top" height="35px">
 <td style="background-color:rgb(77, 89, 93);border:0px;">
@@ -698,6 +795,14 @@ $j.fn.serializeObject = function(){
 </td>
 </tr>
 </table>
+</form>
+<form method="post" name="formScriptActions" action="/start_apply.htm" target="hidden_frame">
+<input type="hidden" name="productid" value="<% nvram_get("productid"); %>">
+<input type="hidden" name="current_page" value="">
+<input type="hidden" name="next_page" value="">
+<input type="hidden" name="action_mode" value="apply">
+<input type="hidden" name="action_script" value="">
+<input type="hidden" name="action_wait" value="">
 </form>
 <div id="footer"></div>
 </body>
