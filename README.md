@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.com/jackyaz/YazFi.svg?branch=master)](https://travis-ci.com/jackyaz/YazFi)
 
 ## v4.2.0
-### Updated on 2020-02-13
+### Updated on 2021-02-13
 ## About
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
 
@@ -22,23 +22,6 @@ Love the script and want to support future development? Any and all donations gr
 [**PayPal donation**](https://paypal.me/jackyaz21)
 
 [**Buy me a coffee**](https://www.buymeacoffee.com/jackyaz)
-
-![Menu UI](https://puu.sh/CNwF7/a095903835.png)
-
-![Web UI](https://puu.sh/FbJeV/0f32c1da9d.png)
-
-## Supported Models
-All modes supported by [Asuswrt-Merlin](https://asuswrt.lostrealm.ca/about). Models confirmed to work are below:
-*   RT-AC56U
-*   RT-AC66U
-*   RT-AC68U
-*   RT-AC86U
-*   RT-AC87U (2.4GHz guests only)
-*   RT-AC88U
-*   RT-AC3100
-*   RT-AC3200
-*   RT-AC5300
-*   RT-AX88U (clientisolation is not supported and is forced to false)
 
 ## Supported firmware versions
 ### Core YazFi features
@@ -59,6 +42,10 @@ Using your preferred SSH client/terminal, copy and paste the following command, 
 Please then follow instructions shown on-screen. An explanation of the settings is provided in the [FAQs](#explanation-of-yazfi-settings)
 
 ## Usage
+### WebUI
+YazFi can be configured via the WebUI, in the Guest Network section.
+
+### Command Line
 To launch the YazFi menu after installation, use:
 ```sh
 YazFi
@@ -69,11 +56,14 @@ If you do not have Entware installed, you will need to use the full path:
 /jffs/scripts/YazFi
 ```
 
-## Updating
-Launch YazFi and select option u
+## Screenshots
+
+![WebUI](https://puu.sh/HgmLl/178327b437.png)
+
+![CLI](https://puu.sh/HgmF1/5a8ae7ed82.png)
 
 ## Help
-Please post about any issues and problems here: [YazFi on SNBForums](https://www.snbforums.com/threads/yazfi-enhanced-asuswrt-merlin-guest-wifi-networks.45924/)
+Please post about any issues and problems here: [Asuswrt-Merlin AddOns on SNBForums](https://www.snbforums.com/forums/asuswrt-merlin-addons.60/)
 
 ## FAQs
 ### Explanation of YazFi settings
