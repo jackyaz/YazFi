@@ -954,9 +954,11 @@ Conf_Validate(){
 						IFACE_PASS="false"
 					fi
 					
-					# Force _CLIENTISOLATION=false on AX3000
-					if [ "$ROUTER_MODEL" = "RT-AX88U" ] || [ "$ROUTER_MODEL" = "RT-AX3000" ]; then
-						sed -i -e "s/${IFACETMP}_CLIENTISOLATION=true/${IFACETMP}_CLIENTISOLATION=false/" "$SCRIPT_CONF"
+					# Force _CLIENTISOLATION=false on AX88U and AX3000 if using firmware prior to 386.1
+					if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.1)" ]; then
+						if [ "$ROUTER_MODEL" = "RT-AX88U" ] || [ "$ROUTER_MODEL" = "RT-AX3000" ]; then
+							sed -i -e "s/${IFACETMP}_CLIENTISOLATION=true/${IFACETMP}_CLIENTISOLATION=false/" "$SCRIPT_CONF"
+						fi
 					fi
 					
 					# Print success message
