@@ -25,9 +25,9 @@
 ### Start of script variables ###
 readonly SCRIPT_NAME="YazFi"
 readonly SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
-readonly YAZFI_VERSION="v4.2.0"
-readonly SCRIPT_VERSION="v4.2.0"
-SCRIPT_BRANCH="master"
+readonly YAZFI_VERSION="v4.2.1"
+readonly SCRIPT_VERSION="v4.2.1"
+SCRIPT_BRANCH="develop"
 SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
 readonly USER_SCRIPT_DIR="$SCRIPT_DIR/userscripts.d"
