@@ -1612,8 +1612,7 @@ DHCP_Conf(){
 			
 			ENABLED_NTPD=0
 			if [ -f /jffs/scripts/nat-start ]; then
-				STARTUPLINECOUNT=$(grep -c '# ntpMerlin' /jffs/scripts/nat-start)
-				if [ "$STARTUPLINECOUNT" -gt 0 ]; then ENABLED_NTPD=1; fi
+				if [ "$(grep -c '# ntpMerlin' /jffs/scripts/nat-start)" -gt 0 ]; then ENABLED_NTPD=1; fi
 			fi
 			
 			if [ "$ENABLED_WINS" -eq 1 ] && [ "$ENABLED_SAMBA" -eq 1 ]; then
@@ -1648,7 +1647,7 @@ DHCP_Conf(){
 			for IFACE in $IFACELIST; do
 				BEGIN="### Start of script-generated configuration for interface $IFACE ###"
 				END="### End of script-generated configuration for interface $IFACE ###"
-				if grep -q "### Start of script-generated configuration for interface $IFACE ###" $TMPCONF; then
+				if grep -q "### Start of script-generated configuration for interface $IFACE ###" "$TMPCONF"; then
 					# shellcheck disable=SC1003
 					sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\' "$TMPCONF"
 				fi
@@ -1839,13 +1838,13 @@ Shortcut_Script(){
 	case $1 in
 		create)
 			if [ -d /opt/bin ] && [ ! -f "/opt/bin/$SCRIPT_NAME" ] && [ -f "/jffs/scripts/$SCRIPT_NAME" ]; then
-				ln -s /jffs/scripts/$SCRIPT_NAME /opt/bin
-				chmod 0755 /opt/bin/$SCRIPT_NAME
+				ln -s "/jffs/scripts/$SCRIPT_NAME" /opt/bin
+				chmod 0755 "/opt/bin/$SCRIPT_NAME"
 			fi
 		;;
 		delete)
 			if [ -f "/opt/bin/$SCRIPT_NAME" ]; then
-				rm -f /opt/bin/$SCRIPT_NAME
+				rm -f "/opt/bin/$SCRIPT_NAME"
 			fi
 		;;
 	esac
