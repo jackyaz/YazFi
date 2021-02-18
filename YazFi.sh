@@ -2359,7 +2359,7 @@ Menu_Status(){
 	ARPDUMP="$(arp -an)"
 	
 	for IFACE in $IFACELIST; do
-		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ]; then
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ] && Validate_Exists_IFACE "$IFACE" silent && Validate_Enabled_IFACE "$IFACE" silent; then
 			printf "%75s\\n\\n" "" |tr " " "-"
 			printf "\\e[1mINTERFACE: %-5s\\e[0m\\n" "$IFACE"
 			printf "\\e[1mSSID: %-20s\\e[0m\\n\\n" "$(nvram get "${IFACE}_ssid")"
