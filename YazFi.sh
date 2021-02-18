@@ -1763,23 +1763,21 @@ Config_Networks(){
 		
 	if [ "$GUESTLANENABLED" = "true" ]; then
 		Avahi_Conf create
-		Clear_Lock
 	else
 		Avahi_Conf delete
-		Clear_Lock
 	fi
 	
 	if [ "$WIRELESSRESTART" = "true" ]; then
 		nvram commit
 		Clear_Lock
 		service restart_wireless >/dev/null 2>&1
+	elif [ "$WIRELESSRESTART" = "false" ]; then
+		Execute_UserScripts
+		Iface_BounceClients
 	fi
 	
-	Execute_UserScripts
-	
-	Iface_BounceClients
-	
 	Print_Output true "$SCRIPT_NAME $SCRIPT_VERSION completed successfully" "$PASS"
+	Clear_Lock
 }
 
 Execute_UserScripts(){
