@@ -53,8 +53,8 @@ IFACELIST="$(echo "$(nvram get wl0_vifnames) $(nvram get wl1_vifnames) $(nvram g
 ### End of router environment variables ###
 
 ### Start of path variables ###
-readonly DNSCONF="/jffs/configs/dnsmasq.conf.add"
-readonly TMPCONF="/jffs/configs/tmpdnsmasq.conf.add"
+readonly DNSCONF="$SCRIPT_DIR/.dnsmasq"
+readonly TMPCONF="$SCRIPT_DIR/.dnsmasq.tmp"
 ### End of path variables ###
 
 ### Start of firewall variables ###
@@ -188,6 +188,40 @@ Iface_BounceClients(){
 	if [ -z "$(pidof networkmap)" ]; then
 		networkmap >/dev/null 2>&1 &
 	fi
+}
+
+Auto_DNSMASQ(){
+	case $1 in
+		create)
+			if [ -f /jffs/scripts/dnsmasq.postconf ]; then
+				STARTUPLINECOUNT=$(grep -c "# $SCRIPT_NAME" /jffs/scripts/dnsmasq.postconf)
+				STARTUPLINECOUNTEX=$(grep -cx ". $DNSCONF # $SCRIPT_NAME" /jffs/scripts/dnsmasq.postconf)
+				
+				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
+					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/dnsmasq.postconf
+				fi
+				
+				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
+					echo ". $DNSCONF # $SCRIPT_NAME" >> /jffs/scripts/dnsmasq.postconf
+				fi
+			else
+				echo "#!/bin/sh" > /jffs/scripts/dnsmasq.postconf
+				echo "" >> /jffs/scripts/dnsmasq.postconf
+				# shellcheck disable=SC2016
+				echo ". $DNSCONF # $SCRIPT_NAME" >> /jffs/scripts/dnsmasq.postconf
+				chmod 0755 /jffs/scripts/dnsmasq.postconf
+			fi
+		;;
+		delete)
+			if [ -f /jffs/scripts/dnsmasq.postconf ]; then
+				STARTUPLINECOUNT=$(grep -c "# $SCRIPT_NAME" /jffs/scripts/dnsmasq.postconf)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/dnsmasq.postconf
+				fi
+			fi
+		;;
+	esac
 }
 
 Auto_ServiceEvent(){
@@ -1551,10 +1585,20 @@ Routing_NVRAM(){
 DHCP_Conf(){
 	case $1 in
 		initialise)
-			if [ -f $DNSCONF ]; then
-				cp $DNSCONF $TMPCONF
+			if [ -f /jffs/configs/dnsmasq.conf.add ]; then
+				for IFACE in $IFACELIST; do
+					BEGIN="### Start of script-generated configuration for interface $IFACE ###"
+					END="### End of script-generated configuration for interface $IFACE ###"
+					if grep -q "### Start of script-generated configuration for interface $IFACE ###" /jffs/configs/dnsmasq.conf.add; then
+						# shellcheck disable=SC1003
+						sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\' /jffs/configs/dnsmasq.conf.add
+					fi
+				done
+			fi
+			if [ -f "$DNSCONF" ]; then
+				cp "$DNSCONF" "$TMPCONF"
 			else
-				touch $TMPCONF
+				touch "$TMPCONF"
 			fi
 		;;
 		create)
@@ -1639,6 +1683,7 @@ Config_Networks(){
 	
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
+	Auto_DNSMASQ create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Auto_ServiceStart create 2>/dev/null
 	Auto_OpenVPNEvent create 2>/dev/null
@@ -2015,6 +2060,7 @@ Menu_Install(){
 	Set_Version_Custom_Settings local
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
+	Auto_DNSMASQ create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Auto_ServiceStart create 2>/dev/null
 	Auto_OpenVPNEvent create 2>/dev/null
@@ -2089,6 +2135,7 @@ Menu_Uninstall(){
 	Print_Output true "Removing $SCRIPT_NAME..." "$PASS"
 	Auto_Startup delete 2>/dev/null
 	Auto_Cron delete 2>/dev/null
+	Auto_DNSMASQ delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
 	Auto_ServiceStart delete 2>/dev/null
 	Auto_OpenVPNEvent delete 2>/dev/null
@@ -2406,9 +2453,10 @@ Menu_Diagnostics(){
 	ifconfig -a > "$DIAGPATH/ifconfig.txt"
 	
 	cp "$SCRIPT_CONF" "$DIAGPATH/$SCRIPT_NAME.conf"
-	cp "$DNSCONF" "$DIAGPATH/dnsmasq.conf.add"
-	cp "/jffs/scripts/firewall-start" "$DIAGPATH/firewall-start"
-	cp "/jffs/scripts/service-event" "$DIAGPATH/service-event"
+	cp "$DNSCONF" "$DIAGPATH/$SCRIPT_NAME.dnsmasq"
+	cp /jffs/scripts/dnsmasq.postconf "$DIAGPATH/dnsmasq.conf.add"
+	cp /jffs/scripts/firewall-start "$DIAGPATH/firewall-start"
+	cp /jffs/scripts/service-event "$DIAGPATH/service-event"
 	
 	SEC="$(Generate_Random_String 32)"
 	tar -czf "/tmp/$SCRIPT_NAME.tar.gz" -C "$DIAGPATH" .
@@ -2427,6 +2475,7 @@ if [ -z "$1" ]; then
 	Set_Version_Custom_Settings local
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
+	Auto_DNSMASQ create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Auto_ServiceStart create 2>/dev/null
 	Auto_OpenVPNEvent create 2>/dev/null
