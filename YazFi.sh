@@ -1993,11 +1993,6 @@ Check_Requirements(){
 		CHECKSFAILED="true"
 	fi
 	
-	if ! modprobe xt_comment 2>/dev/null; then
-		Print_Output true "Router does not support xt_comment module for iptables. Is a newer firmware available?" "$ERR"
-		CHECKSFAILED="true"
-	fi
-	
 	if [ "$(nvram get jffs2_scripts)" -ne 1 ]; then
 		nvram set jffs2_scripts=1
 		nvram commit
