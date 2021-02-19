@@ -195,20 +195,20 @@ Auto_DNSMASQ(){
 		create)
 			if [ -f /jffs/scripts/dnsmasq.postconf ]; then
 				STARTUPLINECOUNT=$(grep -c "# $SCRIPT_NAME" /jffs/scripts/dnsmasq.postconf)
-				STARTUPLINECOUNTEX=$(grep -cx ". $DNSCONF # $SCRIPT_NAME" /jffs/scripts/dnsmasq.postconf)
+				STARTUPLINECOUNTEX=$(grep -cx "cat $DNSCONF >> /etc/dnsmasq.conf # $SCRIPT_NAME" /jffs/scripts/dnsmasq.postconf)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/dnsmasq.postconf
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					echo ". $DNSCONF # $SCRIPT_NAME" >> /jffs/scripts/dnsmasq.postconf
+					echo "cat $DNSCONF >> /etc/dnsmasq.conf # $SCRIPT_NAME" >> /jffs/scripts/dnsmasq.postconf
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/dnsmasq.postconf
 				echo "" >> /jffs/scripts/dnsmasq.postconf
 				# shellcheck disable=SC2016
-				echo ". $DNSCONF # $SCRIPT_NAME" >> /jffs/scripts/dnsmasq.postconf
+				echo "cat $DNSCONF >> /etc/dnsmasq.conf # $SCRIPT_NAME" >> /jffs/scripts/dnsmasq.postconf
 				chmod 0755 /jffs/scripts/dnsmasq.postconf
 			fi
 		;;
