@@ -1477,7 +1477,7 @@ Routing_FWNAT(){
 		create)
 			for ACTION in -D -I; do
 				modprobe xt_comment
-				iptables -t nat "$ACTION" POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 -o tun1"$3" -m comment --comment "$(Get_Guest_Name "$2")" -j MASQUERADE
+				iptables -t nat "$ACTION" POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 -o tun1"$3" -m comment --comment "$(Get_Guest_Name "$2") VPN" -j MASQUERADE
 				iptables "$ACTION" "$FWRD" -i "$2" -o "$IFACE_WAN" -j "$LGRJT"
 				iptables "$ACTION" "$FWRD" -i "$IFACE_WAN" -o "$2" -j "$LGRJT"
 				iptables "$ACTION" "$FWRD" -i "$2" -o tun1"$3" -j ACCEPT
@@ -1485,7 +1485,7 @@ Routing_FWNAT(){
 			done
 		;;
 		delete)
-			RULES=$(iptables -t nat -nvL POSTROUTING --line-number | grep "$(Get_Guest_Name "$2")" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -t nat -nvL POSTROUTING --line-number | grep "$(Get_Guest_Name "$2") VPN" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES; do
 				iptables -t nat -D POSTROUTING "$RULENO"
 			done
@@ -2386,7 +2386,7 @@ Menu_Status(){
 							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | grep -v "\*" | awk '{print $4}')
 						fi
 						
-						if [ "$GUEST_HOST" = "?" ] || [ "$(printf "$GUEST_HOST" | wc -m)" -le 1 ]; then
+						if [ "$GUEST_HOST" = "?" ] || [ "$(printf "%s" "$GUEST_HOST" | wc -m)" -le 1 ]; then
 							GUEST_HOST="$(nvram get custom_clientlist | grep -ioE "<.*>$GUEST_MACADDR" | awk -F ">" '{print $(NF-1)}' | tr -d '<')" #thanks Adamm00
 						fi
 						
@@ -2408,11 +2408,11 @@ Menu_Status(){
 					GUEST_MACADDR="$(echo "$GUEST_MACADDR" | tr -d '\n')"
 					
 					[ -z "$1" ] && printf "%-30s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
-					[ -n "$1" ] && printf "$IFACE,$GUEST_HOST,$GUEST_IPADDR,$GUEST_MACADDR\\n" >> "$STATUSOUTPUTFILE"
+					[ -n "$1" ] && printf "%s,%s,%s,%s\\n" "$IFACE" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" >> "$STATUSOUTPUTFILE"
 				done
 				unset IFS
 			else
-				[ -n "$1" ] && printf "$IFACE,N/A,N/A,N/A\\n" >> "$STATUSOUTPUTFILE"
+				[ -n "$1" ] && printf "%s,N/A,N/A,N/A\\n" "$IFACE" >> "$STATUSOUTPUTFILE"
 				[ -z "$1" ] && printf "\\e[1m$WARN%sNo clients connected\\e[0m\\n\\n" ""
 			fi
 		fi
