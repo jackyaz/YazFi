@@ -393,6 +393,7 @@ Avahi_Conf(){
 					echo 'echo "" >> "$1"'
 					echo 'echo "[reflector]" >> "$1" # '"$SCRIPT_NAME"
 					echo 'echo "enable-reflector=yes" >> "$1" # '"$SCRIPT_NAME"
+					echo "sed -i '/^\[Server\]/a cache-entries-max=0' "'"$1" # '"$SCRIPT_NAME"
 					} >> /jffs/scripts/avahi-daemon.postconf
 					service restart_mdns >/dev/null 2>&1
 				fi
@@ -402,6 +403,7 @@ Avahi_Conf(){
 				echo 'echo "" >> "$1"'
 				echo 'echo "[reflector]" >> "$1" # '"$SCRIPT_NAME"
 				echo 'echo "enable-reflector=yes" >> "$1" # '"$SCRIPT_NAME"
+				echo "sed -i '/^\[Server\]/a cache-entries-max=0' "'"$1" # '"$SCRIPT_NAME"
 				} > /jffs/scripts/avahi-daemon.postconf
 				chmod 0755 /jffs/scripts/avahi-daemon.postconf
 				service restart_mdns >/dev/null 2>&1
