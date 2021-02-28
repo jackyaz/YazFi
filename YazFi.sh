@@ -1046,6 +1046,7 @@ Create_Symlinks(){
 	rm -f "$SCRIPT_WEB_DIR/"* 2>/dev/null
 	
 	ln -s "$SCRIPT_DIR/config"  "$SCRIPT_WEB_DIR/config.htm" 2>/dev/null
+	ln -s "$SCRIPT_DIR/.connectedclients" "$SCRIPT_WEB_DIR/connectedclients.htm" 2>/dev/null
 	
 	if [ ! -d "$SHARED_WEB_DIR" ]; then
 		ln -s "$SHARED_DIR" "$SHARED_WEB_DIR" 2>/dev/null
@@ -1484,7 +1485,7 @@ Routing_FWNAT(){
 				iptables -t nat -D POSTROUTING "$RULENO"
 			done
 			
-			RULES=$(iptables -nvL $FWRD --line-number | grep "$2" | grep "tun1" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -nvL "$FWRD" --line-number | grep "$2" | grep "tun1" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES; do
 				iptables -D "$FWRD" "$RULENO"
 			done
@@ -2343,6 +2344,8 @@ Menu_GuestConfig(){
 
 Menu_Status(){
 	### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
+	STATUSOUTPUTFILE="$SCRIPT_DIR/.connectedclients"
+	[ -n "$1" ] && rm -f "$STATUSOUTPUTFILE"
 	. "$SCRIPT_CONF"
 	
 	if [ ! -f /opt/bin/dig ] && [ -f /opt/bin/opkg ]; then
@@ -2350,34 +2353,35 @@ Menu_Status(){
 		opkg install bind-dig
 	fi
 	
-	ScriptHeader
-	printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
-		
+	[ -z "$1" ] && ScriptHeader
+	[ -z "$1" ] && printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
+	[ -n "$1" ] && printf "INTERFACE,HOSTNAME,IP,MAC\\n" >> "$STATUSOUTPUTFILE"
+	
 	ARPDUMP="$(arp -an)"
 	
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ] && Validate_Exists_IFACE "$IFACE" silent && Validate_Enabled_IFACE "$IFACE" silent; then
-			printf "%75s\\n\\n" "" |tr " " "-"
-			printf "\\e[1mINTERFACE: %-5s\\e[0m\\n" "$IFACE"
-			printf "\\e[1mSSID: %-20s\\e[0m\\n\\n" "$(nvram get "${IFACE}_ssid")"
+			[ -z "$1" ] && printf "%75s\\n\\n" "" | tr " " "-"
+			[ -z "$1" ] && printf "\\e[1mINTERFACE: %-5s\\e[0m\\n" "$IFACE"
+			[ -z "$1" ] && printf "\\e[1mSSID: %-20s\\e[0m\\n\\n" "$(nvram get "${IFACE}_ssid")"
+			
 			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
 			if [ "$IFACE_MACS" != "" ]; then
-				printf "\\e[1m%-30s%-20s%-20s\\e[0m\\n" "HOSTNAME" "IP ADDRESS" "MAC"
+				[ -z "$1" ] && printf "\\e[1m%-30s%-20s%-20s\\e[0m\\n" "HOSTNAME" "IP" "MAC"
 				# shellcheck disable=SC2039
 				IFS=$'\n'
 				for GUEST_MAC in $IFACE_MACS; do
-					GUEST_MACADDR="${GUEST_MAC#* }"
+					GUEST_MACADDR="$(echo "$GUEST_MAC" | awk '{print $2}')"
 					GUEST_ARPINFO="$(echo "$ARPDUMP" | grep "$IFACE" | grep -i "$GUEST_MACADDR" | grep -v "$(nvram get lan_ipaddr | cut -d'.' -f1-3)")"
-					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
+					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed 's/(//g;s/)//g')"
 					GUEST_HOST=""
 					if [ -n "$GUEST_IPADDR" ]; then
 						GUEST_HOST="$(arp "$GUEST_IPADDR" | grep "$IFACE" | awk '{print $1}' | cut -f1 -d ".")"
 						if [ "$GUEST_HOST" = "?" ]; then
-							# shellcheck disable=SC2063
-							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | grep -v "*" | awk '{print $4}')
+							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | grep -v "\*" | awk '{print $4}')
 						fi
 						
-						if [ "$GUEST_HOST" = "?" ] || [ "${#GUEST_HOST}" -le 1 ]; then
+						if [ "$GUEST_HOST" = "?" ] || [ "$(printf "$GUEST_HOST" | wc -m)" -le 1 ]; then
 							GUEST_HOST="$(nvram get custom_clientlist | grep -ioE "<.*>$GUEST_MACADDR" | awk -F ">" '{print $(NF-1)}' | tr -d '<')" #thanks Adamm00
 						fi
 						
@@ -2386,24 +2390,31 @@ Menu_Status(){
 								GUEST_HOST="$(dig +short +answer -x "$GUEST_IPADDR" '@'"$(nvram get lan_ipaddr)" | cut -f1 -d'.')"
 							fi
 						fi
+					else
+						GUEST_IPADDR="Unknown"
 					fi
 					
 					if [ -z "$GUEST_HOST" ]; then
 						GUEST_HOST="Unknown"
 					fi
 					
-					printf "%-30s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
+					GUEST_HOST="$(echo "$GUEST_HOST" | tr -d '\n')"
+					GUEST_IPADDR="$(echo "$GUEST_IPADDR" | tr -d '\n')"
+					GUEST_MACADDR="$(echo "$GUEST_MACADDR" | tr -d '\n')"
+					
+					[ -z "$1" ] && printf "%-30s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
+					[ -n "$1" ] && printf "$IFACE,$GUEST_HOST,$GUEST_IPADDR,$GUEST_MACADDR\\n" >> "$STATUSOUTPUTFILE"
 				done
 				unset IFS
 			else
-				printf "\\e[1m$WARN%sNo clients connected\\e[0m\\n\\n" ""
+				[ -n "$1" ] && printf "$IFACE,N/A,N/A,N/A\\n" >> "$STATUSOUTPUTFILE"
+				[ -z "$1" ] && printf "\\e[1m$WARN%sNo clients connected\\e[0m\\n\\n" ""
 			fi
 		fi
 	done
 	
-	printf "%75s\\n\\n" "" |tr " " "-"
-	
-	printf "\\e[1m$PASS%sQuery complete, please see above for results\\e[0m\\n\\n" ""
+	[ -z "$1" ] && printf "%75s\\n\\n" "" | tr " " "-"
+	[ -z "$1" ] && printf "\\e[1m$PASS%sQuery complete, please see above for results\\e[0m\\n\\n" ""
 	#######################################################################################################
 }
 
@@ -2563,6 +2574,10 @@ case "$1" in
 	;;
 	status)
 		Menu_Status
+		exit 0
+	;;
+	statusfile)
+		Menu_Status outputtofile
 		exit 0
 	;;
 	userscripts)
