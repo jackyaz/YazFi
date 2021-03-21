@@ -1405,6 +1405,31 @@ Firewall_Rules(){
 		iptables -t nat "$ACTION" POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -o "$IFACE" -m comment --comment "$(Get_Guest_Name "$IFACE")" -j MASQUERADE
 		###
 		
+		### NTP redirect if ntpMerlin installed ###
+		ENABLED_NTPD=0
+		if [ -f /jffs/scripts/nat-start ]; then
+			if [ "$(grep -c '# ntpMerlin' /jffs/scripts/nat-start)" -gt 0 ]; then ENABLED_NTPD=1; fi
+		fi
+		
+		if [ "$ENABLED_NTPD" -eq 1 ]; then
+			iptables -t nat "$ACTION" PREROUTING -i "$IFACE" -p udp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
+			iptables -t nat "$ACTION" PREROUTING -i "$IFACE" -p tcp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
+			## drop attempts for clients trying to avoid redirect
+			iptables "$ACTION" "$FWRD" -i "$IFACE" -p tcp --dport 123 -j REJECT
+			iptables "$ACTION" "$FWRD" -i "$IFACE" -p udp --dport 123 -j REJECT
+			ip6tables "$ACTION" FORWARD -i "$IFACE" -p tcp --dport 123 -j REJECT
+			ip6tables "$ACTION" FORWARD -i "$IFACE" -p udp --dport 123 -j REJECT
+			##
+		else
+			iptables -t nat -D PREROUTING -i "$IFACE" -p udp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
+			iptables -t nat -D PREROUTING -i "$IFACE" -p tcp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
+			iptables -D "$FWRD" -i "$IFACE" -p tcp --dport 123 -j REJECT
+			iptables -D "$FWRD" -i "$IFACE" -p udp --dport 123 -j REJECT
+			ip6tables -D FORWARD -i "$IFACE" -p tcp --dport 123 -j REJECT
+			ip6tables -D FORWARD -i "$IFACE" -p udp --dport 123 -j REJECT
+		fi
+		###
+		
 		### End of IP firewall rules ###
 	done
 }
