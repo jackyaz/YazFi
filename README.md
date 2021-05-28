@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.com/jackyaz/YazFi.svg?branch=master)](https://travis-ci.com/jackyaz/YazFi)
 
 ## v4.2.1
-### Updated on 2021-02-15
+### Updated on 2021-05-28
 ## About
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
 
@@ -63,7 +63,7 @@ If you do not have Entware installed, you will need to use the full path:
 ![CLI](https://puu.sh/HgmF1/5a8ae7ed82.png)
 
 ## Help
-Please post about any issues and problems here: [Asuswrt-Merlin AddOns on SNBForums](https://www.snbforums.com/forums/asuswrt-merlin-addons.60/)
+Please post about any issues and problems here: [Asuswrt-Merlin AddOns on SNBForums](https://www.snbforums.com/forums/asuswrt-merlin-addons.60/?prefix_id=13)
 
 ## FAQs
 ### Explanation of YazFi settings
