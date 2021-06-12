@@ -18,8 +18,15 @@
 #############################################
 
 ######        Shellcheck directives    ######
-# shellcheck disable=SC2034
 # shellcheck disable=SC1090
+# shellcheck disable=SC2005
+# shellcheck disable=SC2016
+# shellcheck disable=SC2034
+# shellcheck disable=SC2039
+# shellcheck disable=SC2086
+# shellcheck disable=SC2140
+# shellcheck disable=SC2155
+# shellcheck disable=SC3003
 #############################################
 
 ### Start of script variables ###
@@ -124,11 +131,8 @@ Get_Guest_Name(){
 }
 
 Set_WiFi_Passphrase(){
-	# shellcheck disable=SC2140
 	nvram set "${1}_wpa_psk"="$2"
-	# shellcheck disable=SC2140
 	nvram set "${1}_auth_mode_x"="psk2"
-	# shellcheck disable=SC2140
 	nvram set "${1}_akm"="psk2"
 	nvram commit
 }
@@ -167,7 +171,6 @@ Iface_BounceClients(){
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ]; then
 			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
 			if [ "$IFACE_MACS" != "" ]; then
-				# shellcheck disable=SC2039
 				IFS=$'\n'
 				for GUEST_MAC in $IFACE_MACS; do
 					GUEST_MACADDR="${GUEST_MAC#* }"
@@ -207,7 +210,6 @@ Auto_DNSMASQ(){
 			else
 				echo "#!/bin/sh" > /jffs/scripts/dnsmasq.postconf
 				echo "" >> /jffs/scripts/dnsmasq.postconf
-				# shellcheck disable=SC2016
 				echo "cat $DNSCONF >> /etc/dnsmasq.conf # $SCRIPT_NAME" >> /jffs/scripts/dnsmasq.postconf
 				chmod 0755 /jffs/scripts/dnsmasq.postconf
 			fi
@@ -229,7 +231,6 @@ Auto_ServiceEvent(){
 		create)
 			if [ -f /jffs/scripts/service-event ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/service-event)
-				# shellcheck disable=SC2016
 				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME service_event"' "$@" & # '"$SCRIPT_NAME Guest Networks" /jffs/scripts/service-event)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
@@ -237,13 +238,11 @@ Auto_ServiceEvent(){
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					# shellcheck disable=SC2016
 					echo "/jffs/scripts/$SCRIPT_NAME service_event"' "$@" & # '"$SCRIPT_NAME Guest Networks" >> /jffs/scripts/service-event
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/service-event
 				echo "" >> /jffs/scripts/service-event
-				# shellcheck disable=SC2016
 				echo "/jffs/scripts/$SCRIPT_NAME service_event"' "$@" & # '"$SCRIPT_NAME Guest Networks" >> /jffs/scripts/service-event
 				chmod 0755 /jffs/scripts/service-event
 			fi
@@ -331,7 +330,6 @@ Auto_OpenVPNEvent(){
 		create)
 			if [ -f /jffs/scripts/openvpn-event ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/openvpn-event)
-				# shellcheck disable=SC2016
 				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME openvpn "'$1 $script_type & # '"$SCRIPT_NAME" /jffs/scripts/openvpn-event)
 				
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
@@ -339,13 +337,11 @@ Auto_OpenVPNEvent(){
 				fi
 				
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					# shellcheck disable=SC2016
 					sed -i '2 i /jffs/scripts/'"$SCRIPT_NAME"' openvpn $1 $script_type & # '"$SCRIPT_NAME" /jffs/scripts/openvpn-event
 				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/openvpn-event
 				echo "" >> /jffs/scripts/openvpn-event
-				# shellcheck disable=SC2016
 				echo "/jffs/scripts/$SCRIPT_NAME openvpn "'$1 $script_type & # '"$SCRIPT_NAME" >> /jffs/scripts/openvpn-event
 				chmod 0755 /jffs/scripts/openvpn-event
 			fi
@@ -381,7 +377,6 @@ Auto_Cron(){
 	esac
 }
 
-# shellcheck disable=SC2016
 Avahi_Conf(){
 	case $1 in
 		create)
@@ -1152,13 +1147,13 @@ Firewall_Chains(){
 				if ! iptables -n -L "$CHAIN" >/dev/null 2>&1; then
 					iptables -N "$CHAIN"
 					case $CHAIN in
-						$INPT)
+						"$INPT")
 							iptables -I INPUT -j "$CHAIN"
 						;;
-						$FWRD)
+						"$FWRD")
 							iptables -I FORWARD "$FWRDSTART" -j "$CHAIN"
 						;;
-						$LGRJT)
+						"$LGRJT")
 							iptables -I "$LGRJT" -j REJECT
 							
 							# Optional rule to log all rejected packets to syslog
@@ -1166,7 +1161,7 @@ Firewall_Chains(){
 								iptables -I $LGRJT -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
 							fi
 						;;
-						$DNSFLTR_DOT)
+						"$DNSFLTR_DOT")
 							iptables -I FORWARD "$FWRDSTART" -p tcp -m tcp --dport 853 -j "$CHAIN"
 						;;
 					esac
@@ -1176,7 +1171,7 @@ Firewall_Chains(){
 				if ! iptables -t nat -n -L "$CHAIN" >/dev/null 2>&1; then
 					iptables -t nat -N "$CHAIN"
 					case $CHAIN in
-						$DNSFLTR)
+						"$DNSFLTR")
 							### DNSFilter rules - credit to @RMerlin for the original implementation in Asuswrt ###
 							iptables -t nat -A PREROUTING -p udp -m udp --dport 53 -j "$CHAIN"
 							iptables -t nat -A PREROUTING -p tcp -m tcp --dport 53 -j "$CHAIN"
@@ -1190,16 +1185,16 @@ Firewall_Chains(){
 			for CHAIN in $CHAINS; do
 				if iptables -n -L "$CHAIN" >/dev/null 2>&1; then
 					case $CHAIN in
-						$INPT)
+						"$INPT")
 							iptables -D INPUT -j "$CHAIN"
 						;;
-						$FWRD)
+						"$FWRD")
 							iptables -D FORWARD -j "$CHAIN"
 						;;
-						$LGRJT)
+						"$LGRJT")
 							iptables -D "$LGRJT" -j REJECT
 						;;
-						$DNSFLTR_DOT)
+						"$DNSFLTR_DOT")
 							iptables -D FORWARD -p tcp -m tcp --dport 853 -j "$CHAIN"
 						;;
 					esac
@@ -1211,7 +1206,7 @@ Firewall_Chains(){
 			for CHAIN in $NATCHAINS; do
 				if ! iptables -t nat -n -L "$CHAIN" >/dev/null 2>&1; then
 					case $CHAIN in
-						$DNSFLTR)
+						"$DNSFLTR")
 							iptables -t nat -D PREROUTING -p udp -m udp --dport 53 -j "$CHAIN"
 							iptables -t nat -D PREROUTING -p tcp -m tcp --dport 53 -j "$CHAIN"
 						;;
@@ -1437,11 +1432,9 @@ Firewall_Rules(){
 Firewall_NVRAM(){
 	case $1 in
 		create)
-			# shellcheck disable=SC2140
 			nvram set "${2}_ap_isolate"="1"
 		;;
 		delete)
-			# shellcheck disable=SC2140
 			nvram set "${2}_ap_isolate"="0"
 		;;
 		deleteall)
@@ -1572,8 +1565,6 @@ Routing_NVRAM(){
 			COUNTER=1
 			until [ $COUNTER -gt 5 ]; do
 				VPN_NVRAM="$(Get_Guest_Name "$2")"
-				# shellcheck disable=SC2005
-				# shellcheck disable=SC2086
 				eval "VPN_IP_LIST_NEW_$COUNTER=$(echo "$(eval echo '$'"VPN_IP_LIST_NEW_$COUNTER")" | sed -e "s/$(echo '<'$VPN_NVRAM |  sed -e 's/\//\\\//g' | sed -e 's/ /\\ /g').*>VPN//g" | Escape_Sed)"
 				COUNTER=$((COUNTER + 1))
 			done
@@ -1593,7 +1584,6 @@ Routing_NVRAM(){
 				if [ "$(eval echo '$'"VPN_IP_LIST_ORIG_$COUNTER")" != "$(eval echo '$'"VPN_IP_LIST_NEW_$COUNTER")" ]; then
 					Print_Output true "VPN Client $COUNTER client list has changed, restarting VPN Client $COUNTER"
 					
-					# shellcheck disable=SC2140
 					if [ "$(/bin/uname -m)" = "aarch64" ]; then
 						fullstring="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
 						nvram set vpn_client"$COUNTER"_clientlist="$(echo "$fullstring" | cut -c0-255)"
@@ -2280,7 +2270,6 @@ Menu_GuestConfig(){
 					if ! Validate_String "$newssid"; then
 						newssidclean="$(echo "$newssid" | sed 's/[^a-zA-Z0-9]//g')"
 					fi
-					# shellcheck disable=SC2140
 					nvram set "${selectediface}_ssid"="$newssidclean"
 					nvram commit
 					changesmade="true"
@@ -2399,7 +2388,6 @@ Menu_Status(){
 			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
 			if [ "$IFACE_MACS" != "" ]; then
 				[ -z "$1" ] && printf "\\e[1m%-30s%-20s%-20s\\e[0m\\n" "HOSTNAME" "IP" "MAC"
-				# shellcheck disable=SC2039
 				IFS=$'\n'
 				for GUEST_MAC in $IFACE_MACS; do
 					GUEST_MACADDR="$(echo "$GUEST_MAC" | awk '{print $2}')"
