@@ -25,6 +25,7 @@
 # shellcheck disable=SC2039
 # shellcheck disable=SC2086
 # shellcheck disable=SC2140
+# shellcheck disable=SC2155
 # shellcheck disable=SC3003
 #############################################
 
@@ -1146,13 +1147,13 @@ Firewall_Chains(){
 				if ! iptables -n -L "$CHAIN" >/dev/null 2>&1; then
 					iptables -N "$CHAIN"
 					case $CHAIN in
-						$INPT)
+						"$INPT")
 							iptables -I INPUT -j "$CHAIN"
 						;;
-						$FWRD)
+						"$FWRD")
 							iptables -I FORWARD "$FWRDSTART" -j "$CHAIN"
 						;;
-						$LGRJT)
+						"$LGRJT")
 							iptables -I "$LGRJT" -j REJECT
 							
 							# Optional rule to log all rejected packets to syslog
@@ -1160,7 +1161,7 @@ Firewall_Chains(){
 								iptables -I $LGRJT -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
 							fi
 						;;
-						$DNSFLTR_DOT)
+						"$DNSFLTR_DOT")
 							iptables -I FORWARD "$FWRDSTART" -p tcp -m tcp --dport 853 -j "$CHAIN"
 						;;
 					esac
@@ -1170,7 +1171,7 @@ Firewall_Chains(){
 				if ! iptables -t nat -n -L "$CHAIN" >/dev/null 2>&1; then
 					iptables -t nat -N "$CHAIN"
 					case $CHAIN in
-						$DNSFLTR)
+						"$DNSFLTR")
 							### DNSFilter rules - credit to @RMerlin for the original implementation in Asuswrt ###
 							iptables -t nat -A PREROUTING -p udp -m udp --dport 53 -j "$CHAIN"
 							iptables -t nat -A PREROUTING -p tcp -m tcp --dport 53 -j "$CHAIN"
@@ -1184,16 +1185,16 @@ Firewall_Chains(){
 			for CHAIN in $CHAINS; do
 				if iptables -n -L "$CHAIN" >/dev/null 2>&1; then
 					case $CHAIN in
-						$INPT)
+						"$INPT")
 							iptables -D INPUT -j "$CHAIN"
 						;;
-						$FWRD)
+						"$FWRD")
 							iptables -D FORWARD -j "$CHAIN"
 						;;
-						$LGRJT)
+						"$LGRJT")
 							iptables -D "$LGRJT" -j REJECT
 						;;
-						$DNSFLTR_DOT)
+						"$DNSFLTR_DOT")
 							iptables -D FORWARD -p tcp -m tcp --dport 853 -j "$CHAIN"
 						;;
 					esac
