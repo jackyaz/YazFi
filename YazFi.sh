@@ -1206,7 +1206,7 @@ Firewall_Chains(){
 			for CHAIN in $NATCHAINS; do
 				if ! iptables -t nat -n -L "$CHAIN" >/dev/null 2>&1; then
 					case $CHAIN in
-						$DNSFLTR)
+						"$DNSFLTR")
 							iptables -t nat -D PREROUTING -p udp -m udp --dport 53 -j "$CHAIN"
 							iptables -t nat -D PREROUTING -p tcp -m tcp --dport 53 -j "$CHAIN"
 						;;
