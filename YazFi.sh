@@ -1154,8 +1154,8 @@ Firewall_Chains(){
 					case $CHAIN in
 						"$DNSFLTR")
 							### DNSFilter rules - credit to @RMerlin for the original implementation in Asuswrt ###
-							iptables -t nat -A PREROUTING -p udp -m udp --dport 53 -j "$CHAIN"
-							iptables -t nat -A PREROUTING -p tcp -m tcp --dport 53 -j "$CHAIN"
+							iptables -t nat -I PREROUTING -p udp -m udp --dport 53 -j "$CHAIN"
+							iptables -t nat -I PREROUTING -p tcp -m tcp --dport 53 -j "$CHAIN"
 							###
 						;;
 					esac
