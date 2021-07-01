@@ -207,6 +207,10 @@ Auto_DNSMASQ(){
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					echo "cat $DNSCONF >> /etc/dnsmasq.conf # $SCRIPT_NAME" >> /jffs/scripts/dnsmasq.postconf
 				fi
+				
+				if [ "$(grep -c "NextDNS" /jffs/scripts/dnsmasq.postconf)" -gt 0 ]; then
+					sed -i '/exit 0/d' /jffs/scripts/dnsmasq.postconf
+				fi
 			else
 				echo "#!/bin/sh" > /jffs/scripts/dnsmasq.postconf
 				echo "" >> /jffs/scripts/dnsmasq.postconf
@@ -2480,7 +2484,7 @@ Menu_Diagnostics(){
 	
 	cp "$SCRIPT_CONF" "$DIAGPATH/$SCRIPT_NAME.conf"
 	cp "$DNSCONF" "$DIAGPATH/$SCRIPT_NAME.dnsmasq"
-	cp /jffs/scripts/dnsmasq.postconf "$DIAGPATH/dnsmasq.conf.add"
+	cp /jffs/scripts/dnsmasq.postconf "$DIAGPATH/dnsmasq.postconf"
 	cp /jffs/scripts/firewall-start "$DIAGPATH/firewall-start"
 	cp /jffs/scripts/service-event "$DIAGPATH/service-event"
 	
