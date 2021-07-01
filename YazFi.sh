@@ -2425,7 +2425,7 @@ Menu_Diagnostics(){
 	
 	cp "$SCRIPT_CONF" "$DIAGPATH/$SCRIPT_NAME.conf"
 	cp "$DNSCONF" "$DIAGPATH/$SCRIPT_NAME.dnsmasq"
-	cp /jffs/scripts/dnsmasq.postconf "$DIAGPATH/dnsmasq.conf.add"
+	cp /jffs/scripts/dnsmasq.postconf "$DIAGPATH/dnsmasq.postconf"
 	cp /jffs/scripts/firewall-start "$DIAGPATH/firewall-start"
 	cp /jffs/scripts/service-event "$DIAGPATH/service-event"
 	
