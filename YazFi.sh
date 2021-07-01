@@ -212,7 +212,6 @@ Auto_DNSMASQ(){
 				if [ "$(grep -c "NextDNS" /jffs/scripts/dnsmasq.postconf)" -gt 0 ]; then
 					sed -i '/exit 0/d' /jffs/scripts/dnsmasq.postconf
 				fi
-				
 			else
 				echo "#!/bin/sh" > /jffs/scripts/dnsmasq.postconf
 				echo "" >> /jffs/scripts/dnsmasq.postconf
@@ -2477,6 +2476,12 @@ case "$1" in
 		exit 0
 	;;
 	check)
+		if [ "$(grep -c "NextDNS" /jffs/scripts/dnsmasq.postconf)" -gt 0 ]; then
+			if [ "$(grep -c "exit 0" /jffs/scripts/dnsmasq.postconf)" -gt 0 ]; then
+				sed -i '/exit 0/d' /jffs/scripts/dnsmasq.postconf
+				service restart_dnsmasq
+			fi
+		fi
 		if ! iptables -nL | grep -q "YazFi"; then
 			Check_Lock
 			Print_Output true "$SCRIPT_NAME firewall rules not detected during persistence check, re-applying rules" "$WARN"
