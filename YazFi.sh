@@ -208,6 +208,11 @@ Auto_DNSMASQ(){
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					echo "cat $DNSCONF >> /etc/dnsmasq.conf # $SCRIPT_NAME" >> /jffs/scripts/dnsmasq.postconf
 				fi
+				
+				if [ "$(grep -c "NextDNS" /jffs/scripts/dnsmasq.postconf)" -gt 0 ]; then
+					sed -i '/exit 0/d' /jffs/scripts/dnsmasq.postconf
+				fi
+				
 			else
 				echo "#!/bin/sh" > /jffs/scripts/dnsmasq.postconf
 				echo "" >> /jffs/scripts/dnsmasq.postconf
