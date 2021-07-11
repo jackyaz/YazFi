@@ -116,7 +116,7 @@ function LoadCustomSettings(){
 		}
 	}
 }
-var $j=jQuery.noConflict();
+var $j = jQuery.noConflict();
 var bands = 0;
 
 function YazHint(hintid){
