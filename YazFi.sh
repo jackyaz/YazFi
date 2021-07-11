@@ -2437,7 +2437,12 @@ Menu_Diagnostics(){
 	
 	ip rule show > "$DIAGPATH/iprule.txt"
 	ip route show > "$DIAGPATH/iproute.txt"
-	ip route show table all | grep "table" | sed 's/.*\(table.*\)/\1/g' | awk '{print $2}' | sort | uniq | grep ovpn > "$DIAGPATH/routetables.txt"
+	ip route show table all | grep "table" | sed 's/.*\(table.*\)/\1/g' | awk '{print $2}' | sort | uniq | grep ovpn > "$DIAGPATH/routetablelist.txt"
+	
+	while IFS='' read -r line || [ -n "$line" ]; do
+		ip route show table "$line" > "$DIAGPATH/iproute_$line.txt"
+	done < "$DIAGPATH/routetablelist.txt"
+	
 	ifconfig -a > "$DIAGPATH/ifconfig.txt"
 	
 	cp "$SCRIPT_CONF" "$DIAGPATH/$SCRIPT_NAME.conf"
