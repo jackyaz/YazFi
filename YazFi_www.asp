@@ -390,7 +390,7 @@ function get_conf_file(){
 				if(settingname.indexOf("enabled") != -1) OptionsEnableDisable($j("#yazfi_"+settingname.replace("_enabled","")+"_en_"+settingvalue)[0]);
 			}
 			
-			if($("#firmver").text()*1 < 386.1){
+			if($j("#firmver").text()*1 < 386.1){
 				if(productid == "RT-AX88U" || productid == "RT-AX3000"){
 					$j("input[name*=clientisolation][value=false]").prop("checked",true);
 					$j("input[name*=clientisolation]").attr('disabled',true);
