@@ -374,7 +374,7 @@ function get_conf_file(){
 				window["yazfi_settings"].unshift(setting);
 			}
 			if(typeof wl_info == 'undefined' || wl_info == null){
-				bands = 6;
+				bands = 2;
 			}
 			else{
 				if(wl_info.band2g_support){$j("#table_buttons").before(BuildConfigTable("wl0","2.4GHz Guest Networks"));bands = bands + 1;}
