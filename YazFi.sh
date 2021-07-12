@@ -32,8 +32,8 @@
 ### Start of script variables ###
 readonly SCRIPT_NAME="YazFi"
 readonly SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
-readonly YAZFI_VERSION="v4.2.1"
-readonly SCRIPT_VERSION="v4.2.1"
+readonly YAZFI_VERSION="v4.2.3"
+readonly SCRIPT_VERSION="v4.2.3"
 SCRIPT_BRANCH="mips"
 SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
