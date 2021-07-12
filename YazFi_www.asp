@@ -375,6 +375,8 @@ function get_conf_file(){
 			}
 			if(typeof wl_info == 'undefined' || wl_info == null){
 				bands = 2;
+				$j("#table_buttons").before(BuildConfigTable("wl0","2.4GHz Guest Networks"));
+				$j("#table_buttons").before(BuildConfigTable("wl1","5GHz-1 Guest Networks"));
 			}
 			else{
 				if(wl_info.band2g_support){$j("#table_buttons").before(BuildConfigTable("wl0","2.4GHz Guest Networks"));bands = bands + 1;}
