@@ -2331,7 +2331,7 @@ Menu_GuestConfig(){
 Menu_Status(){
 	### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
 	STATUSOUTPUTFILE="$SCRIPT_DIR/.connectedclients"
-	[ -n "$1" ] && rm -f "$STATUSOUTPUTFILE"
+	rm -f "$STATUSOUTPUTFILE"
 	. "$SCRIPT_CONF"
 	
 	if [ ! -f /opt/bin/dig ] && [ -f /opt/bin/opkg ]; then
@@ -2341,7 +2341,7 @@ Menu_Status(){
 	
 	[ -z "$1" ] && ScriptHeader
 	[ -z "$1" ] && printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
-	[ -n "$1" ] && printf "INTERFACE,HOSTNAME,IP,MAC\\n" >> "$STATUSOUTPUTFILE"
+	printf "INTERFACE,HOSTNAME,IP,MAC\\n" >> "$STATUSOUTPUTFILE"
 	
 	ARPDUMP="$(arp -an)"
 	
@@ -2388,11 +2388,10 @@ Menu_Status(){
 					GUEST_MACADDR="$(echo "$GUEST_MACADDR" | tr -d '\n')"
 					
 					[ -z "$1" ] && printf "%-30s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
-					[ -n "$1" ] && printf "%s,%s,%s,%s\\n" "$IFACE" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" >> "$STATUSOUTPUTFILE"
+					printf "%s,%s,%s,%s\\n" "$IFACE" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" >> "$STATUSOUTPUTFILE"
 				done
 				unset IFS
 			else
-				[ -n "$1" ] && printf "%s,N/A,N/A,N/A\\n" "$IFACE" >> "$STATUSOUTPUTFILE"
 				[ -z "$1" ] && printf "\\e[1m$WARN%sNo clients connected\\e[0m\\n\\n" ""
 			fi
 		fi
