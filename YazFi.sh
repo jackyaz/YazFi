@@ -915,7 +915,7 @@ Conf_Validate(){
 							Print_Output false "${IFACETMP}_IPADDR setting last octet to 0" "$WARN"
 						fi
 						
-						if [ "$(grep -o "$IPADDRTMP".0 $SCRIPT_CONF | wc -l )" -gt 1 ] || [ "$(ifconfig -a | grep -o "inet addr:$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")"  | sed 's/inet addr://' | wc -l )" -gt 1 ]; then
+						if [ "$(ifconfig -a | grep -o "inet addr:$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d'.')"  | sed 's/inet addr://' | wc -l )" -gt 1 ]; then
 							Print_Output false "${IFACETMP}_IPADDR ($(eval echo '$'"${IFACETMP}_IPADDR")) has been used for another interface already" "$ERR"
 							IFACE_PASS="false"
 						fi
@@ -1569,6 +1569,7 @@ Routing_NVRAM(){
 					else
 						nvram set vpn_client"$COUNTER"_clientlist="$(eval echo '$'"VPN_IP_LIST_NEW_$COUNTER")"
 					fi
+					
 					if [ "$(nvram get vpn_client"$COUNTER"_rgw)" -lt 2 ]; then
 						nvram set vpn_client"$COUNTER"_rgw=2
 					fi
