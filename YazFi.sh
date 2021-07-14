@@ -18,6 +18,7 @@
 #############################################
 
 ######        Shellcheck directives    ######
+# shellcheck disable=SC1003
 # shellcheck disable=SC1090
 # shellcheck disable=SC2005
 # shellcheck disable=SC2016
@@ -32,9 +33,9 @@
 ### Start of script variables ###
 readonly SCRIPT_NAME="YazFi"
 readonly SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
-readonly YAZFI_VERSION="v4.2.3"
-readonly SCRIPT_VERSION="v4.2.3"
-SCRIPT_BRANCH="mips"
+readonly YAZFI_VERSION="v4.2.2"
+readonly SCRIPT_VERSION="v4.2.2"
+SCRIPT_BRANCH="develop"
 SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
 readonly USER_SCRIPT_DIR="$SCRIPT_DIR/userscripts.d"
@@ -872,7 +873,6 @@ Conf_Validate(){
 	CONF_VALIDATED="true"
 	NETWORKS_ENABLED="false"
 	
-	# Mop up blank settings regardless of state
 	Conf_FixBlanks
 	
 	for IFACE in $IFACELIST_FULL; do
@@ -882,7 +882,6 @@ Conf_Validate(){
 		REDIRECTTMP=""
 		IFACE_PASS="true"
 		
-		# Validate _ENABLED
 		if [ -z "$(eval echo '$'"${IFACETMP}_ENABLED")" ]; then
 			ENABLEDTMP="false"
 			sed -i -e "s/${IFACETMP}_ENABLED=/${IFACETMP}_ENABLED=false/" "$SCRIPT_CONF"
@@ -900,54 +899,46 @@ Conf_Validate(){
 		else
 			if [ "$ENABLEDTMP" = "true" ]; then
 				NETWORKS_ENABLED="true"
-				# Validate interface is enabled in GUI
+				
 				if ! Validate_Enabled_IFACE "$IFACE"; then
 					IFACE_PASS="false"
 				fi
 				
-				# Only validate interfaces enabled in config file
 				if [ "$(eval echo '$'"${IFACETMP}_ENABLED")" = "true" ]; then
-					# Validate _IPADDR
 					if ! Validate_IP "${IFACETMP}_IPADDR" "$(eval echo '$'"${IFACETMP}_IPADDR")"; then
 						IFACE_PASS="false"
 					else
 						IPADDRTMP="$(eval echo '$'"${IFACETMP}_IPADDR" | cut -f1-3 -d".")"
 						
-						# Set last octet to 0
 						if [ "$(eval echo '$'"${IFACETMP}_IPADDR" | cut -f4 -d".")" -ne 0 ]; then
 							sed -i -e "s/${IFACETMP}_IPADDR=$(eval echo '$'"${IFACETMP}_IPADDR")/${IFACETMP}_IPADDR=$IPADDRTMP.0/" "$SCRIPT_CONF"
 							Print_Output false "${IFACETMP}_IPADDR setting last octet to 0" "$WARN"
 						fi
 						
-						if [ "$(grep -o "$IPADDRTMP".0 $SCRIPT_CONF | wc -l )" -gt 1 ] || [ "$(ifconfig -a | grep -o "inet addr:$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d".")"  | sed 's/inet addr://' | wc -l )" -gt 1 ]; then
+						if [ "$(ifconfig -a | grep -o "inet addr:$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d'.')"  | sed 's/inet addr://' | wc -l )" -gt 1 ]; then
 							Print_Output false "${IFACETMP}_IPADDR ($(eval echo '$'"${IFACETMP}_IPADDR")) has been used for another interface already" "$ERR"
 							IFACE_PASS="false"
 						fi
 					fi
 					
-					#Validate _DHCPSTART and _DHCPEND
 					if [ -n "$(eval echo '$'"${IFACETMP}_DHCPSTART")" ] && [ -n "$(eval echo '$'"${IFACETMP}_DHCPEND")" ]; then
 						if ! Validate_DHCP "${IFACETMP}_DHCPSTART|and|${IFACETMP}_DHCPEND" "$(eval echo '$'"${IFACETMP}_DHCPSTART")" "$(eval echo '$'"${IFACETMP}_DHCPEND")"; then
 						IFACE_PASS="false"
 						fi
 					fi
 					
-					# Validate _DNS1
 					if ! Validate_IP "${IFACETMP}_DNS1" "$(eval echo '$'"${IFACETMP}_DNS1")" "DNS"; then
 						IFACE_PASS="false"
 					fi
 					
-					# Validate _DNS2
 					if ! Validate_IP "${IFACETMP}_DNS2" "$(eval echo '$'"${IFACETMP}_DNS2")" "DNS"; then
 						IFACE_PASS="false"
 					fi
 					
-					# Validate _FORCEDNS
 					if ! Validate_TrueFalse "${IFACETMP}_FORCEDNS" "$(eval echo '$'"${IFACETMP}_FORCEDNS")"; then
 						IFACE_PASS="false"
 					fi
 					
-					# Validate _REDIRECTALLTOVPN
 					if ! Validate_TrueFalse "${IFACETMP}_REDIRECTALLTOVPN" "$(eval echo '$'"${IFACETMP}_REDIRECTALLTOVPN")"; then
 						REDIRECTTMP="false"
 						IFACE_PASS="false"
@@ -955,49 +946,41 @@ Conf_Validate(){
 						REDIRECTTMP="$(eval echo '$'"${IFACETMP}_REDIRECTALLTOVPN")"
 					fi
 					
-					# Validate _VPNCLIENTNUMBER if _REDIRECTALLTOVPN is enabled
 					if [ "$REDIRECTTMP" = "true" ]; then
 						if ! Validate_VPNClientNo "${IFACETMP}_VPNCLIENTNUMBER" "$(eval echo '$'"${IFACETMP}_VPNCLIENTNUMBER")"; then
 							IFACE_PASS="false"
 						else
-							#Validate VPN client is configured for policy routing
 							if [ "$(nvram get vpn_client"$(eval echo '$'"${IFACETMP}_VPNCLIENTNUMBER")"_rgw)" -lt 2 ]; then
 								Print_Output false "VPN Client $(eval echo '$'"${IFACETMP}_VPNCLIENTNUMBER") is not configured for Policy Routing, enabling it..." "$WARN"
-								nvram set vpn_client"$(eval echo '$'"${IFACETMP}_VPNCLIENTNUMBER")"_rgw=3
+								nvram set vpn_client"$(eval echo '$'"${IFACETMP}_VPNCLIENTNUMBER")"_rgw=2
 								nvram commit
 							fi
 						fi
 					fi
 					
-					# Validate _TWOWAYTOGUEST
 					if ! Validate_TrueFalse "${IFACETMP}_TWOWAYTOGUEST" "$(eval echo '$'"${IFACETMP}_TWOWAYTOGUEST")"; then
 						IFACE_PASS="false"
 					fi
 					
-					# Validate _ONEWAYTOGUEST
 					if ! Validate_TrueFalse "${IFACETMP}_ONEWAYTOGUEST" "$(eval echo '$'"${IFACETMP}_ONEWAYTOGUEST")"; then
 						IFACE_PASS="false"
 					fi
 					
-					# Validate _TWOWAYTOGUEST and _ONEWAYTOGUEST to make sure both aren't enabled
 					if [ "$(eval echo '$'"${IFACETMP}_ONEWAYTOGUEST")" = "true" ] && [ "$(eval echo '$'"${IFACETMP}_TWOWAYTOGUEST")" = "true" ]; then
 						Print_Output false "$(eval echo '$'"${IFACETMP}_ONEWAYTOGUEST") & $(eval echo '$'"${IFACETMP}_TWOWAYTOGUEST") cannot both be true" "$ERR"
 						IFACE_PASS="false"
 					fi
 					
-					# Validate _CLIENTISOLATION
 					if ! Validate_TrueFalse "${IFACETMP}_CLIENTISOLATION" "$(eval echo '$'"${IFACETMP}_CLIENTISOLATION")"; then
 						IFACE_PASS="false"
 					fi
 					
-					# Force _CLIENTISOLATION=false on AX88U and AX3000 if using firmware prior to 386.1
 					if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.1)" ]; then
 						if [ "$ROUTER_MODEL" = "RT-AX88U" ] || [ "$ROUTER_MODEL" = "RT-AX3000" ]; then
 							sed -i -e "s/${IFACETMP}_CLIENTISOLATION=true/${IFACETMP}_CLIENTISOLATION=false/" "$SCRIPT_CONF"
 						fi
 					fi
 					
-					# Print success message
 					if [ "$IFACE_PASS" = "true" ]; then
 						Print_Output false "$IFACE passed validation" "$PASS"
 					fi
@@ -1005,7 +988,6 @@ Conf_Validate(){
 			fi
 		fi
 		
-		# Print failure message
 		if [ "$IFACE_PASS" = "false" ]; then
 			IFACELIST="$(echo "$IFACELIST" | sed 's/'"$IFACE"'//;s/  / /')"
 			Print_Output false "$IFACE failed validation, removing from list" "$CRIT"
@@ -1160,7 +1142,6 @@ Firewall_Chains(){
 						"$LGRJT")
 							iptables -I "$LGRJT" -j REJECT
 							
-							# Optional rule to log all rejected packets to syslog
 							if [ -f "$SCRIPT_DIR/.rejectlogging" ]; then
 								iptables -I $LGRJT -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
 							fi
@@ -1177,8 +1158,8 @@ Firewall_Chains(){
 					case $CHAIN in
 						"$DNSFLTR")
 							### DNSFilter rules - credit to @RMerlin for the original implementation in Asuswrt ###
-							iptables -t nat -A PREROUTING -p udp -m udp --dport 53 -j "$CHAIN"
-							iptables -t nat -A PREROUTING -p tcp -m tcp --dport 53 -j "$CHAIN"
+							iptables -t nat -I PREROUTING -p udp -m udp --dport 53 -j "$CHAIN"
+							iptables -t nat -I PREROUTING -p tcp -m tcp --dport 53 -j "$CHAIN"
 							###
 						;;
 					esac
@@ -1246,9 +1227,6 @@ Firewall_Rules(){
 	
 	for ACTION in $ACTIONS; do
 		
-		### Start of bridge rules ###
-		
-		# Un-bridge all frames entering br0 for IPv4, IPv6 and ARP to be processed by iptables
 		ebtables -t broute "$ACTION" BROUTING -p ipv4 -i "$IFACE" -j DROP
 		ebtables -t broute "$ACTION" BROUTING -p ipv6 -i "$IFACE" -j DROP
 		ebtables -t broute "$ACTION" BROUTING -p arp -i "$IFACE" -j DROP
@@ -1256,9 +1234,6 @@ Firewall_Rules(){
 		ebtables -t broute -D BROUTING -p IPv4 -i "$IFACE" --ip-dst "$LAN"/24 --ip-proto tcp -j DROP
 		ebtables -t broute -D BROUTING -p IPv4 -i "$IFACE" --ip-dst "$LAN" --ip-proto icmp -j ACCEPT
 		ebtables -t broute -D BROUTING -p IPv4 -i "$IFACE" --ip-dst "$LAN"/24 --ip-proto icmp -j DROP
-		### End of bridge rules ###
-		
-		### Start of IP firewall rules ###
 		
 		iptables "$ACTION" "$FWRD" -i "$IFACE" -j ACCEPT
 		
@@ -1368,18 +1343,8 @@ Firewall_Rules(){
 				iptables -t nat -D "$DNSFLTR_DOT" "$RULENO"
 			done
 			
-			VPNDNS="$(nvram get vpn_client"$(eval echo '$'"$(Get_Iface_Var "$IFACE")_VPNCLIENTNUMBER")"_adns)"
-			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_REDIRECTALLTOVPN")" = "true" ] && [ "$VPNDNS" -lt 3 ]; then
-				iptables -t nat "$ACTION" "$DNSFLTR" -i "$IFACE" -j DNAT --to-destination "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")"
-				if [ "$(nvram get dnspriv_enable)" -eq 1 ]; then
-					iptables "$ACTION" "$DNSFLTR_DOT" -i "$IFACE" ! -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")" -j "$LGRJT"
-				fi
-			elif [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_REDIRECTALLTOVPN")" = "false" ]; then
-				iptables -t nat "$ACTION" "$DNSFLTR" -i "$IFACE" -j DNAT --to-destination "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")"
-				if [ "$(nvram get dnspriv_enable)" -eq 1 ]; then
-					iptables "$ACTION" "$DNSFLTR_DOT" -i "$IFACE" ! -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")" -j "$LGRJT"
-				fi
-			fi
+			iptables -t nat "$ACTION" "$DNSFLTR" -i "$IFACE" -j DNAT --to-destination "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")"
+			iptables "$ACTION" "$DNSFLTR_DOT" -i "$IFACE" ! -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")" -j "$LGRJT"
 		else
 			RULES=$(iptables -t nat -nvL "$DNSFLTR" --line-number | grep "$IFACE" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES; do
@@ -1393,18 +1358,13 @@ Firewall_Rules(){
 		fi
 		###
 		
-		### mDNS traffic ###
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")" = "true" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")" = "true" ]; then
 			iptables "$ACTION" "$INPT" -i "$IFACE" -d 224.0.0.0/4 -j ACCEPT
 		fi
-		###
 		
-		### NAT hairpinning ###
 		modprobe xt_comment
 		iptables -t nat "$ACTION" POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -o "$IFACE" -m comment --comment "$(Get_Guest_Name "$IFACE")" -j MASQUERADE
-		###
 		
-		### NTP redirect if ntpMerlin installed ###
 		ENABLED_NTPD=0
 		if [ -f /jffs/scripts/nat-start ]; then
 			if [ "$(grep -c '# ntpMerlin' /jffs/scripts/nat-start)" -gt 0 ]; then ENABLED_NTPD=1; fi
@@ -1413,7 +1373,7 @@ Firewall_Rules(){
 		if [ "$ENABLED_NTPD" -eq 1 ]; then
 			iptables -t nat "$ACTION" PREROUTING -i "$IFACE" -p udp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
 			iptables -t nat "$ACTION" PREROUTING -i "$IFACE" -p tcp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
-			## drop attempts for clients trying to avoid redirect
+			
 			iptables "$ACTION" "$FWRD" -i "$IFACE" -p tcp --dport 123 -j REJECT
 			iptables "$ACTION" "$FWRD" -i "$IFACE" -p udp --dport 123 -j REJECT
 			ip6tables "$ACTION" FORWARD -i "$IFACE" -p tcp --dport 123 -j REJECT
@@ -1427,9 +1387,6 @@ Firewall_Rules(){
 			ip6tables -D FORWARD -i "$IFACE" -p tcp --dport 123 -j REJECT
 			ip6tables -D FORWARD -i "$IFACE" -p udp --dport 123 -j REJECT
 		fi
-		###
-		
-		### End of IP firewall rules ###
 	done
 }
 
@@ -1475,11 +1432,26 @@ Routing_RPDB(){
 Routing_RPDB_LAN(){
 	case $1 in
 		create)
+			if ! ip route show | grep -q "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR")"; then
+				ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
+				ip route add "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
+			fi
+			COUNTER=1
+			until [ $COUNTER -gt 5 ]; do
+				if ifconfig "tun1$COUNTER" >/dev/null 2>&1; then
+					if ! ip route show table ovpnc"$COUNTER" | grep -q "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR")"; then
+						ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
+						ip route add "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
+					fi
+				fi
+				COUNTER=$((COUNTER+1))
+			done
+		;;
+		delete)
 			COUNTER=1
 			until [ $COUNTER -gt 5 ]; do
 				if ifconfig "tun1$COUNTER" >/dev/null 2>&1; then
 					ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
-					ip route add "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
 				fi
 				COUNTER=$((COUNTER+1))
 			done
@@ -1549,12 +1521,10 @@ Routing_NVRAM(){
 			fi
 			VPN_IFACE_NVRAM_SAFE="$(echo "$VPN_IFACE_NVRAM" | sed -e 's/\//\\\//g;s/\./\\./g;s/ /\\ /g')"
 			
-			# Check if guest network has already been added to policy routing for VPN client. If not, append to list.
 			if ! eval echo '$'"VPN_IP_LIST_ORIG_$3" | grep -q "$VPN_IFACE_NVRAM"; then
 				eval "VPN_IP_LIST_NEW_$3=$(echo "$(eval echo '$'"VPN_IP_LIST_NEW_$3")$VPN_IFACE_NVRAM" | Escape_Sed)"
 			fi
 			
-			# Remove guest interface from any other VPN clients (i.e. config has changed from client 2 to client 1)
 			COUNTER=1
 			until [ $COUNTER -gt 5 ]; do
 				if [ $COUNTER -eq "$3" ]; then
@@ -1599,7 +1569,10 @@ Routing_NVRAM(){
 					else
 						nvram set vpn_client"$COUNTER"_clientlist="$(eval echo '$'"VPN_IP_LIST_NEW_$COUNTER")"
 					fi
-					nvram set vpn_client"$COUNTER"_rgw=3
+					
+					if [ "$(nvram get vpn_client"$COUNTER"_rgw)" -lt 2 ]; then
+						nvram set vpn_client"$COUNTER"_rgw=2
+					fi
 					
 					nvram commit
 					service restart_vpnclient$COUNTER >/dev/null 2>&1
@@ -1618,7 +1591,6 @@ DHCP_Conf(){
 					BEGIN="### Start of script-generated configuration for interface $IFACE ###"
 					END="### End of script-generated configuration for interface $IFACE ###"
 					if grep -q "### Start of script-generated configuration for interface $IFACE ###" /jffs/configs/dnsmasq.conf.add; then
-						# shellcheck disable=SC1003
 						sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\' /jffs/configs/dnsmasq.conf.add
 					fi
 				done
@@ -1656,7 +1628,6 @@ DHCP_Conf(){
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" "$TMPCONF"; then
-				# shellcheck disable=SC1003
 				sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\'"$BEGIN"'||||'"$CONFSTRING"'||||'"$END" "$TMPCONF"
 			else
 				printf "\\n%s\\n%s\\n%s\\n" "$BEGIN" "$CONFSTRING" "$END" >> "$TMPCONF"
@@ -1666,7 +1637,6 @@ DHCP_Conf(){
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" "$TMPCONF"; then
-				# shellcheck disable=SC1003
 				sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\' "$TMPCONF"
 			fi
 		;;
@@ -1676,7 +1646,6 @@ DHCP_Conf(){
 				BEGIN="### Start of script-generated configuration for interface $IFACE ###"
 				END="### End of script-generated configuration for interface $IFACE ###"
 				if grep -q "### Start of script-generated configuration for interface $IFACE ###" "$TMPCONF"; then
-					# shellcheck disable=SC1003
 					sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\' "$TMPCONF"
 				fi
 			done
@@ -1753,13 +1722,10 @@ Config_Networks(){
 			else
 				Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - sending all interface internet traffic over WAN interface"
 				
-				# Remove guest interface from VPN client routing table
 				Routing_RPDB delete "$IFACE" 2>/dev/null
 				
-				# Remove guest interface VPN NAT rules and interface access
 				Routing_FWNAT delete "$IFACE" 2>/dev/null
 				
-				# Remove guest interface from all policy routing
 				Routing_NVRAM delete "$IFACE" 2>/dev/null
 			fi
 			
@@ -1793,7 +1759,7 @@ Config_Networks(){
 				WIRELESSRESTART="true"
 			fi
 			
-			#Routing_RPDB_LAN create "$IFACE" 2>/dev/null
+			Routing_RPDB_LAN create "$IFACE" 2>/dev/null
 			
 			DHCP_Conf create "$IFACE" 2>/dev/null
 			
@@ -1812,20 +1778,17 @@ Config_Networks(){
 				WIRELESSRESTART="true"
 			fi
 			
-			#Remove guest interface
 			Iface_Manage delete "$IFACE" 2>/dev/null
 			
-			# Remove dnsmasq entries for this interface
 			DHCP_Conf delete "$IFACE" 2>/dev/null
 			
-			# Remove guest interface from all policy routing
 			Routing_NVRAM delete "$IFACE" 2>/dev/null
 			
-			# Remove guest interface from VPN client routing table
 			Routing_RPDB delete "$IFACE" 2>/dev/null
 			
-			# Remove guest interface VPN NAT rules and interface access
 			Routing_FWNAT delete "$IFACE" 2>/dev/null
+			
+			Routing_RPDB_LAN delete "$IFACE" 2>/dev/null
 		fi
 	done
 	
@@ -2369,7 +2332,7 @@ Menu_GuestConfig(){
 Menu_Status(){
 	### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
 	STATUSOUTPUTFILE="$SCRIPT_DIR/.connectedclients"
-	[ -n "$1" ] && rm -f "$STATUSOUTPUTFILE"
+	rm -f "$STATUSOUTPUTFILE"
 	. "$SCRIPT_CONF"
 	
 	if [ ! -f /opt/bin/dig ] && [ -f /opt/bin/opkg ]; then
@@ -2379,7 +2342,7 @@ Menu_Status(){
 	
 	[ -z "$1" ] && ScriptHeader
 	[ -z "$1" ] && printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
-	[ -n "$1" ] && printf "INTERFACE,HOSTNAME,IP,MAC\\n" >> "$STATUSOUTPUTFILE"
+	printf "INTERFACE,HOSTNAME,IP,MAC\\n" >> "$STATUSOUTPUTFILE"
 	
 	ARPDUMP="$(arp -an)"
 	
@@ -2426,11 +2389,10 @@ Menu_Status(){
 					GUEST_MACADDR="$(echo "$GUEST_MACADDR" | tr -d '\n')"
 					
 					[ -z "$1" ] && printf "%-30s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
-					[ -n "$1" ] && printf "%s,%s,%s,%s\\n" "$IFACE" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" >> "$STATUSOUTPUTFILE"
+					printf "%s,%s,%s,%s\\n" "$IFACE" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" >> "$STATUSOUTPUTFILE"
 				done
 				unset IFS
 			else
-				[ -n "$1" ] && printf "%s,N/A,N/A,N/A\\n" "$IFACE" >> "$STATUSOUTPUTFILE"
 				[ -z "$1" ] && printf "\\e[1m$WARN%sNo clients connected\\e[0m\\n\\n" ""
 			fi
 		fi
@@ -2479,7 +2441,12 @@ Menu_Diagnostics(){
 	
 	ip rule show > "$DIAGPATH/iprule.txt"
 	ip route show > "$DIAGPATH/iproute.txt"
-	ip route show table all | grep "table" | sed 's/.*\(table.*\)/\1/g' | awk '{print $2}' | sort | uniq | grep ovpn > "$DIAGPATH/routetables.txt"
+	ip route show table all | grep "table" | sed 's/.*\(table.*\)/\1/g' | awk '{print $2}' | sort | uniq | grep ovpn > "$DIAGPATH/routetablelist.txt"
+	
+	while IFS='' read -r line || [ -n "$line" ]; do
+		ip route show table "$line" > "$DIAGPATH/iproute_$line.txt"
+	done < "$DIAGPATH/routetablelist.txt"
+	
 	ifconfig -a > "$DIAGPATH/ifconfig.txt"
 	
 	cp "$SCRIPT_CONF" "$DIAGPATH/$SCRIPT_NAME.conf"

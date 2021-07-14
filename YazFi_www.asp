@@ -93,6 +93,7 @@ label.settingvalue {
 }
 </style>
 <script language="JavaScript" type="text/javascript" src="/ext/shared-jy/jquery.js"></script>
+<script language="JavaScript" type="text/javascript" src="/ext/shared-jy/d3.js"></script>
 <script language="JavaScript" type="text/javascript" src="/state.js"></script>
 <script language="JavaScript" type="text/javascript" src="/general.js"></script>
 <script language="JavaScript" type="text/javascript" src="/popup.js"></script>
@@ -241,6 +242,7 @@ function jy_checkIPConflict(CompareItem, sourceIP, sourceMask, compareIP, compar
 }
 
 var $j = jQuery.noConflict();
+
 var bands = 0;
 
 function YazHint(hintid){
@@ -342,7 +344,9 @@ function Validate_IP(forminput,iptype){
 			var fixedip = inputvalue.substring(0,inputvalue.lastIndexOf("."))+".0";
 			$j(forminput).val(fixedip);
 			if (/(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)/.test(fixedip)){
+
 				if(! jy_checkIPConflict("LAN",fixedip,"255.255.255.0",document.form.lan_ipaddr.value,document.form.lan_netmask.value).state){
+
 					matchfound=false;
 					for(var i = 0; i < bands; i++){
 						for(var i2 = 1; i2 < 4; i2++){
@@ -499,14 +503,32 @@ function get_conf_file(){
 			}
 			if(typeof wl_info == 'undefined' || wl_info == null){
 				bands = 2;
-				$j("#table_buttons").before(BuildConfigTable("wl0","2.4GHz Guest Networks"));
-				$j("#table_buttons").before(BuildConfigTable("wl1","5GHz-1 Guest Networks"));
+				$j("#table_config").append(BuildConfigTable("wl0","2.4GHz Guest Networks"));
+				$j("#table_config").append('<tr><td style="padding:0px;height:10px;"></td></tr>');
+				$j("#table_config").append(BuildConfigTable("wl1","5GHz-1 Guest Networks"));
 			}
 			else{
-				if(wl_info.band2g_support){$j("#table_buttons").before(BuildConfigTable("wl0","2.4GHz Guest Networks"));bands = bands + 1;}
-				if(wl_info.band5g_support){$j("#table_buttons").before(BuildConfigTable("wl1","5GHz-1 Guest Networks"));bands = bands + 1;}
-				if(wl_info.band5g_2_support){$j("#table_buttons").before(BuildConfigTable("wl2","5GHz-2 Guest Networks"));bands = bands + 1;}
+				if(wl_info.band2g_support){
+					$j("#table_config").append(BuildConfigTable("wl0","2.4GHz Guest Networks"));
+					bands = bands + 1;
+				}
+				if(wl_info.band5g_support){
+					$j("#table_config").append('<tr><td style="padding:0px;height:10px;"></td></tr>');
+					$j("#table_config").append(BuildConfigTable("wl1","5GHz-1 Guest Networks"));
+					bands = bands + 1;
+				}
+				if(wl_info.band5g_2_support){
+					$j("#table_config").append('<tr><td style="padding:0px;height:10px;"></td></tr>');
+					$j("#table_config").append(BuildConfigTable("wl2","5GHz-2 Guest Networks"));
+					bands = bands + 1;
+				}
 			}
+			
+			$j("#table_config").append('<tr class="apply_gen" valign="top"><td style="background-color:rgb(77, 89, 93);border-top:0px;border-bottom:0px;height:5px;"></td></tr>');
+			var buttonshtml = '<tr class="apply_gen" valign="top" height="35px"><td style="background-color:rgb(77, 89, 93);border-top:0px;">';
+			buttonshtml += '<input name="button" type="button" class="button_gen" onclick="SaveConfig();" value="Apply"/></td></tr>';
+			$j("#table_config").append(buttonshtml);
+
 			var settingcount = bands*12*3;
 			for(var i = 0; i < settingcount; i++){
 				var settingname = window["yazfi_settings"][i][0].toLowerCase();
@@ -653,6 +675,16 @@ function SaveConfig(){
 	}
 }
 
+var wl01_clients = [];
+var wl02_clients = [];
+var wl03_clients = [];
+var wl11_clients = [];
+var wl12_clients = [];
+var wl13_clients = [];
+var wl21_clients = [];
+var wl22_clients = [];
+var wl23_clients = [];
+
 function initial(){
 	SetCurrentPage();
 	LoadCustomSettings();
@@ -673,6 +705,50 @@ function BuildConfigTable(prefix,title){
 	charthtml+='<td colspan="2" align="center" style="padding: 0px;">';
 	
 	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable SettingsTable">';
+
+	d3.csv("/ext/YazFi/connectedclients.htm").then(function(data){
+		if(data.length > 0){
+			console.log(data);
+			
+			var unique = [];
+			var YazFiInterfaces = [];
+			for( let i = 0; i < data.length; i++ ){
+				if( !unique[data[i].INTERFACE]){
+					YazFiInterfaces.push(data[i].INTERFACE.replace(".",""));
+					unique[data[i].INTERFACE] = 1;
+				}
+			}
+			console.log(YazFiInterfaces)
+			
+			for(var i = 0; i < YazFiInterfaces.length; i++){
+				var interfacedata = data.filter(function(item){
+					return item.INTERFACE.replace(".","") == YazFiInterfaces[i];
+				}).map(function(obj) {
+					return {
+						HOSTNAME: obj.HOSTNAME,
+						IP: obj.IP,
+						MAC: obj.MAC
+					}
+				});
+				window[YazFiInterfaces[i]+"_clients"] = interfacedata;
+				console.log(window[YazFiInterfaces[i]+"_clients"])
+			}
+		}
+	}).catch(function(){console.log("Error");});
+}
+
+function BuildConfigTable(prefix,title){
+	var charthtml = '<tr><td style="padding:0px;">';
+	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_config_'+prefix+'">';
+	charthtml+='<thead class="collapsible-jquery" id="'+prefix+'">';
+	charthtml+='<tr>';
+	charthtml+='<td>'+title+' (click to expand/collapse)</td>';
+	charthtml+='</tr>';
+	charthtml+='</thead>';
+	charthtml+='<tr>';
+	charthtml+='<td colspan="2" align="center" style="padding:0px;">';
+	charthtml+='<table width="100%" border="0" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable SettingsTable" style="border:0px;">';
+
 	charthtml+='<col style="width:130px;">';
 	charthtml+='<col style="width:205px;">';
 	charthtml+='<col style="width:205px;">';
@@ -809,7 +885,9 @@ function BuildConfigTable(prefix,title){
 	charthtml+='</td>';
 	charthtml+='</tr>';
 	charthtml+='</table>';
-	charthtml+='<div style="line-height:10px;">&nbsp;</div>';
+
+	charthtml+='</td></tr>';
+
 	return charthtml;
 }
 
@@ -850,7 +928,6 @@ $j.fn.serializeObject = function(){
 	});
 	return o;
 };
-
 </script>
 </head>
 <body onload="initial();" onunload="return unload_body();">
@@ -908,7 +985,7 @@ $j.fn.serializeObject = function(){
 <div style="margin:10px 0 10px 5px;" class="splitLine"></div>
 <div class="formfontdesc">Feature expansion of guest WiFi networks on AsusWRT-Merlin, including SSID -> VPN, separate subnets per guest network, pinhole access to LAN resources (e.g. DNS) and more!</div>
 <table width="100%" border="1" align="center" cellpadding="2" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_utilities">
-<thead class="collapsible-jquery" id="scripttools">
+<thead class="collapsible-jquery" id="thead_utilities">
 <tr><td colspan="2">Utilities (click to expand/collapse)</td></tr>
 </thead>
 <tr>
@@ -925,13 +1002,13 @@ $j.fn.serializeObject = function(){
 </td>
 </tr>
 </table>
-<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:0px;" id="table_buttons">
-<tr class="apply_gen" valign="top" height="35px">
-<td style="background-color:rgb(77, 89, 93);border:0px;">
-<input name="button" type="button" class="button_gen" onclick="SaveConfig();" value="Apply"/>
-</td>
-</tr>
+<div style="line-height:10px;">&nbsp;</div>
+<table width="100%" border="1" align="center" cellpadding="2" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:1px;" id="table_config">
+<thead class="collapsible-jquery" id="thead_config">
+<tr><td colspan="2">Guest Network Configuration (click to expand/collapse)</td></tr>
+</thead>
 </table>
+
 </td>
 </tr>
 </table>
