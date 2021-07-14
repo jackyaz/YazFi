@@ -691,21 +691,7 @@ function initial(){
 	show_menu();
 	get_conf_file();
 	ScriptUpdateLayout();
-}
-
-function BuildConfigTable(prefix,title){
-	var charthtml = '<div style="line-height:10px;">&nbsp;</div>';
-	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_config_'+prefix+'">';
-	charthtml+='<thead class="collapsible-jquery" id="'+prefix+'">';
-	charthtml+='<tr>';
-	charthtml+='<td colspan="2">'+title+' Configuration (click to expand/collapse)</td>';
-	charthtml+='</tr>';
-	charthtml+='</thead>';
-	charthtml+='<tr>';
-	charthtml+='<td colspan="2" align="center" style="padding: 0px;">';
 	
-	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable SettingsTable">';
-
 	d3.csv("/ext/YazFi/connectedclients.htm").then(function(data){
 		if(data.length > 0){
 			console.log(data);
