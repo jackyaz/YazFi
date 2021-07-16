@@ -2687,6 +2687,9 @@ case "$1" in
 		elif [ "$2" = "start" ] && [ "$3" = "${SCRIPT_NAME}doupdate" ]; then
 			Update_Version force unattended
 			exit 0
+		elif [ "$2" = "start" ] && [ "$3" = "${SCRIPT_NAME}connectedclients" ]; then
+			Menu_Status outputtofile
+			exit 0
 		fi
 		exit 0
 	;;
@@ -2714,10 +2717,6 @@ case "$1" in
 	;;
 	status)
 		Menu_Status
-		exit 0
-	;;
-	statusfile)
-		Menu_Status outputtofile
 		exit 0
 	;;
 	userscripts)
