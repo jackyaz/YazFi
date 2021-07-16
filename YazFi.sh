@@ -2630,7 +2630,33 @@ case "$1" in
 			Print_Output true "$SCRIPT_NAME firewall rules not detected during persistence check, re-applying rules" "$WARN"
 			Config_Networks
 			Clear_Lock
+			exit 0
 		fi
+		
+		if ! Conf_Exists; then
+			exit 1
+		fi
+		
+		if ! Conf_Validate; then
+			exit 1
+		fi
+		
+		. $SCRIPT_CONF
+		WIRELESSRESTART="false"
+		for IFACE in $IFACELIST; do
+			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ]; then
+				if [ "$(nvram get "${IFACE}_lanaccess")" != "on" ]; then
+					nvram set "$IFACE"_lanaccess=on
+					WIRELESSRESTART="true"
+				fi
+			fi
+		done
+		
+		if [ "$WIRELESSRESTART" = "true" ]; then
+			nvram commit
+			service restart_wireless >/dev/null 2>&1
+		fi
+		
 		exit 0
 	;;
 	startup)
