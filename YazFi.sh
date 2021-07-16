@@ -1420,29 +1420,6 @@ Firewall_NVRAM(){
 Routing_RPDB(){
 	case $1 in
 		create)
-			ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$3" src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
-			ip route add "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$3" src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
-		;;
-		delete)
-			COUNTER=1
-			until [ $COUNTER -gt 5 ]; do
-				ip route del "$(ip route show table ovpnc"$COUNTER" | grep "$2" | awk '{ print $1 }')" dev "$2" proto kernel table ovpnc"$COUNTER" src "$(ip route show table ovpnc"$COUNTER" | grep "$2" | awk '{ print $9 }')" 2>/dev/null
-				COUNTER=$((COUNTER + 1))
-			done
-		;;
-		deleteall)
-			for IFACE in $IFACELIST; do
-				Routing_RPDB delete "$IFACE" 2>/dev/null
-			done
-		;;
-	esac
-	
-	ip route flush cache
-}
-
-Routing_RPDB_LAN(){
-	case $1 in
-		create)
 			if ! ip route show | grep -q "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR")"; then
 				ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
 				ip route add "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
@@ -1468,6 +1445,8 @@ Routing_RPDB_LAN(){
 			done
 		;;
 	esac
+	
+	ip route flush cache
 }
 
 Routing_FWNAT(){
@@ -1821,13 +1800,9 @@ Config_Networks(){
 					Routing_VPNDirector create "$IFACE" "$VPNCLIENTNO"
 				fi
 				
-				Routing_RPDB create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
-				
 				Routing_FWNAT create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
 			else
 				Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - sending all interface internet traffic over WAN interface"
-				
-				Routing_RPDB delete "$IFACE" 2>/dev/null
 				
 				Routing_FWNAT delete "$IFACE" 2>/dev/null
 				
@@ -1868,7 +1843,7 @@ Config_Networks(){
 				WIRELESSRESTART="true"
 			fi
 			
-			Routing_RPDB_LAN create "$IFACE" 2>/dev/null
+			Routing_RPDB create "$IFACE" 2>/dev/null
 			
 			DHCP_Conf create "$IFACE" 2>/dev/null
 			
@@ -1900,8 +1875,6 @@ Config_Networks(){
 			Routing_RPDB delete "$IFACE" 2>/dev/null
 			
 			Routing_FWNAT delete "$IFACE" 2>/dev/null
-			
-			Routing_RPDB_LAN delete "$IFACE" 2>/dev/null
 		fi
 	done
 	
@@ -2248,7 +2221,7 @@ Menu_Uninstall(){
 		Routing_VPNDirector deleteall
 	fi
 	Routing_FWNAT deleteall 2>/dev/null
-	Routing_RPDB deleteall 2>/dev/null
+	Routing_RPDB delete 2>/dev/null
 	Firewall_Chains deleteall 2>/dev/null
 	Firewall_NVRAM deleteall "$IFACE" 2>/dev/null
 	Iface_Manage deleteall 2>/dev/null
@@ -2680,11 +2653,8 @@ case "$1" in
 			. $SCRIPT_CONF
 			
 			for IFACE in $IFACELIST; do
-				VPNCLIENTNO=$(eval echo '$'"$(Get_Iface_Var "$IFACE")_VPNCLIENTNUMBER")
 				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ]; then
-					if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_REDIRECTALLTOVPN")" = "true" ]; then
-						Routing_RPDB create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
-					fi
+					Routing_RPDB create "$IFACE" 2>/dev/null
 				fi
 			done
 		fi
