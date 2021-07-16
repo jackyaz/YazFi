@@ -2463,7 +2463,7 @@ Menu_Status(){
 	
 	[ -z "$1" ] && ScriptHeader
 	[ -z "$1" ] && printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
-	printf "INTERFACE,HOSTNAME,IP,MAC\\n" >> "$STATUSOUTPUTFILE"
+	printf "INTERFACE,HOSTNAME,IP,MAC,CONNECTED,RX,TX,RSSI,PHY\\n" >> "$STATUSOUTPUTFILE"
 	
 	ARPDUMP="$(arp -an)"
 	
@@ -2527,7 +2527,7 @@ Menu_Status(){
 					fi
 					
 					[ -z "$1" ] && printf "%-30s%-20s%-20s%-15s%-15s%-10s%-5s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED_PRINT" "$GUEST_RX/$GUEST_TX Mbps" "$GUEST_RSSI dBm" "$GUEST_PHY"
-					printf "%s,%s,%s,%s\\n" "$IFACE" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" >> "$STATUSOUTPUTFILE"
+					printf "%s,%s,%s,%s,%s,%s,%s,%s,%s\\n" "$IFACE" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED" "$GUEST_RX" "$GUEST_TX" "$GUEST_RSSI" "$GUEST_PHY" >> "$STATUSOUTPUTFILE"
 				done
 				unset IFS
 			else

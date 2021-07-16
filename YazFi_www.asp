@@ -118,6 +118,29 @@ function LoadCustomSettings(){
 	}
 }
 
+var wl01_clients = [];
+var wl02_clients = [];
+var wl03_clients = [];
+var wl11_clients = [];
+var wl12_clients = [];
+var wl13_clients = [];
+var wl21_clients = [];
+var wl22_clients = [];
+var wl23_clients = [];
+
+function initial(){
+	SetCurrentPage();
+	LoadCustomSettings();
+	show_menu();
+	get_conf_file();
+	ScriptUpdateLayout();
+	
+	document.formScriptActions.action_script.value='start_YazFiconnectedclients';
+	document.formScriptActions.submit();
+	
+	setTimeout(get_connected_clients_file,5000);
+}
+
 function jy_checkIPConflict(CompareItem, sourceIP, sourceMask, compareIP, compareMask){
 	var SetIPConflictAttr = function () {
 		this.state = false;
@@ -558,6 +581,44 @@ function get_conf_file(){
 	});
 }
 
+function get_connected_clients_file(){
+	d3.csv("/ext/YazFi/connectedclients.htm").then(function(data){
+		if(data.length > 0){
+			console.log(data);
+			
+			var unique = [];
+			var YazFiInterfaces = [];
+			for( let i = 0; i < data.length; i++ ){
+				if( !unique[data[i].INTERFACE]){
+					YazFiInterfaces.push(data[i].INTERFACE.replace(".",""));
+					unique[data[i].INTERFACE] = 1;
+				}
+			}
+			console.log(YazFiInterfaces)
+			
+			for(var i = 0; i < YazFiInterfaces.length; i++){
+				var interfacedata = data.filter(function(item){
+					return item.INTERFACE.replace(".","") == YazFiInterfaces[i];
+				}).map(function(obj) {
+					return {
+						HOSTNAME: obj.HOSTNAME,
+						IP: obj.IP,
+						MAC: obj.MAC,
+						CONNECTED: obj.CONNECTED,
+						RX: obj.RX,
+						TXL obj.TX,
+						RSSI: obj.RSSI,
+						PHY: obj.PHY
+					}
+				});
+				window[YazFiInterfaces[i]+"_clients"] = interfacedata;
+				console.log(window[YazFiInterfaces[i]+"_clients"])
+			}
+		}
+		setTimeout(get_connected_clients_file,3000);
+	}).catch(function(){setTimeout(get_connected_clients_file,3000);});
+}
+
 function SetCurrentPage(){
 	document.form.next_page.value = window.location.pathname.substring(1);
 	document.form.current_page.value = window.location.pathname.substring(1);
@@ -673,54 +734,6 @@ function SaveConfig(){
 	else{
 		return false;
 	}
-}
-
-var wl01_clients = [];
-var wl02_clients = [];
-var wl03_clients = [];
-var wl11_clients = [];
-var wl12_clients = [];
-var wl13_clients = [];
-var wl21_clients = [];
-var wl22_clients = [];
-var wl23_clients = [];
-
-function initial(){
-	SetCurrentPage();
-	LoadCustomSettings();
-	show_menu();
-	get_conf_file();
-	ScriptUpdateLayout();
-	
-	d3.csv("/ext/YazFi/connectedclients.htm").then(function(data){
-		if(data.length > 0){
-			console.log(data);
-			
-			var unique = [];
-			var YazFiInterfaces = [];
-			for( let i = 0; i < data.length; i++ ){
-				if( !unique[data[i].INTERFACE]){
-					YazFiInterfaces.push(data[i].INTERFACE.replace(".",""));
-					unique[data[i].INTERFACE] = 1;
-				}
-			}
-			console.log(YazFiInterfaces)
-			
-			for(var i = 0; i < YazFiInterfaces.length; i++){
-				var interfacedata = data.filter(function(item){
-					return item.INTERFACE.replace(".","") == YazFiInterfaces[i];
-				}).map(function(obj) {
-					return {
-						HOSTNAME: obj.HOSTNAME,
-						IP: obj.IP,
-						MAC: obj.MAC
-					}
-				});
-				window[YazFiInterfaces[i]+"_clients"] = interfacedata;
-				console.log(window[YazFiInterfaces[i]+"_clients"])
-			}
-		}
-	}).catch(function(){console.log("Error");});
 }
 
 function BuildConfigTable(prefix,title){
@@ -989,12 +1002,17 @@ $j.fn.serializeObject = function(){
 </tr>
 </table>
 <div style="line-height:10px;">&nbsp;</div>
+<table width="100%" border="1" align="center" cellpadding="2" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:1px;" id="table_connectedclients">
+<thead class="collapsible-jquery" id="thead_connectedclients">
+<tr><td colspan="2">Connected Guests (click to expand/collapse)</td></tr>
+</thead>
+</table>
+<div style="line-height:10px;">&nbsp;</div>
 <table width="100%" border="1" align="center" cellpadding="2" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:1px;" id="table_config">
 <thead class="collapsible-jquery" id="thead_config">
 <tr><td colspan="2">Guest Network Configuration (click to expand/collapse)</td></tr>
 </thead>
 </table>
-
 </td>
 </tr>
 </table>
