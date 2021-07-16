@@ -123,6 +123,16 @@ Get_Iface_Var(){
 
 Get_Guest_Name(){
 	if echo "$1" | grep -q "wl0"; then
+		echo "YazFi 2.4GHz $(echo "$1" | cut -f2 -d".")"
+	elif echo "$1" | grep -q "wl1"; then
+		echo "YazFi 5GHz $(echo "$1" | cut -f2 -d".")"
+	else
+		echo "YazFi 5GHz2 $(echo "$1" | cut -f2 -d".")"
+	fi
+}
+
+Get_Guest_Name_Old(){
+	if echo "$1" | grep -q "wl0"; then
 		echo "2.4GHz Guest $(echo "$1" | cut -f2 -d".")"
 	elif echo "$1" | grep -q "wl1"; then
 		echo "5GHz1 Guest $(echo "$1" | cut -f2 -d".")"
@@ -1363,6 +1373,7 @@ Firewall_Rules(){
 		fi
 		
 		modprobe xt_comment
+		iptables -t nat -D POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -o "$IFACE" -m comment --comment "$(Get_Guest_Name_Old "$IFACE")" -j MASQUERADE
 		iptables -t nat "$ACTION" POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -o "$IFACE" -m comment --comment "$(Get_Guest_Name "$IFACE")" -j MASQUERADE
 		
 		ENABLED_NTPD=0
@@ -1472,6 +1483,7 @@ Routing_FWNAT(){
 		create)
 			for ACTION in -D -I; do
 				modprobe xt_comment
+				iptables -t nat -D POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 -o tun1"$3" -m comment --comment "$(Get_Guest_Name_Old "$2") VPN" -j MASQUERADE
 				iptables -t nat "$ACTION" POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 -o tun1"$3" -m comment --comment "$(Get_Guest_Name "$2") VPN" -j MASQUERADE
 				iptables "$ACTION" "$FWRD" -i "$2" -o "$IFACE_WAN" -j "$LGRJT"
 				iptables "$ACTION" "$FWRD" -i "$IFACE_WAN" -o "$2" -j "$LGRJT"
@@ -1480,6 +1492,11 @@ Routing_FWNAT(){
 			done
 		;;
 		delete)
+			RULES=$(iptables -t nat -nvL POSTROUTING --line-number | grep "$(Get_Guest_Name_Old "$2") VPN" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			for RULENO in $RULES; do
+				iptables -t nat -D POSTROUTING "$RULENO"
+			done
+			
 			RULES=$(iptables -t nat -nvL POSTROUTING --line-number | grep "$(Get_Guest_Name "$2") VPN" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES; do
 				iptables -t nat -D POSTROUTING "$RULENO"
@@ -1497,6 +1514,70 @@ Routing_FWNAT(){
 			for IFACE in $IFACELIST; do
 				Routing_FWNAT delete "$IFACE" 2>/dev/null
 			done
+		;;
+	esac
+}
+
+Routing_VPNDirector(){
+	case $1 in
+		initialise)
+			VPN_IP_LIST_ORIG=$(cat /jffs/openvpn/vpndirector_rulelist)
+			VPN_IP_LIST_NEW="$VPN_IP_LIST_ORIG"
+		;;
+		create)
+			VPN_IFACE_NVRAM=""
+			VPN_IFACE_NVRAM="<1>$(Get_Guest_Name "$2")>$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").0/24>>OVPN$3"
+			
+			if ! echo "$VPN_IP_LIST_ORIG" | grep -q "$VPN_IFACE_NVRAM"; then
+				VPN_IP_LIST_NEW="${VPN_IP_LIST_NEW}${VPN_IFACE_NVRAM}"
+			fi
+			
+			COUNTER=1
+			until [ $COUNTER -gt 5 ]; do
+				if [ $COUNTER -eq "$3" ]; then
+					COUNTER=$((COUNTER + 1))
+					continue
+				fi
+				VPN_IFACE_NVRAM_SAFE="$(echo "<0>$(Get_Guest_Name "$2")>$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").0/24>>OVPN$COUNTER" | sed -e 's/\//\\\//g;s/\./\\./g;s/ /\\ /g')"
+				VPN_IP_LIST_NEW=$(echo "$VPN_IP_LIST_NEW" | sed -e "s/$VPN_IFACE_NVRAM_SAFE//g")
+				VPN_IFACE_NVRAM_SAFE="$(echo "<1>$(Get_Guest_Name "$2")>$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").0/24>>OVPN$COUNTER" | sed -e 's/\//\\\//g;s/\./\\./g;s/ /\\ /g')"
+				VPN_IP_LIST_NEW=$(echo "$VPN_IP_LIST_NEW" | sed -e "s/$VPN_IFACE_NVRAM_SAFE//g")
+				COUNTER=$((COUNTER + 1))
+			done
+		;;
+		delete)
+			COUNTER=1
+			until [ $COUNTER -gt 5 ]; do
+				VPN_IP_LIST_NEW=$(echo "$VPN_IP_LIST_NEW" | sed -e "s/$(echo '<0>'"$(Get_Guest_Name "$2")" | sed -e 's/\//\\\//g;s/ /\\ /g').*>OVPN$COUNTER//g")
+				VPN_IP_LIST_NEW=$(echo "$VPN_IP_LIST_NEW" | sed -e "s/$(echo '<1>'"$(Get_Guest_Name "$2")" | sed -e 's/\//\\\//g;s/ /\\ /g').*>OVPN$COUNTER//g")
+				COUNTER=$((COUNTER + 1))
+			done
+		;;
+		deleteall)
+			Routing_VPNDirector initialise
+			
+			for IFACE in $IFACELIST; do
+				Routing_VPNDirector delete "$IFACE"
+			done
+			
+			Routing_VPNDirector save
+		;;
+		save)
+			if [ "$VPN_IP_LIST_ORIG" != "$VPN_IP_LIST_NEW" ]; then
+				printf "%s" "$VPN_IP_LIST_NEW" > /jffs/openvpn/vpndirector_rulelist
+				
+				COUNTER=1
+				until [ $COUNTER -gt 5 ]; do
+					if ifconfig "tun1$COUNTER" >/dev/null 2>&1; then
+						if [ "$(nvram get vpn_client"$COUNTER"_rgw)" -lt 2 ]; then
+							nvram set vpn_client"$COUNTER"_rgw=2
+							nvram commit
+						fi
+						service restart_vpnclient$COUNTER >/dev/null 2>&1
+					fi
+					COUNTER=$((COUNTER + 1))
+				done
+			fi
 		;;
 	esac
 }
@@ -1534,12 +1615,29 @@ Routing_NVRAM(){
 				eval "VPN_IP_LIST_NEW_$COUNTER=$(eval echo '$'"VPN_IP_LIST_NEW_$COUNTER" | sed -e "s/$VPN_IFACE_NVRAM_SAFE//g" | Escape_Sed)"
 				COUNTER=$((COUNTER + 1))
 			done
+			
+			VPN_NVRAM="$(Get_Guest_Name_Old "$2")"
+			VPN_IFACE_NVRAM=""
+			if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 384.18)" ]; then
+				VPN_IFACE_NVRAM="<$VPN_NVRAM>$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").0/24>0.0.0.0>VPN"
+			else
+				VPN_IFACE_NVRAM="<$VPN_NVRAM>$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").0/24>>VPN"
+			fi
+			VPN_IFACE_NVRAM_SAFE="$(echo "$VPN_IFACE_NVRAM" | sed -e 's/\//\\\//g;s/\./\\./g;s/ /\\ /g')"
+			
+			COUNTER=1
+			until [ $COUNTER -gt 5 ]; do
+				eval "VPN_IP_LIST_NEW_$COUNTER=$(eval echo '$'"VPN_IP_LIST_NEW_$COUNTER" | sed -e "s/$VPN_IFACE_NVRAM_SAFE//g" | Escape_Sed)"
+				COUNTER=$((COUNTER + 1))
+			done
 		;;
 		delete)
 			COUNTER=1
 			until [ $COUNTER -gt 5 ]; do
+				VPN_NVRAM="$(Get_Guest_Name_Old "$2")"
+				eval "VPN_IP_LIST_NEW_$COUNTER=$(echo "$(eval echo '$'"VPN_IP_LIST_NEW_$COUNTER")" | sed -e "s/$(echo '<'$VPN_NVRAM | sed -e 's/\//\\\//g' | sed -e 's/ /\\ /g').*>VPN//g" | Escape_Sed)"
 				VPN_NVRAM="$(Get_Guest_Name "$2")"
-				eval "VPN_IP_LIST_NEW_$COUNTER=$(echo "$(eval echo '$'"VPN_IP_LIST_NEW_$COUNTER")" | sed -e "s/$(echo '<'$VPN_NVRAM |  sed -e 's/\//\\\//g' | sed -e 's/ /\\ /g').*>VPN//g" | Escape_Sed)"
+				eval "VPN_IP_LIST_NEW_$COUNTER=$(echo "$(eval echo '$'"VPN_IP_LIST_NEW_$COUNTER")" | sed -e "s/$(echo '<'$VPN_NVRAM | sed -e 's/\//\\\//g' | sed -e 's/ /\\ /g').*>VPN//g" | Escape_Sed)"
 				COUNTER=$((COUNTER + 1))
 			done
 		;;
@@ -1573,7 +1671,6 @@ Routing_NVRAM(){
 					if [ "$(nvram get vpn_client"$COUNTER"_rgw)" -lt 2 ]; then
 						nvram set vpn_client"$COUNTER"_rgw=2
 					fi
-					
 					nvram commit
 					service restart_vpnclient$COUNTER >/dev/null 2>&1
 				fi
@@ -1699,7 +1796,11 @@ Config_Networks(){
 	
 	DHCP_Conf initialise 2>/dev/null
 	
-	Routing_NVRAM initialise 2>/dev/null
+	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
+		Routing_NVRAM initialise 2>/dev/null
+	else
+		Routing_VPNDirector initialise
+	fi
 	
 	Firewall_Chains create 2>/dev/null
 	
@@ -1714,7 +1815,11 @@ Config_Networks(){
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_REDIRECTALLTOVPN")" = "true" ]; then
 				Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
 				
-				Routing_NVRAM create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
+				if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
+					Routing_NVRAM create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
+				else
+					Routing_VPNDirector create "$IFACE" "$VPNCLIENTNO"
+				fi
 				
 				Routing_RPDB create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
 				
@@ -1726,7 +1831,11 @@ Config_Networks(){
 				
 				Routing_FWNAT delete "$IFACE" 2>/dev/null
 				
-				Routing_NVRAM delete "$IFACE" 2>/dev/null
+				if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
+					Routing_NVRAM delete "$IFACE" 2>/dev/null
+				else
+					Routing_VPNDirector delete "$IFACE"
+				fi
 			fi
 			
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_CLIENTISOLATION")" = "true" ]; then
@@ -1782,7 +1891,11 @@ Config_Networks(){
 			
 			DHCP_Conf delete "$IFACE" 2>/dev/null
 			
-			Routing_NVRAM delete "$IFACE" 2>/dev/null
+			if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
+				Routing_NVRAM delete "$IFACE" 2>/dev/null
+			else
+				Routing_VPNDirector delete "$IFACE"
+			fi
 			
 			Routing_RPDB delete "$IFACE" 2>/dev/null
 			
@@ -1792,7 +1905,11 @@ Config_Networks(){
 		fi
 	done
 	
-	Routing_NVRAM save 2>/dev/null
+	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
+		Routing_NVRAM save 2>/dev/null
+	else
+		Routing_VPNDirector save
+	fi
 	
 	DHCP_Conf save 2>/dev/null
 		
@@ -2125,7 +2242,11 @@ Menu_Uninstall(){
 	Auto_ServiceStart delete 2>/dev/null
 	Auto_OpenVPNEvent delete 2>/dev/null
 	Avahi_Conf delete 2>/dev/null
-	Routing_NVRAM deleteall 2>/dev/null
+	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
+		Routing_NVRAM deleteall 2>/dev/null
+	else
+		Routing_VPNDirector deleteall
+	fi
 	Routing_FWNAT deleteall 2>/dev/null
 	Routing_RPDB deleteall 2>/dev/null
 	Firewall_Chains deleteall 2>/dev/null
