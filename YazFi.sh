@@ -2475,7 +2475,7 @@ Menu_Status(){
 			
 			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
 			if [ "$IFACE_MACS" != "" ]; then
-				[ -z "$1" ] && printf "\\e[1m%-30s%-20s%-20s\\e[0m\\n" "HOSTNAME" "IP" "MAC"
+				[ -z "$1" ] && printf "\\e[1m%-30s%-20s%-20s%-15s%-15s%-10s%-5s\\e[0m\\n" "HOSTNAME" "IP" "MAC" "CONNECTED" "RX/TX" "RSSI" "PHY"
 				IFS=$'\n'
 				for GUEST_MAC in $IFACE_MACS; do
 					GUEST_MACADDR="$(echo "$GUEST_MAC" | awk '{print $2}')"
@@ -2505,11 +2505,28 @@ Menu_Status(){
 						GUEST_HOST="Unknown"
 					fi
 					
-					GUEST_HOST="$(echo "$GUEST_HOST" | tr -d '\n')"
-					GUEST_IPADDR="$(echo "$GUEST_IPADDR" | tr -d '\n')"
-					GUEST_MACADDR="$(echo "$GUEST_MACADDR" | tr -d '\n')"
+					GUEST_HOST=$(echo "$GUEST_HOST" | tr -d '\n')
+					GUEST_IPADDR=$(echo "$GUEST_IPADDR" | tr -d '\n')
+					GUEST_MACADDR=$(echo "$GUEST_MACADDR" | tr -d '\n')
+					GUEST_RSSI=$(wl -i "$IFACE" rssi "$GUEST_MACADDR" | tr -d '\n')
 					
-					[ -z "$1" ] && printf "%-30s%-20s%-20s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR"
+					GUEST_STAINFO=$(wl -i "$IFACE" sta_info "$GUEST_MACADDR")
+					GUEST_TIMECONNECTED=$(echo "$GUEST_STAINFO" | grep "in network" | awk '{print $3}' | tr -d '\n')
+					GUEST_TIMECONNECTED_PRINT=$(printf '%dh:%dm:%ds\n' $((GUEST_TIMECONNECTED/3600)) $((GUEST_TIMECONNECTED%3600/60)) $((GUEST_TIMECONNECTED%60)))
+					
+					GUEST_TX=$(echo "$GUEST_STAINFO" | grep "rate of last tx pkt" | awk '{print $6}' | tr -d '\n' | awk '{printf("%.0f", $1/1000);}')
+					GUEST_RX=$(echo "$GUEST_STAINFO" | grep "rate of last rx pkt" | awk '{print $6}' | tr -d '\n' | awk '{printf("%.0f", $1/1000);}')
+					
+					GUEST_PHY=""
+					if echo "$GUEST_STAINFO" | grep -q "HT caps"; then
+						GUEST_PHY="n"
+					elif echo "$GUEST_STAINFO" | grep -q "VHT caps"; then
+						GUEST_PHY="ac"
+					else
+						GUEST_PHY="Unknown"
+					fi
+					
+					[ -z "$1" ] && printf "%-30s%-20s%-20s%-15s%-15s%-10s%-5s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED_PRINT" "$GUEST_RX/$GUEST_TX Mbps" "$GUEST_RSSI dBm" "$GUEST_PHY"
 					printf "%s,%s,%s,%s\\n" "$IFACE" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" >> "$STATUSOUTPUTFILE"
 				done
 				unset IFS
