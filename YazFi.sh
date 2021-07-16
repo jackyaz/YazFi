@@ -1282,6 +1282,60 @@ Firewall_Rules(){
 			iptables -D "$INPT" -i "$IFACE" -p udp -m multiport --dports 137,138 -j ACCEPT
 		fi
 		
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")" = "true" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")" = "true" ]; then
+			iptables "$ACTION" "$INPT" -i "$IFACE" -d 224.0.0.0/4 -j ACCEPT
+		fi
+		
+		modprobe xt_comment
+		iptables -t nat -D POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -o "$IFACE" -m comment --comment "$(Get_Guest_Name_Old "$IFACE")" -j MASQUERADE
+		iptables -t nat "$ACTION" POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -o "$IFACE" -m comment --comment "$(Get_Guest_Name "$IFACE")" -j MASQUERADE
+		
+		ENABLED_NTPD=0
+		if [ -f /jffs/scripts/nat-start ]; then
+			if [ "$(grep -c '# ntpMerlin' /jffs/scripts/nat-start)" -gt 0 ]; then ENABLED_NTPD=1; fi
+		fi
+		
+		if [ "$ENABLED_NTPD" -eq 1 ]; then
+			iptables -t nat "$ACTION" PREROUTING -i "$IFACE" -p udp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
+			iptables -t nat "$ACTION" PREROUTING -i "$IFACE" -p tcp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
+			
+			iptables "$ACTION" "$FWRD" -i "$IFACE" -p tcp --dport 123 -j REJECT
+			iptables "$ACTION" "$FWRD" -i "$IFACE" -p udp --dport 123 -j REJECT
+			ip6tables "$ACTION" FORWARD -i "$IFACE" -p tcp --dport 123 -j REJECT
+			ip6tables "$ACTION" FORWARD -i "$IFACE" -p udp --dport 123 -j REJECT
+			##
+		else
+			iptables -t nat -D PREROUTING -i "$IFACE" -p udp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
+			iptables -t nat -D PREROUTING -i "$IFACE" -p tcp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
+			iptables -D "$FWRD" -i "$IFACE" -p tcp --dport 123 -j REJECT
+			iptables -D "$FWRD" -i "$IFACE" -p udp --dport 123 -j REJECT
+			ip6tables -D FORWARD -i "$IFACE" -p tcp --dport 123 -j REJECT
+			ip6tables -D FORWARD -i "$IFACE" -p udp --dport 123 -j REJECT
+		fi
+	done
+}
+
+Firewall_DNS(){
+	ACTIONS=""
+	IFACE="$2"
+	IFACE_WAN=""
+	
+	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
+		IFACE_WAN="ppp0"
+	else
+		IFACE_WAN="$(nvram get wan0_ifname)"
+	fi
+	
+	case $1 in
+		create)
+			ACTIONS="-D -I"
+		;;
+		delete)
+			ACTIONS="-D"
+		;;
+	esac
+	
+	for ACTION in $ACTIONS; do
 		if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")" || IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS2")"; then
 			RULES=$(iptables -nvL "$INPT" --line-number | grep "$IFACE" | grep "pt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
 			for RULENO in $RULES; do
@@ -1367,37 +1421,6 @@ Firewall_Rules(){
 			done
 		fi
 		###
-		
-		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")" = "true" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")" = "true" ]; then
-			iptables "$ACTION" "$INPT" -i "$IFACE" -d 224.0.0.0/4 -j ACCEPT
-		fi
-		
-		modprobe xt_comment
-		iptables -t nat -D POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -o "$IFACE" -m comment --comment "$(Get_Guest_Name_Old "$IFACE")" -j MASQUERADE
-		iptables -t nat "$ACTION" POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -o "$IFACE" -m comment --comment "$(Get_Guest_Name "$IFACE")" -j MASQUERADE
-		
-		ENABLED_NTPD=0
-		if [ -f /jffs/scripts/nat-start ]; then
-			if [ "$(grep -c '# ntpMerlin' /jffs/scripts/nat-start)" -gt 0 ]; then ENABLED_NTPD=1; fi
-		fi
-		
-		if [ "$ENABLED_NTPD" -eq 1 ]; then
-			iptables -t nat "$ACTION" PREROUTING -i "$IFACE" -p udp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
-			iptables -t nat "$ACTION" PREROUTING -i "$IFACE" -p tcp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
-			
-			iptables "$ACTION" "$FWRD" -i "$IFACE" -p tcp --dport 123 -j REJECT
-			iptables "$ACTION" "$FWRD" -i "$IFACE" -p udp --dport 123 -j REJECT
-			ip6tables "$ACTION" FORWARD -i "$IFACE" -p tcp --dport 123 -j REJECT
-			ip6tables "$ACTION" FORWARD -i "$IFACE" -p udp --dport 123 -j REJECT
-			##
-		else
-			iptables -t nat -D PREROUTING -i "$IFACE" -p udp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
-			iptables -t nat -D PREROUTING -i "$IFACE" -p tcp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
-			iptables -D "$FWRD" -i "$IFACE" -p tcp --dport 123 -j REJECT
-			iptables -D "$FWRD" -i "$IFACE" -p udp --dport 123 -j REJECT
-			ip6tables -D FORWARD -i "$IFACE" -p tcp --dport 123 -j REJECT
-			ip6tables -D FORWARD -i "$IFACE" -p udp --dport 123 -j REJECT
-		fi
 	done
 }
 
@@ -1417,39 +1440,7 @@ Firewall_NVRAM(){
 	esac
 }
 
-Routing_RPDB(){
-	case $1 in
-		create)
-			if ! ip route show | grep -q "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR")"; then
-				ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
-				ip route add "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
-			fi
-			COUNTER=1
-			until [ $COUNTER -gt 5 ]; do
-				if ifconfig "tun1$COUNTER" >/dev/null 2>&1; then
-					if ! ip route show table ovpnc"$COUNTER" | grep -q "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR")"; then
-						ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
-						ip route add "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
-					fi
-				fi
-				COUNTER=$((COUNTER+1))
-			done
-		;;
-		delete)
-			COUNTER=1
-			until [ $COUNTER -gt 5 ]; do
-				if ifconfig "tun1$COUNTER" >/dev/null 2>&1; then
-					ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
-				fi
-				COUNTER=$((COUNTER+1))
-			done
-		;;
-	esac
-	
-	ip route flush cache
-}
-
-Routing_FWNAT(){
+Firewall_NAT(){
 	IFACE_WAN=""
 	
 	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
@@ -1491,10 +1482,42 @@ Routing_FWNAT(){
 		;;
 		deleteall)
 			for IFACE in $IFACELIST; do
-				Routing_FWNAT delete "$IFACE" 2>/dev/null
+				Firewall_NAT delete "$IFACE" 2>/dev/null
 			done
 		;;
 	esac
+}
+
+Routing_RPDB(){
+	case $1 in
+		create)
+			if ! ip route show | grep -q "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR")"; then
+				ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
+				ip route add "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
+			fi
+			COUNTER=1
+			until [ $COUNTER -gt 5 ]; do
+				if ifconfig "tun1$COUNTER" >/dev/null 2>&1; then
+					if ! ip route show table ovpnc"$COUNTER" | grep -q "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR")"; then
+						ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
+						ip route add "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
+					fi
+				fi
+				COUNTER=$((COUNTER+1))
+			done
+		;;
+		delete)
+			COUNTER=1
+			until [ $COUNTER -gt 5 ]; do
+				if ifconfig "tun1$COUNTER" >/dev/null 2>&1; then
+					ip route del "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 dev "$2" proto kernel table ovpnc"$COUNTER" src "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")"
+				fi
+				COUNTER=$((COUNTER+1))
+			done
+		;;
+	esac
+	
+	ip route flush cache
 }
 
 Routing_VPNDirector(){
@@ -1533,13 +1556,13 @@ Routing_VPNDirector(){
 			done
 		;;
 		deleteall)
-			Routing_VPNDirector initialise
+			Routing_VPNDirector initialise 2>/dev/null
 			
 			for IFACE in $IFACELIST; do
-				Routing_VPNDirector delete "$IFACE"
+				Routing_VPNDirector delete "$IFACE" 2>/dev/null
 			done
 			
-			Routing_VPNDirector save
+			Routing_VPNDirector save 2>/dev/null
 		;;
 		save)
 			if [ "$VPN_IP_LIST_ORIG" != "$VPN_IP_LIST_NEW" ]; then
@@ -1778,7 +1801,7 @@ Config_Networks(){
 	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
 		Routing_NVRAM initialise 2>/dev/null
 	else
-		Routing_VPNDirector initialise
+		Routing_VPNDirector initialise 2>/dev/null
 	fi
 	
 	Firewall_Chains create 2>/dev/null
@@ -1797,21 +1820,23 @@ Config_Networks(){
 				if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
 					Routing_NVRAM create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
 				else
-					Routing_VPNDirector create "$IFACE" "$VPNCLIENTNO"
+					Routing_VPNDirector create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
 				fi
 				
-				Routing_FWNAT create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
+				Firewall_NAT create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
 			else
 				Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - sending all interface internet traffic over WAN interface"
 				
-				Routing_FWNAT delete "$IFACE" 2>/dev/null
+				Firewall_NAT delete "$IFACE" 2>/dev/null
 				
 				if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
 					Routing_NVRAM delete "$IFACE" 2>/dev/null
 				else
-					Routing_VPNDirector delete "$IFACE"
+					Routing_VPNDirector delete "$IFACE" 2>/dev/null
 				fi
 			fi
+			
+			Firewall_DNS create "$IFACE" 2>/dev/null
 			
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_CLIENTISOLATION")" = "true" ]; then
 				ISOBEFORE="$(nvram get "${IFACE}_ap_isolate")"
@@ -1852,6 +1877,8 @@ Config_Networks(){
 			#Remove firewall rules for guest interface
 			Firewall_Rules delete "$IFACE" 2>/dev/null
 			
+			Firewall_DNS delete "$IFACE" 2>/dev/null
+			
 			#Reset guest interface ISOLATION
 			ISOBEFORE="$(nvram get "${IFACE}_ap_isolate")"
 			if ! Validate_Number "" "$ISOBEFORE" silent; then ISOBEFORE=0; fi
@@ -1869,19 +1896,19 @@ Config_Networks(){
 			if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
 				Routing_NVRAM delete "$IFACE" 2>/dev/null
 			else
-				Routing_VPNDirector delete "$IFACE"
+				Routing_VPNDirector delete "$IFACE" 2>/dev/null
 			fi
 			
 			Routing_RPDB delete "$IFACE" 2>/dev/null
 			
-			Routing_FWNAT delete "$IFACE" 2>/dev/null
+			Firewall_NAT delete "$IFACE" 2>/dev/null
 		fi
 	done
 	
 	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
 		Routing_NVRAM save 2>/dev/null
 	else
-		Routing_VPNDirector save
+		Routing_VPNDirector save 2>/dev/null
 	fi
 	
 	DHCP_Conf save 2>/dev/null
@@ -2218,9 +2245,9 @@ Menu_Uninstall(){
 	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
 		Routing_NVRAM deleteall 2>/dev/null
 	else
-		Routing_VPNDirector deleteall
+		Routing_VPNDirector deleteall 2>/dev/null
 	fi
-	Routing_FWNAT deleteall 2>/dev/null
+	Firewall_NAT deleteall 2>/dev/null
 	Routing_RPDB delete 2>/dev/null
 	Firewall_Chains deleteall 2>/dev/null
 	Firewall_NVRAM deleteall "$IFACE" 2>/dev/null
