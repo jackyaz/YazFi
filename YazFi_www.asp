@@ -606,7 +606,7 @@ function get_connected_clients_file(){
 						MAC: obj.MAC,
 						CONNECTED: obj.CONNECTED,
 						RX: obj.RX,
-						TXL obj.TX,
+						TX: obj.TX,
 						RSSI: obj.RSSI,
 						PHY: obj.PHY
 					}
