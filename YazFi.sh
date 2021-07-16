@@ -2705,6 +2705,9 @@ case "$1" in
 			Update_Version force unattended
 			exit 0
 		elif [ "$2" = "start" ] && [ "$3" = "${SCRIPT_NAME}connectedclients" ]; then
+			STATUSOUTPUTFILE="$SCRIPT_DIR/.connectedclients"
+			rm -f "$STATUSOUTPUTFILE"
+			sleep 3
 			Menu_Status outputtofile
 			exit 0
 		fi
