@@ -24,6 +24,7 @@
 # shellcheck disable=SC2016
 # shellcheck disable=SC2034
 # shellcheck disable=SC2039
+# shellcheck disable=SC2059
 # shellcheck disable=SC2086
 # shellcheck disable=SC2140
 # shellcheck disable=SC2155
