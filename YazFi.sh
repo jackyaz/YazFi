@@ -2533,7 +2533,7 @@ Menu_Status(){
 				unset IFS
 			else
 				[ -z "$1" ] && printf "\\e[1m${WARN}No clients connected\\e[0m\\n\\n"
-				printf "%s,,,,,,,,\\n" "$IFACE" >> "$STATUSOUTPUTFILE"
+				printf "%s,,NOCLIENTS,,,,,,\\n" "$IFACE" >> "$STATUSOUTPUTFILE"
 			fi
 		fi
 	done
