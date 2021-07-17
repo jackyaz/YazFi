@@ -4,6 +4,6 @@ trap '' SIGHUP
 renice 15 $$
 while true; do
 	/jffs/scripts/YazFi statustofile
-	sleep 3
+	sleep 4
 done
 renice 0 $$
