@@ -1,0 +1,9 @@
+#!/bin/sh
+# shellcheck disable=SC2039
+trap '' SIGHUP
+renice 15 $$
+while true; do
+	/jffs/scripts/YazFi statustofile
+	sleep 3
+done
+renice 0 $$
