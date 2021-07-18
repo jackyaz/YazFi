@@ -113,30 +113,45 @@ function Validate_IP(forminput,iptype){
 					}
 					if(matchfound){
 						$j(forminput).addClass("invalid");
+						failedfields.push([$j(forminput),"Conflict with another YazFi network"]);
+						$j(forminput).on('mouseover',function(){return overlib("Conflict with another YazFi network",0,0);});
+						$j(forminput)[0].onmouseout = nd;
 						return false;
 					}
 					else{
 						$j(forminput).removeClass("invalid");
+						$j(forminput).off('mouseover');
 						return true;
 					}
 				}
 				else{
 					$j(forminput).addClass("invalid");
+					failedfields.push([$j(forminput),"LAN IP conflict"]);
+					$j(forminput).on('mouseover',function(){return overlib("LAN IP conflict",0,0);});
+					$j(forminput)[0].onmouseout = nd;
+					
 					return false;
 				}
 			}
 			else{
 				$j(forminput).addClass("invalid");
+				failedfields.push([$j(forminput),"Not a private IP address"]);
+				$j(forminput).on('mouseover',function(){return overlib("Not a private IP address",0,0);});
+				$j(forminput)[0].onmouseout = nd;
 				return false;
 			}
 		}
 		else{
 			$j(forminput).removeClass("invalid");
+			$j(forminput).off('mouseover');
 			return true;
 		}
 	}
 	else{
 		$j(forminput).addClass("invalid");
+		failedfields.push([$j(forminput),"Invalid IP Address"]);
+		$j(forminput).on('mouseover',function(){return overlib("Invalid IP Address",0,0);});
+		$j(forminput)[0].onmouseout = nd;
 		return false;
 	}
 }
@@ -150,15 +165,22 @@ function Validate_DHCP(forminput){
 	if(startend == "start"){
 		if(inputvalue >= eval("document.form."+inputname.substring(0,inputname.indexOf("start"))+"end.value")*1){
 			$j(forminput).addClass("invalid");
+			failedfields.push([$j(forminput),"DHCP start is greater than DHCP end"]);
+			$j(forminput).on('mouseover',function(){return overlib("DHCP start is greater than DHCP end",0,0);});
+			$j(forminput)[0].onmouseout = nd;
 			return false;
 		}
 		else{
 			if(inputvalue > 254 || inputvalue < 2){
 				$j(forminput).addClass("invalid");
+				failedfields.push([$j(forminput),"Value not between 2 and 254"]);
+				$j(forminput).on('mouseover',function(){return overlib("Value not between 2 and 254",0,0);});
+				$j(forminput)[0].onmouseout = nd;
 				return false;
 			}
 			else{
 				$j(forminput).removeClass("invalid");
+				$j(forminput).off('mouseover');
 				return true;
 			}
 		}
@@ -166,15 +188,22 @@ function Validate_DHCP(forminput){
 	else{
 		if(inputvalue <= eval("document.form."+inputname.substring(0,inputname.indexOf("end"))+"start.value")*1){
 			$j(forminput).addClass("invalid");
+			failedfields.push([$j(forminput),"DHCP end is less than DHCP start"]);
+			$j(forminput).on('mouseover',function(){return overlib("DHCP end is less than DHCP start",0,0);});
+			$j(forminput)[0].onmouseout = nd;
 			return false;
 		}
 		else{
 			if(inputvalue > 254 || inputvalue < 2){
 				$j(forminput).addClass("invalid");
+				failedfields.push([$j(forminput),"Value not between 2 and 254"]);
+				$j(forminput).on('mouseover',function(){return overlib("Value not between 2 and 254",0,0);});
+				$j(forminput)[0].onmouseout = nd;
 				return false;
 			}
 			else{
 				$j(forminput).removeClass("invalid");
+				$j(forminput).off('mouseover');
 				return true;
 			}
 		}
@@ -187,10 +216,14 @@ function Validate_VPNClientNo(forminput){
 	
 	if(inputvalue > 5 || inputvalue < 1){
 		$j(forminput).addClass("invalid");
+		failedfields.push([$j(forminput),"Value not between 1 and 5"]);
+		$j(forminput).on('mouseover',function(){return overlib("Value not between 1 and 5",0,0);});
+		$j(forminput)[0].onmouseout = nd;
 		return false;
 	}
 	else{
 		$j(forminput).removeClass("invalid");
+		$j(forminput).off('mouseover');
 		return true;
 	}
 }
@@ -215,6 +248,7 @@ function Validate_OneTwoWay(forminput){
 
 function Validate_All(){
 	var validationfailed = false;
+	failedfields = [];
 	for(var i=0; i < bands; i++){
 		for(var i2=1; i2 <= 3; i2++){
 			if(! Validate_IP(eval("document.form.yazfi_wl"+i+i2+"_ipaddr"),"IP")){validationfailed=true;}
@@ -225,8 +259,25 @@ function Validate_All(){
 			if(! Validate_VPNClientNo(eval("document.form.yazfi_wl"+i+i2+"_vpnclientnumber"))){validationfailed=true;}
 		}
 	}
+	
+	var failedfieldsstring = '';
+	for(var i=0; i < failedfields.length; i++){
+		var guestnework = '';
+		var prefix = failedfields[i][0].attr("name").split('_')[1];
+		if(prefix.startsWith('wl0')){
+			guestnetwork = "2.4GHz Guest Network "+prefix.replace('wl0','');
+		}
+		else if(prefix.startsWith('wl1')){
+			guestnetwork = "5GHz Guest Network "+prefix.replace('wl0','');
+		}
+		else if(prefix.startsWith('wl2')){
+			guestnetwork = "5GHz-2 Guest Network "+prefix.replace('wl0','');
+		}
+		failedfieldsstring += guestnetwork+' - '+failedfields[i][0].parent().parent().children().children()[0].innerHTML+' - '+failedfields[i][1]+'\n';
+	}
+	
 	if(validationfailed){
-		alert("Validation for some fields failed. Please correct invalid values and try again.");
+		alert('Validation for some fields failed, shown below. Please correct invalid values and try again.\n'+failedfieldsstring);
 		return false;
 	}
 	else{
