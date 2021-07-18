@@ -306,9 +306,34 @@ function get_conf_file(){
 				var setting=settings[i].split("=");
 				window["yazfi_settings"].unshift(setting);
 			}
-			if(wl_info.band2g_support){$j("#table_buttons").before(BuildConfigTable("wl0","2.4GHz Guest Networks"));bands = bands + 1;}
-			if(wl_info.band5g_support){$j("#table_buttons").before(BuildConfigTable("wl1","5GHz-1 Guest Networks"));bands = bands + 1;}
-			if(wl_info.band5g_2_support){$j("#table_buttons").before(BuildConfigTable("wl2","5GHz-2 Guest Networks"));bands = bands + 1;}
+			if(typeof wl_info == 'undefined' || wl_info == null){
+				bands = 2;
+				$j("#table_config").append(BuildConfigTable("wl0","2.4GHz Guest Networks"));
+				$j("#table_config").append('<tr><td style="padding:0px;height:10px;"></td></tr>');
+				$j("#table_config").append(BuildConfigTable("wl1","5GHz Guest Networks"));
+			}
+			else{
+				if(wl_info.band2g_support){
+					$j("#table_config").append(BuildConfigTable("wl0","2.4GHz Guest Networks"));
+					bands = bands+1;
+				}
+				if(wl_info.band5g_support){
+					$j("#table_config").append('<tr><td style="padding:0px;height:10px;"></td></tr>');
+					$j("#table_config").append(BuildConfigTable("wl1","5GHz Guest Networks"));
+					bands = bands+1;
+				}
+				if(wl_info.band5g_2_support){
+					$j("#table_config").append('<tr><td style="padding:0px;height:10px;"></td></tr>');
+					$j("#table_config").append(BuildConfigTable("wl2","5GHz-2 Guest Networks"));
+					bands = bands+1;
+				}
+			}
+			
+			$j("#table_config").append('<tr class="apply_gen" valign="top"><td style="background-color:rgb(77,89,93);border-top:0px;border-bottom:0px;height:5px;"></td></tr>');
+			var buttonshtml = '<tr class="apply_gen" valign="top" height="35px"><td style="background-color:rgb(77,89,93);border-top:0px;">';
+			buttonshtml += '<input name="button" type="button" class="button_gen" onclick="SaveConfig();" value="Apply"/></td></tr>';
+			$j("#table_config").append(buttonshtml);
+
 			var settingcount = bands*12*3;
 			for(var i = 0; i < settingcount; i++){
 				var settingname = window["yazfi_settings"][i][0].toLowerCase();
