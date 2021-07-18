@@ -623,7 +623,7 @@ function GetCookie(cookiename,returntype){
 }
 
 function SetCookie(cookiename,cookievalue){
-	cookie.set("yazfi_"+cookiename, cookievalue, 31);
+	cookie.set("yazfi_"+cookiename,cookievalue,10*365);
 }
 
 function SaveConfig(){
