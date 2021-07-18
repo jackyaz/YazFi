@@ -31,7 +31,7 @@ var custom_settings;
 function LoadCustomSettings(){
 	custom_settings = <% get_custom_settings(); %>;
 	for(var prop in custom_settings){
-		if (Object.prototype.hasOwnProperty.call(custom_settings, prop)){
+		if (Object.prototype.hasOwnProperty.call(custom_settings,prop)){
 			if(prop.indexOf("yazfi") != -1 && prop.indexOf("yazfi_version") == -1){
 				eval("delete custom_settings."+prop);
 			}
