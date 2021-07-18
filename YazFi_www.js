@@ -103,7 +103,7 @@ function Validate_IP(forminput,iptype){
 				if(! checkIPConflict("LAN",fixedip,"255.255.255.0",document.form.lan_ipaddr.value,document.form.lan_netmask.value).state){
 					matchfound=false;
 					for(var i = 0; i < bands; i++){
-						for(var i2 = 1; i2 < 4; i2++){
+						for(var i2 = 1; i2 <= 3; i2++){
 							if("yazfi_wl"+i.toString()+i2.toString()+"_ipaddr" != inputname){
 								if(eval("document.form.yazfi_wl"+i.toString()+i2.toString()+"_ipaddr.value") == fixedip){
 									matchfound=true;
@@ -216,7 +216,7 @@ function Validate_OneTwoWay(forminput){
 function Validate_All(){
 	var validationfailed = false;
 	for(var i=0; i < bands; i++){
-		for(var i2=1; i2 < 4; i2++){
+		for(var i2=1; i2 <= 3; i2++){
 			if(! Validate_IP(eval("document.form.yazfi_wl"+i+i2+"_ipaddr"),"IP")){validationfailed=true;}
 			if(! Validate_DHCP(eval("document.form.yazfi_wl"+i+i2+"_dhcpstart"))){validationfailed=true;}
 			if(! Validate_DHCP(eval("document.form.yazfi_wl"+i+i2+"_dhcpend"))){validationfailed=true;}
@@ -275,7 +275,7 @@ function get_conf_file(){
 			}
 			
 			for(var i = 0; i < bands; i++){
-				for(var i2 = 1; i2 < 4; i2++){
+				for(var i2 = 1; i2 <= 3; i2++){
 					if(eval('document.form.wl'+i+i2+'_bss_enabled').value == 0){
 						OptionsEnableDisable($j("#yazfi_wl"+i+i2+"_en_false")[0]);
 						$j('input[name=yazfi_wl'+i+i2+'_enabled]').prop("disabled",true);
