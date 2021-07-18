@@ -1,3 +1,13 @@
+var clientswl01 = []; var sortnamewl01 = 'Hostname'; var sortdirwl01 = 'asc';
+var clientswl02 = []; var sortnamewl02 = 'Hostname'; var sortdirwl02 = 'asc';
+var clientdwl03 = []; var sortnamewl03 = 'Hostname'; var sortdirwl03 = 'asc';
+var clientswl11 = []; var sortnamewl11 = 'Hostname'; var sortdirwl11 = 'asc';
+var clientswl12 = []; var sortnamewl12 = 'Hostname'; var sortdirwl12 = 'asc';
+var clientswl13 = []; var sortnamewl13 = 'Hostname'; var sortdirwl13 = 'asc';
+var clientswl21 = []; var sortnamewl21 = 'Hostname'; var sortdirwl21 = 'asc';
+var clientswl22 = []; var sortnamewl22 = 'Hostname'; var sortdirwl22 = 'asc';
+var clientswl23 = []; var sortnamewl23 = 'Hostname'; var sortdirwl23 = 'asc';
+var tout;
 var bands = 0;
 var failedfields = [];
 
@@ -10,6 +20,7 @@ function initial(){
 	get_conf_file();
 	ScriptUpdateLayout();
 	
+	get_connected_clients_file();
 }
 
 function YazHint(hintid){
@@ -369,9 +380,202 @@ function get_conf_file(){
 					}
 				}
 			}
-			AddEventHandlers();
 		}
 	});
+}
+
+function get_connected_clients_file(){
+	d3.csv("/ext/YazFi/connectedclients.htm").then(function(data){
+		if(data.length > 0){
+			var unique = [];
+			var YazFiInterfaces = [];
+			for(var i = 0; i < data.length; i++){
+				if(!unique[data[i].INTERFACE]){
+					YazFiInterfaces.push(data[i].INTERFACE.replace(".",""));
+					unique[data[i].INTERFACE] = 1;
+				}
+			}
+			
+			$j('#table_connectedclients').empty();
+			
+			for(var i = 0; i < YazFiInterfaces.length; i++){
+				window["clients"+YazFiInterfaces[i]] = data.filter(function(item){
+					return item.INTERFACE.replace(".","") == YazFiInterfaces[i];
+				}).map(function(obj){
+					return {
+						Hostname: obj.HOSTNAME,
+						IPAddress: obj.IP,
+						MACAddress: obj.MAC,
+						Connected: obj.CONNECTED,
+						Rx: obj.RX,
+						Tx: obj.TX,
+						RSSI: obj.RSSI,
+						PHY: obj.PHY
+					}
+				});
+				
+				$j('#table_connectedclients').append(BuildConnectedClientPlaceholderTable(YazFiInterfaces[i],eval('document.form.'+YazFiInterfaces[i]+'_ssid.value')));
+				if(window["clients"+YazFiInterfaces[i]][0].IPAddress != 'NOCLIENTS'){
+					SortTable('sortTable'+YazFiInterfaces[i],'clients'+YazFiInterfaces[i],eval('sortname'+YazFiInterfaces[i])+' '+eval('sortdir'+YazFiInterfaces[i]).replace('desc','↑').replace('asc','↓').trim(),'sortname'+YazFiInterfaces[i],'sortdir'+YazFiInterfaces[i]);
+				}
+				else{
+					$j('#sortTable'+YazFiInterfaces[i]).css('height','30px');
+					$j('#sortTable'+YazFiInterfaces[i]).css('overflow-y','hidden');
+					$j('#sortTable'+YazFiInterfaces[i]).append(BuildConnectedClientsTableNoData('sortTable'+YazFiInterfaces[i]));
+				}
+			}
+		}
+		if(document.getElementById('auto_refresh').checked){
+			tout = setTimeout(get_connected_clients_file,5000);
+		}
+		AddEventHandlers();
+	}).catch(function(){setTimeout(get_connected_clients_file,1000);});
+}
+
+function SortTable(tableid,arrayid,sorttext,sortname,sortdir){
+	window[sortname] = sorttext.replace('↑','').replace('↓','').trim();
+	var sorttype = 'string';
+	var sortfield = window[sortname];
+	switch(window[sortname]){
+		case 'Connected':
+			sorttype = 'time';
+		break
+		case 'Rx':
+		case 'Tx':
+		case 'RSSI':
+			sorttype = 'number';
+		break
+	}
+	
+	if(sorttype == 'string'){
+		if(sorttext.indexOf('↓') == -1 && sorttext.indexOf('↑') == -1){
+			eval(arrayid+' = '+arrayid+'.sort((a,b) => (a.'+sortfield+'.toLowerCase() > b.'+sortfield+'.toLowerCase()) ? 1 : ((b.'+sortfield+'.toLowerCase() > a.'+sortfield+'.toLowerCase()) ? -1 : 0));');
+			window[sortdir] = 'asc';
+		}
+		else if(sorttext.indexOf('↓') != -1){
+			eval(arrayid+' = '+arrayid+'.sort((a,b) => (a.'+sortfield+'.toLowerCase() > b.'+sortfield+'.toLowerCase()) ? 1 : ((b.'+sortfield+'.toLowerCase() > a.'+sortfield+'.toLowerCase()) ? -1 : 0));');
+			window[sortdir] = 'asc';
+		}
+		else{
+			eval(arrayid+' = '+arrayid+'.sort((a,b) => (a.'+sortfield+'.toLowerCase() < b.'+sortfield+'.toLowerCase()) ? 1 : ((b.'+sortfield+'.toLowerCase() < a.'+sortfield+'.toLowerCase()) ? -1 : 0));');
+			window[sortdir] = 'desc';
+		}
+	}
+	else if(sorttype == 'number'){
+		if(sorttext.indexOf('↓') == -1 && sorttext.indexOf('↑') == -1){
+			eval(arrayid+' = '+arrayid+'.sort((a,b) => parseFloat(a.'+sortfield+'.replace("m","000")) - parseFloat(b.'+sortfield+'.replace("m","000")));');
+			window[sortdir] = 'asc';
+		}
+		else if(sorttext.indexOf('↓') != -1){
+			eval(arrayid+' = '+arrayid+'.sort((a,b) => parseFloat(a.'+sortfield+'.replace("m","000")) - parseFloat(b.'+sortfield+'.replace("m","000")));');
+			window[sortdir] = 'asc';
+		}
+		else{
+			eval(arrayid+' = '+arrayid+'.sort((a,b) => parseFloat(b.'+sortfield+'.replace("m","000")) - parseFloat(a.'+sortfield+'.replace("m","000")));');
+			window[sortdir] = 'desc';
+		}
+	}
+	else if(sorttype == 'time'){
+		if(sorttext.indexOf('↓') == -1 && sorttext.indexOf('↑') == -1){
+			eval(arrayid+' = '+arrayid+'.sort((a,b) => parseFloat(HHMMSStoS(a.'+sortfield+'.replace("m","000"))) - parseFloat(HHMMSStoS(b.'+sortfield+'.replace("m","000"))));');
+			window[sortdir] = 'asc';
+		}
+		else if(sorttext.indexOf('↓') != -1){
+			eval(arrayid+' = '+arrayid+'.sort((a,b) => parseFloat(HHMMSStoS(a.'+sortfield+'.replace("m","000"))) - parseFloat(HHMMSStoS(b.'+sortfield+'.replace("m","000"))));');
+			window[sortdir] = 'asc';
+		}
+		else{
+			eval(arrayid+' = '+arrayid+'.sort((a,b) => parseFloat(HHMMSStoS(b.'+sortfield+'.replace("m","000"))) - parseFloat(HHMMSStoS(a.'+sortfield+'.replace("m","000"))));');
+			window[sortdir] = 'desc';
+		}
+	}
+	
+	$j('#'+tableid).empty();
+	$j('#'+tableid).append(BuildConnectedClientsTable(tableid.replace('sortTable','')));
+	
+	$j('#'+tableid).find('.sortable').each(function(index,element){
+		if(element.innerHTML.replace(/ \(.*\)/,'').replace(' ','') == window[sortname]){
+			if(window[sortdir] == 'asc'){
+				element.innerHTML = element.innerHTML+' ↑';
+			}
+			else{
+				element.innerHTML = element.innerHTML+' ↓';
+			}
+		}
+	});
+}
+
+function BuildConnectedClientPlaceholderTable(iface,title){
+	var tablehtml = '<div style="line-height:10px;">&nbsp;</div>';
+	tablehtml+='<tr><td style="padding:0px;">';
+	tablehtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_clients_'+iface+'">';
+	tablehtml+='<thead class="collapsible-jquery" id="thead_clients_'+iface+'">';
+	tablehtml+='<tr>';
+	tablehtml+='<td>'+title+' (click to expand/collapse)</td>';
+	tablehtml+='</tr>';
+	tablehtml+='</thead>';
+	tablehtml+='<tr>';
+	tablehtml+='<td style="padding:0px;">';
+	tablehtml+='<div id="sortTable'+iface+'" class="sortTableContainer" style="height:150px;"></div>';
+	tablehtml+='</td>';
+	tablehtml+='</tr>';
+	tablehtml+='</table>';
+	tablehtml+='</td>';
+	tablehtml+='</tr>';
+	return tablehtml;
+}
+
+function BuildConnectedClientsTableNoData(){
+	var tablehtml = '<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="sortTable">';
+	tablehtml += '<tr>';
+	tablehtml += '<td class="nodata">';
+	tablehtml += 'No connected clients';
+	tablehtml += '</td>';
+	tablehtml += '</tr>';
+	tablehtml += '</table>';
+	return tablehtml;
+}
+
+function BuildConnectedClientsTable(name){
+	var tablehtml = '<table border="0" cellpadding="0" cellspacing="0" width="100%" class="sortTable">';
+	tablehtml += '<col style="width:150px;">';
+	tablehtml += '<col style="width:100px;">';
+	tablehtml += '<col style="width:100px;">';
+	tablehtml += '<col style="width:60px;">';
+	tablehtml += '<col style="width:60px;">';
+	tablehtml += '<col style="width:65px;">';
+	tablehtml += '<col style="width:60px;">';
+	tablehtml += '<col style="width:40px;">';
+	
+	tablehtml += '<thead class="sortTableHeader">';
+	tablehtml += '<tr>';
+	tablehtml += '<th class="sortable" onclick="SortTable(\'sortTable'+name+'\',\'clients'+name+'\',this.innerHTML.replace(/ \\(.*\\)/,\'\'),\'sortname'+name+'\',\'sortdir'+name+'\')">Hostname</th>';
+	tablehtml += '<th class="sortable" onclick="SortTable(\'sortTable'+name+'\',\'clients'+name+'\',this.innerHTML.replace(/ \\(.*\\)/,\'\').replace(\' \',\'\'),\'sortname'+name+'\',\'sortdir'+name+'\')">IP Address</th>';
+	tablehtml += '<th class="sortable" onclick="SortTable(\'sortTable'+name+'\',\'clients'+name+'\',this.innerHTML.replace(/ \\(.*\\)/,\'\').replace(\' \',\'\'),\'sortname'+name+'\',\'sortdir'+name+'\')">MAC Address</th>';
+	tablehtml += '<th class="sortable" onclick="SortTable(\'sortTable'+name+'\',\'clients'+name+'\',this.innerHTML.replace(/ \\(.*\\)/,\'\'),\'sortname'+name+'\',\'sortdir'+name+'\')">Connected</th>';
+	tablehtml += '<th class="sortable" onclick="SortTable(\'sortTable'+name+'\',\'clients'+name+'\',this.innerHTML.replace(/ \\(.*\\)/,\'\'),\'sortname'+name+'\',\'sortdir'+name+'\')">Rx (Mbps)</th>';
+	tablehtml += '<th class="sortable" onclick="SortTable(\'sortTable'+name+'\',\'clients'+name+'\',this.innerHTML.replace(/ \\(.*\\)/,\'\'),\'sortname'+name+'\',\'sortdir'+name+'\')">Tx (Mbps)</th>';
+	tablehtml += '<th class="sortable" onclick="SortTable(\'sortTable'+name+'\',\'clients'+name+'\',this.innerHTML.replace(/ \\(.*\\)/,\'\'),\'sortname'+name+'\',\'sortdir'+name+'\')">RSSI (dBm)</th>';
+	tablehtml += '<th class="sortable" onclick="SortTable(\'sortTable'+name+'\',\'clients'+name+'\',this.innerHTML.replace(/ \\(.*\\)/,\'\'),\'sortname'+name+'\',\'sortdir'+name+'\')">PHY</th>';
+	tablehtml += '</tr>';
+	tablehtml += '</thead>';
+	tablehtml += '<tbody class="sortTableContent">';
+	
+	for(var i = 0; i < window['clients'+name].length; i++){
+		tablehtml += '<tr class="sortRow">';
+		tablehtml += '<td>'+window['clients'+name][i].Hostname+'</td>';
+		tablehtml += '<td>'+window['clients'+name][i].IPAddress+'</td>';
+		tablehtml += '<td>'+window['clients'+name][i].MACAddress+'</td>';
+		tablehtml += '<td>'+StoHHMMSS(window['clients'+name][i].Connected)+'</td>';
+		tablehtml += '<td>'+window['clients'+name][i].Rx+'</td>';
+		tablehtml += '<td>'+window['clients'+name][i].Tx+'</td>';
+		tablehtml += '<td>'+window['clients'+name][i].RSSI+'</td>';
+		tablehtml += '<td>'+window['clients'+name][i].PHY+'</td>';
+		tablehtml += '</tr>';
+	}
+	tablehtml += '</tbody>';
+	tablehtml += '</table>';
+	return tablehtml;
 }
 
 function BuildConfigTable(prefix,title){
@@ -660,6 +864,12 @@ function AddEventHandlers(){
 			$j(this).siblings().toggle(true);
 		}
 	});
+	
+	$j('#auto_refresh').off('click').on('click',function(){ToggleRefresh();});
+}
+
+function ToggleRefresh(){
+	$j('#auto_refresh').prop('checked',function(i,v){ if(v){get_connected_clients_file();} else{clearTimeout(tout);} });
 }
 
 $j.fn.serializeObject = function(){

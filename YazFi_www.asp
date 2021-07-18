@@ -923,10 +923,21 @@ $j.fn.serializeObject = function(){
 </tr>
 </table>
 <div style="line-height:10px;">&nbsp;</div>
-<table width="100%" border="1" align="center" cellpadding="2" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:1px;" id="table_connectedclients">
+<table width="100%" border="1" align="center" cellpadding="2" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:1px;">
 <thead class="collapsible-jquery" id="thead_connectedclients">
 <tr><td colspan="2">Connected Guests (click to expand/collapse)</td></tr>
 </thead>
+<tr class="even">
+<th style="width:40%;">Update automatically?</th>
+<td>
+<label style="color:#FFCC00;display:block;">
+<input type="checkbox" checked="" id="auto_refresh" style="padding:0;margin:0;vertical-align:middle;position:relative;top:-1px;" />&nbsp;&nbsp;Table will refresh every 5s</label>
+</td>
+</tr>
+<tr><td colspan="2" style="padding:0px;">
+<table width="100%" border="0" align="center" cellpadding="2" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:1px;" id="table_connectedclients">
+</table>
+</td></tr>
 </table>
 <div style="line-height:10px;">&nbsp;</div>
 <table width="100%" border="1" align="center" cellpadding="2" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" style="border:1px;" id="table_config">
