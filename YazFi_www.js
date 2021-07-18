@@ -1,5 +1,16 @@
-var $j=jQuery.noConflict();
 var bands = 0;
+var failedfields = [];
+
+var $j = jQuery.noConflict();
+
+function initial(){
+	SetCurrentPage();
+	LoadCustomSettings();
+	show_menu();
+	get_conf_file();
+	ScriptUpdateLayout();
+	
+}
 
 function YazHint(hintid){
 	var tag_name= document.getElementsByTagName('a');
@@ -363,6 +374,160 @@ function get_conf_file(){
 	});
 }
 
+function BuildConfigTable(prefix,title){
+	var tablehtml = '<tr><td style="padding:0px;">';
+	tablehtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_config_'+prefix+'">';
+	tablehtml+='<thead class="collapsible-jquery" id="'+prefix+'">';
+	tablehtml+='<tr>';
+	tablehtml+='<td>'+title+' (click to expand/collapse)</td>';
+	tablehtml+='</tr>';
+	tablehtml+='</thead>';
+	tablehtml+='<tr>';
+	tablehtml+='<td colspan="2" align="center" style="padding:0px;">';
+	tablehtml+='<table width="100%" border="0" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable SettingsTable" style="border:0px;">';
+	
+	tablehtml+='<col style="width:130px;">';
+	tablehtml+='<col style="width:205px;">';
+	tablehtml+='<col style="width:205px;">';
+	tablehtml+='<col style="width:205px;">';
+	tablehtml+='<thead>';
+	tablehtml+='<tr>';
+	tablehtml+='<th>&nbsp;</th>';
+	tablehtml+='<th>Guest Network 1</th>';
+	tablehtml+='<th>Guest Network 2</th>';
+	tablehtml+='<th>Guest Network 3</th>';
+	tablehtml+='</tr>';
+	tablehtml+='<tr>';
+	tablehtml+='<th>&nbsp;</th>';
+	tablehtml+='<th>'+eval('document.form.'+prefix+'1_ssid.value')+'</th>';
+	tablehtml+='<th>'+eval('document.form.'+prefix+'2_ssid.value')+'</th>';
+	tablehtml+='<th>'+eval('document.form.'+prefix+'3_ssid.value')+'</th>';
+	tablehtml+='</tr>'
+	
+	var enabled1 = eval('document.form.'+prefix+'1_bss_enabled.value');
+	var enabled2 = eval('document.form.'+prefix+'2_bss_enabled.value');
+	var enabled3 = eval('document.form.'+prefix+'3_bss_enabled.value');
+	
+	if( enabled1 == 0 || enabled2 == 0 || enabled3 == 0){
+		tablehtml+='<tr>';
+		tablehtml+='<th>&nbsp;</th>';
+		if(enabled1 == 0){
+			tablehtml+='<th class="bss">Disabled on Guest Network Tab</th>';
+		}
+		else{
+			tablehtml+='<th>&nbsp;</th>';
+		}
+		if(enabled2 == 0){
+			tablehtml+='<th class="bss">Disabled on Guest Network Tab</th>';
+		}
+		else{
+			tablehtml+='<th>&nbsp;</th>';
+		}
+		if(enabled3 == 0){
+			tablehtml+='<th class="bss">Disabled on Guest Network Tab</th>';
+		}
+		else{
+			tablehtml+='<th>&nbsp;</th>';
+		}
+		tablehtml+='</tr>'
+	}
+	
+	tablehtml+='</thead>';
+	
+	/* ENABLED */
+	tablehtml+='<tr>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(1);">Enabled</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_enabled" id="yazfi_'+prefix+'1_en_true" onChange="OptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_enabled" id="yazfi_'+prefix+'1_en_false" onChange="OptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_enabled" id="yazfi_'+prefix+'2_en_true" onChange="OptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_enabled" id="yazfi_'+prefix+'2_en_false" onChange="OptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_enabled" id="yazfi_'+prefix+'3_en_true" onChange="OptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_enabled" id="yazfi_'+prefix+'3_en_false" onChange="OptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
+	tablehtml+='</tr>';
+	
+	/* IPADDR */
+	tablehtml+='<tr>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(2);">IP Address</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'1_ipaddr" value="0.0.0.0" onkeypress="return validator.isIPAddr(this,event)" onblur="Validate_IP(this,\'IP\')" data-lpignore="true" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'2_ipaddr" value="0.0.0.0" onkeypress="return validator.isIPAddr(this,event)" onblur="Validate_IP(this,\'IP\')" data-lpignore="true" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'3_ipaddr" value="0.0.0.0" onkeypress="return validator.isIPAddr(this,event)" onblur="Validate_IP(this,\'IP\')" data-lpignore="true" /></td>';
+	tablehtml+='</tr>';
+	
+	/* DHCP START */
+	tablehtml+='<tr>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(3);">DHCP Start</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'1_dhcpstart" value="2" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this)" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'2_dhcpstart" value="2" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this)" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'3_dhcpstart" value="2" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this)" /></td>';
+	tablehtml+='</tr>';
+	
+	/* DHCP END */
+	tablehtml+='<tr>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(4);">DHCP End</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'1_dhcpend" value="254" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this)" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'2_dhcpend" value="254" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this)" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'3_dhcpend" value="254" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this)" /></td>';
+	tablehtml+='</tr>';
+	
+	/* DNS1 */
+	tablehtml+='<tr>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(5);">DNS Server 1</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'1_dns1" value="0.0.0.0" onkeypress="return validator.isIPAddr(this,event)" onblur="Validate_IP(this,\'DNS\')" data-lpignore="true" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'2_dns1" value="0.0.0.0" onkeypress="return validator.isIPAddr(this,event)" onblur="Validate_IP(this,\'DNS\')" data-lpignore="true" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'3_dns1" value="0.0.0.0" onkeypress="return validator.isIPAddr(this,event)" onblur="Validate_IP(this,\'DNS\')" data-lpignore="true" /></td>';
+	tablehtml+='</tr>';
+	
+	/* DNS2 */
+	tablehtml+='<tr>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(6);">DNS Server 2</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'1_dns2" value="0.0.0.0" onkeypress="return validator.isIPAddr(this,event)" onblur="Validate_IP(this,\'DNS\')" data-lpignore="true" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'2_dns2" value="0.0.0.0" onkeypress="return validator.isIPAddr(this,event)" onblur="Validate_IP(this,\'DNS\')" data-lpignore="true" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'3_dns2" value="0.0.0.0" onkeypress="return validator.isIPAddr(this,event)" onblur="Validate_IP(this,\'DNS\')" data-lpignore="true" /></td>';
+	tablehtml+='</tr>';
+	
+	/* FORCEDNS */
+	tablehtml+='<tr>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(7);">Force DNS</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_forcedns" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_forcedns" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_forcedns" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_forcedns" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_forcedns" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_forcedns" class="input" value="false" checked>No</td>';
+	tablehtml+='</tr>';
+	
+	/* REDIRECTALLTOVPN */
+	tablehtml+='<tr>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(8);">Redirect all to VPN</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_redirectalltovpn" id="yazfi_'+prefix+'1_redir_true" onChange="VPNOptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_redirectalltovpn" id="yazfi_'+prefix+'1_redir_false" onChange="VPNOptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_redirectalltovpn" id="yazfi_'+prefix+'2_redir_true" onChange="VPNOptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_redirectalltovpn" id="yazfi_'+prefix+'2_redir_false" onChange="VPNOptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_redirectalltovpn" id="yazfi_'+prefix+'3_redir_true" onChange="VPNOptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_redirectalltovpn" id="yazfi_'+prefix+'3_redir_false" onChange="VPNOptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
+	tablehtml+='</tr>';
+	
+	/* VPNCLIENTNUMBER */
+	tablehtml+='<tr>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(9);">VPN Client No.</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="1" class="input_6_table" name="yazfi_'+prefix+'1_vpnclientnumber" value="2" onkeypress="return validator.isNumber(this,event)" onblur="Validate_VPNClientNo(this)" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="1" class="input_6_table" name="yazfi_'+prefix+'2_vpnclientnumber" value="2" onkeypress="return validator.isNumber(this,event)" onblur="Validate_VPNClientNo(this)" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="1" class="input_6_table" name="yazfi_'+prefix+'3_vpnclientnumber" value="2" onkeypress="return validator.isNumber(this,event)" onblur="Validate_VPNClientNo(this)" /></td>';
+	tablehtml+='</tr>';
+	
+	/* TWOWAYTOGUEST */
+	tablehtml+='<tr>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(10);">Two way to guest</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_twowaytoguest" class="input" value="true" onchange="Validate_OneTwoWay(this)">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_twowaytoguest" class="input" value="false" onchange="Validate_OneTwoWay(this)" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_twowaytoguest" class="input" value="true" onchange="Validate_OneTwoWay(this)" >Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_twowaytoguest" class="input" value="false" onchange="Validate_OneTwoWay(this)" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_twowaytoguest" class="input" value="true" onchange="Validate_OneTwoWay(this)" >Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_twowaytoguest" class="input" value="false" onchange="Validate_OneTwoWay(this)" checked>No</td>';
+	tablehtml+='</tr>';
+	
+	/* ONEWAYTOGUEST */
+	tablehtml+='<tr>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(11);">One way to guest</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_onewaytoguest" class="input" value="true" onchange="Validate_OneTwoWay(this)" >Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_onewaytoguest" class="input" value="false" onchange="Validate_OneTwoWay(this)" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_onewaytoguest" class="input" value="true" onchange="Validate_OneTwoWay(this)" >Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_onewaytoguest" class="input" value="false" onchange="Validate_OneTwoWay(this)" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_onewaytoguest" class="input" value="true" onchange="Validate_OneTwoWay(this)" >Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_onewaytoguest" class="input" value="false" onchange="Validate_OneTwoWay(this)" checked>No</td>';
+	tablehtml+='</tr>';
+	
+	/* CLIENT ISOLATION */
+	tablehtml+='<tr>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(12);">Client isolation</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_clientisolation" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_clientisolation" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_clientisolation" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_clientisolation" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_clientisolation" class="input" value="true" >Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_clientisolation" class="input" value="false" checked>No</td>';
+	tablehtml+='</tr>';
+	
+	tablehtml+='</table>';
+	tablehtml+='</td>';
+	tablehtml+='</tr>';
+	tablehtml+='</table>';
+
+	tablehtml+='</td></tr>';
+
+	return tablehtml;
+}
+
 function SetCurrentPage(){
 	document.form.next_page.value = window.location.pathname.substring(1);
 	document.form.current_page.value = window.location.pathname.substring(1);
@@ -473,166 +638,6 @@ function SaveConfig(){
 	else{
 		return false;
 	}
-}
-
-function initial(){
-	SetCurrentPage();
-	LoadCustomSettings();
-	show_menu();
-	get_conf_file();
-	ScriptUpdateLayout();
-}
-
-function BuildConfigTable(prefix,title){
-	var charthtml = '<div style="line-height:10px;">&nbsp;</div>';
-	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable" id="table_config_'+prefix+'">';
-	charthtml+='<thead class="collapsible-jquery" id="'+prefix+'">';
-	charthtml+='<tr>';
-	charthtml+='<td colspan="2">'+title+' Configuration (click to expand/collapse)</td>';
-	charthtml+='</tr>';
-	charthtml+='</thead>';
-	charthtml+='<tr>';
-	charthtml+='<td colspan="2" align="center" style="padding: 0px;">';
-	
-	charthtml+='<table width="100%" border="1" align="center" cellpadding="4" cellspacing="0" bordercolor="#6b8fa3" class="FormTable SettingsTable">';
-	charthtml+='<col style="width:130px;">';
-	charthtml+='<col style="width:205px;">';
-	charthtml+='<col style="width:205px;">';
-	charthtml+='<col style="width:205px;">';
-	charthtml+='<thead>';
-	charthtml+='<tr>';
-	charthtml+='<th>&nbsp;</th>';
-	charthtml+='<th>Guest Network 1</th>';
-	charthtml+='<th>Guest Network 2</th>';
-	charthtml+='<th>Guest Network 3</th>';
-	charthtml+='</tr>';
-	charthtml+='<tr>';
-	charthtml+='<th>&nbsp;</th>';
-	charthtml+='<th>'+eval('document.form.'+prefix+'1_ssid.value')+'</th>';
-	charthtml+='<th>'+eval('document.form.'+prefix+'2_ssid.value')+'</th>';
-	charthtml+='<th>'+eval('document.form.'+prefix+'3_ssid.value')+'</th>';
-	charthtml+='</tr>'
-	
-	var enabled1 = eval('document.form.'+prefix+'1_bss_enabled.value');
-	var enabled2 = eval('document.form.'+prefix+'2_bss_enabled.value');
-	var enabled3 = eval('document.form.'+prefix+'3_bss_enabled.value');
-	
-	if( enabled1 == 0 || enabled2 == 0 || enabled3 == 0){
-		charthtml+='<tr>';
-		charthtml+='<th>&nbsp;</th>';
-		if(enabled1 == 0){
-			charthtml+='<th class="bss">Disabled on Guest Network Tab</th>';
-		}
-		else{
-			charthtml+='<th>&nbsp;</th>';
-		}
-		if(enabled2 == 0){
-			charthtml+='<th class="bss">Disabled on Guest Network Tab</th>';
-		}
-		else{
-			charthtml+='<th>&nbsp;</th>';
-		}
-		if(enabled3 == 0){
-			charthtml+='<th class="bss">Disabled on Guest Network Tab</th>';
-		}
-		else{
-			charthtml+='<th>&nbsp;</th>';
-		}
-		charthtml+='</tr>'
-	}
-	
-	charthtml+='</thead>';
-	
-	/* ENABLED */
-	charthtml+='<tr>';
-	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(1);">Enabled</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_enabled" id="yazfi_'+prefix+'1_en_true" onChange="OptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_enabled" id="yazfi_'+prefix+'1_en_false" onChange="OptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_enabled" id="yazfi_'+prefix+'2_en_true" onChange="OptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_enabled" id="yazfi_'+prefix+'2_en_false" onChange="OptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_enabled" id="yazfi_'+prefix+'3_en_true" onChange="OptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_enabled" id="yazfi_'+prefix+'3_en_false" onChange="OptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
-	charthtml+='</tr>';
-	
-	/* IPADDR */
-	charthtml+='<tr>';
-	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(2);">IP Address</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'1_ipaddr" value="0.0.0.0" onkeypress="return validator.isIPAddr(this, event)" onblur="Validate_IP(this,\'IP\')" data-lpignore="true" /></td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'2_ipaddr" value="0.0.0.0" onkeypress="return validator.isIPAddr(this, event)" onblur="Validate_IP(this,\'IP\')" data-lpignore="true" /></td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'3_ipaddr" value="0.0.0.0" onkeypress="return validator.isIPAddr(this, event)" onblur="Validate_IP(this,\'IP\')" data-lpignore="true" /></td>';
-	charthtml+='</tr>';
-	
-	/* DHCP START */
-	charthtml+='<tr>';
-	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(3);">DHCP Start</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'1_dhcpstart" value="2" onkeypress="return validator.isNumber(this, event)" onblur="Validate_DHCP(this)" /></td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'2_dhcpstart" value="2" onkeypress="return validator.isNumber(this, event)" onblur="Validate_DHCP(this)" /></td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'3_dhcpstart" value="2" onkeypress="return validator.isNumber(this, event)" onblur="Validate_DHCP(this)" /></td>';
-	charthtml+='</tr>';
-	
-	/* DHCP END */
-	charthtml+='<tr>';
-	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(4);">DHCP End</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'1_dhcpend" value="254" onkeypress="return validator.isNumber(this, event)" onblur="Validate_DHCP(this)" /></td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'2_dhcpend" value="254" onkeypress="return validator.isNumber(this, event)" onblur="Validate_DHCP(this)" /></td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'3_dhcpend" value="254" onkeypress="return validator.isNumber(this, event)" onblur="Validate_DHCP(this)" /></td>';
-	charthtml+='</tr>';
-	
-	/* DNS1 */
-	charthtml+='<tr>';
-	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(5);">DNS Server 1</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'1_dns1" value="0.0.0.0" onkeypress="return validator.isIPAddr(this, event)" onblur="Validate_IP(this,\'DNS\')" data-lpignore="true" /></td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'2_dns1" value="0.0.0.0" onkeypress="return validator.isIPAddr(this, event)" onblur="Validate_IP(this,\'DNS\')" data-lpignore="true" /></td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'3_dns1" value="0.0.0.0" onkeypress="return validator.isIPAddr(this, event)" onblur="Validate_IP(this,\'DNS\')" data-lpignore="true" /></td>';
-	charthtml+='</tr>';
-	
-	/* DNS2 */
-	charthtml+='<tr>';
-	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(6);">DNS Server 2</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'1_dns2" value="0.0.0.0" onkeypress="return validator.isIPAddr(this, event)" onblur="Validate_IP(this,\'DNS\')" data-lpignore="true" /></td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'2_dns2" value="0.0.0.0" onkeypress="return validator.isIPAddr(this, event)" onblur="Validate_IP(this,\'DNS\')" data-lpignore="true" /></td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'3_dns2" value="0.0.0.0" onkeypress="return validator.isIPAddr(this, event)" onblur="Validate_IP(this,\'DNS\')" data-lpignore="true" /></td>';
-	charthtml+='</tr>';
-	
-	/* FORCEDNS */
-	charthtml+='<tr>';
-	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(7);">Force DNS</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_forcedns" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_forcedns" class="input" value="false" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_forcedns" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_forcedns" class="input" value="false" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_forcedns" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_forcedns" class="input" value="false" checked>No</td>';
-	charthtml+='</tr>';
-	
-	/* REDIRECTALLTOVPN */
-	charthtml+='<tr>';
-	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(8);">Redirect all to VPN</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_redirectalltovpn" id="yazfi_'+prefix+'1_redir_true" onChange="VPNOptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_redirectalltovpn" id="yazfi_'+prefix+'1_redir_false" onChange="VPNOptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_redirectalltovpn" id="yazfi_'+prefix+'2_redir_true" onChange="VPNOptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_redirectalltovpn" id="yazfi_'+prefix+'2_redir_false" onChange="VPNOptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_redirectalltovpn" id="yazfi_'+prefix+'3_redir_true" onChange="VPNOptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_redirectalltovpn" id="yazfi_'+prefix+'3_redir_false" onChange="VPNOptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
-	charthtml+='</tr>';
-	
-	/* VPNCLIENTNUMBER */
-	charthtml+='<tr>';
-	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(9);">VPN Client No.</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="1" class="input_6_table" name="yazfi_'+prefix+'1_vpnclientnumber" value="2" onkeypress="return validator.isNumber(this, event)" onblur="Validate_VPNClientNo(this)" /></td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="1" class="input_6_table" name="yazfi_'+prefix+'2_vpnclientnumber" value="2" onkeypress="return validator.isNumber(this, event)" onblur="Validate_VPNClientNo(this)" /></td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="1" class="input_6_table" name="yazfi_'+prefix+'3_vpnclientnumber" value="2" onkeypress="return validator.isNumber(this, event)" onblur="Validate_VPNClientNo(this)" /></td>';
-	charthtml+='</tr>';
-	
-	/* TWOWAYTOGUEST */
-	charthtml+='<tr>';
-	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(10);">Two way to guest</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_twowaytoguest" class="input" value="true" onchange="Validate_OneTwoWay(this)">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_twowaytoguest" class="input" value="false" onchange="Validate_OneTwoWay(this)" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_twowaytoguest" class="input" value="true" onchange="Validate_OneTwoWay(this)" >Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_twowaytoguest" class="input" value="false" onchange="Validate_OneTwoWay(this)" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_twowaytoguest" class="input" value="true" onchange="Validate_OneTwoWay(this)" >Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_twowaytoguest" class="input" value="false" onchange="Validate_OneTwoWay(this)" checked>No</td>';
-	charthtml+='</tr>';
-	
-	/* ONEWAYTOGUEST */
-	charthtml+='<tr>';
-	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(11);">One way to guest</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_onewaytoguest" class="input" value="true" onchange="Validate_OneTwoWay(this)" >Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_onewaytoguest" class="input" value="false" onchange="Validate_OneTwoWay(this)" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_onewaytoguest" class="input" value="true" onchange="Validate_OneTwoWay(this)" >Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_onewaytoguest" class="input" value="false" onchange="Validate_OneTwoWay(this)" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_onewaytoguest" class="input" value="true" onchange="Validate_OneTwoWay(this)" >Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_onewaytoguest" class="input" value="false" onchange="Validate_OneTwoWay(this)" checked>No</td>';
-	charthtml+='</tr>';
-	
-	/* CLIENT ISOLATION */
-	charthtml+='<tr>';
-	charthtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(12);">Client isolation</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_clientisolation" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_clientisolation" class="input" value="false" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_clientisolation" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_clientisolation" class="input" value="false" checked>No</td>';
-	charthtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_clientisolation" class="input" value="true" >Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_clientisolation" class="input" value="false" checked>No</td>';
-	charthtml+='</tr>';
-	
-	charthtml+='</table>';
-	charthtml+='</td>';
-	charthtml+='</tr>';
-	charthtml+='</table>';
-	charthtml+='<div style="line-height:10px;">&nbsp;</div>';
-	return charthtml;
 }
 
 function AddEventHandlers(){
