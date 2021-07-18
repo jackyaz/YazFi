@@ -61,9 +61,8 @@ function initial(){
 	
 	setTimeout(get_connected_clients_file,5000);
 }
-
-function jy_checkIPConflict(CompareItem, sourceIP, sourceMask, compareIP, compareMask){
-	var SetIPConflictAttr = function () {
+function jy_checkIPConflict(CompareItem,sourceIP,sourceMask,compareIP,compareMask){
+	var SetIPConflictAttr = function(){
 		this.state = false;
 		this.ipAddr = "";
 		this.mask = "";
@@ -73,7 +72,7 @@ function jy_checkIPConflict(CompareItem, sourceIP, sourceMask, compareIP, compar
 		this.netLegalRangeEnd = "";
 	};
 	var ipConflict = new SetIPConflictAttr();
-	var calculatorNetworkSegmentRange = function (compareIP, compareMask){
+	var calculatorNetworkSegmentRange = function(compareIP,compareMask){
 		var gatewayIPArray = compareIP.split(".");
 		var netMaskArray = compareMask.split(".");
 		var ipPoolStartArray = new Array();
@@ -88,13 +87,13 @@ function jy_checkIPConflict(CompareItem, sourceIP, sourceMask, compareIP, compar
 		ipPoolEndArray[1] = (gatewayIPArray[1] & 0xFF) | (~netMaskArray[1] & 0xFF);
 		ipPoolEndArray[2] = (gatewayIPArray[2] & 0xFF) | (~netMaskArray[2] & 0xFF);
 		ipPoolEndArray[3] = (gatewayIPArray[3] & 0xFF) | (~netMaskArray[3] & 0xFF);
-		ipActualRange = ipPoolStartArray[0] + "." + ipPoolStartArray[1] + "." + ipPoolStartArray[2] + "." + ipPoolStartArray[3] + ">" +
-		ipPoolEndArray[0] + "." + ipPoolEndArray[1] + "." + ipPoolEndArray[2] + "." + ipPoolEndArray[3];
-		ipLegalRange = ipPoolStartArray[0] + "." + ipPoolStartArray[1] + "." + ipPoolStartArray[2] + "." + (ipPoolStartArray[3] + 1) + ">" +
-		ipPoolEndArray[0] + "." + ipPoolEndArray[1] + "." + ipPoolEndArray[2] + "." + (ipPoolEndArray[3] - 1);
-		return ipActualRange + ">" + ipLegalRange;
+		ipActualRange = ipPoolStartArray[0]+"."+ipPoolStartArray[1]+"."+ipPoolStartArray[2]+"."+ipPoolStartArray[3]+">" +
+		ipPoolEndArray[0]+"."+ipPoolEndArray[1]+"."+ipPoolEndArray[2]+"."+ipPoolEndArray[3];
+		ipLegalRange = ipPoolStartArray[0]+"."+ipPoolStartArray[1]+"."+ipPoolStartArray[2]+"."+(ipPoolStartArray[3]+1)+">" +
+		ipPoolEndArray[0]+"."+ipPoolEndArray[1]+"."+ipPoolEndArray[2]+"."+(ipPoolEndArray[3] - 1);
+		return ipActualRange+">"+ipLegalRange;
 	};
-	var checkRangeConflict = function (sourceRangeStart, sourceRangeEnd, compareRangeStart, compareRangeEnd){
+	var checkRangeConflict = function(sourceRangeStart,sourceRangeEnd,compareRangeStart,compareRangeEnd){
 		var sourceNetStartNum = inet_network(sourceRangeStart);
 		var sourceNetEndNum = inet_network(sourceRangeEnd);
 		var compareNetStartNum = inet_network(compareRangeStart);
@@ -109,18 +108,18 @@ function jy_checkIPConflict(CompareItem, sourceIP, sourceMask, compareIP, compar
 			return false;
 		}
 	};
-	var setIPConflictValue = function (compareIP, compareMask, sourceIP, sourceMask){
+	var setIPConflictValue = function(compareIP,compareMask,sourceIP,sourceMask){
 		var compareNetRangeArray = "";
 		var sourceNetRangeArray = "";
 		ipConflict.ipAddr = compareIP;
 		ipConflict.mask = compareMask;
-		compareNetRangeArray = calculatorNetworkSegmentRange(ipConflict.ipAddr, ipConflict.mask).split(">");
+		compareNetRangeArray = calculatorNetworkSegmentRange(ipConflict.ipAddr,ipConflict.mask).split(">");
 		ipConflict.netRangeStart = compareNetRangeArray[0];
 		ipConflict.netRangeEnd = compareNetRangeArray[1];
 		ipConflict.netLegalRangeStart = compareNetRangeArray[2];
 		ipConflict.netLegalRangeEnd = compareNetRangeArray[3];
-		sourceNetRangeArray = calculatorNetworkSegmentRange(sourceIP, sourceMask).split(">");
-		ipConflict.state = checkRangeConflict(sourceNetRangeArray[0], sourceNetRangeArray[1], ipConflict.netRangeStart, ipConflict.netRangeEnd);
+		sourceNetRangeArray = calculatorNetworkSegmentRange(sourceIP,sourceMask).split(">");
+		ipConflict.state = checkRangeConflict(sourceNetRangeArray[0],sourceNetRangeArray[1],ipConflict.netRangeStart,ipConflict.netRangeEnd);
 	};
 	var iSourceIndex = 0;
 	if(CompareItem.search("VLAN") !== -1){
@@ -135,28 +134,28 @@ function jy_checkIPConflict(CompareItem, sourceIP, sourceMask, compareIP, compar
 		case "WAN":
 			var wanIP = wanlink_ipaddr();
 			var wanMask = wanlink_netmask();
-			if(wanIP != "0.0.0.0" && wanIP != "" && wanMask != "0.0.0.0" && wanMask != "") {
-				setIPConflictValue(wanIP, wanMask, sourceIP, sourceMask);
+			if(wanIP != "0.0.0.0" && wanIP != "" && wanMask != "0.0.0.0" && wanMask != ""){
+				setIPConflictValue(wanIP,wanMask,sourceIP,sourceMask);
 			}
 		break;
 		case "LAN":
-			setIPConflictValue('10.14.16.1', '255.255.255.0', sourceIP, sourceMask);
+			setIPConflictValue('<% nvram_get("lan_ipaddr"); %>', '<% nvram_get("lan_netmask"); %>', sourceIP, sourceMask);
 			break;
 			case "PPTP":
-			var pptpIP = '192.168.10.2-11';
+			var pptpIP = '<% nvram_get("pptpd_clients"); %>';
 			pptpIP = pptpIP.split("-")[0];
-			setIPConflictValue(pptpIP, "255.255.255.0", sourceIP, sourceMask);
+			setIPConflictValue(pptpIP,"255.255.255.0",sourceIP,sourceMask);
 		break;
 		case "OpenVPN":
-			setIPConflictValue('10.16.14.0', '255.255.255.0', sourceIP, sourceMask);
+			setIPConflictValue('<% nvram_get("vpn_server_sn"); %>', '<% nvram_get("vpn_server_nm"); %>', sourceIP, sourceMask);
 		break;
 		case "VLAN":
-			var subnet_rulelist_array = decodeURIComponent("%3C192%2E168%2E101%2E1%3E255%2E255%2E255%2E0%3E1%3E192%2E168%2E101%2E2%3E192%2E168%2E101%2E254%3E86400%3E%3E%3E%3E0%3E%3E1%3E%3C192%2E168%2E102%2E1%3E255%2E255%2E255%2E0%3E1%3E192%2E168%2E102%2E2%3E192%2E168%2E102%2E254%3E86400%3E%3E%3E%3E0%3E%3E1%3E");
+			var subnet_rulelist_array = decodeURIComponent("<% nvram_char_to_ascii("","subnet_rulelist"); %>");
 			var subnet_rulelist_row = subnet_rulelist_array.split('<');
 			var subnet_rulelist_col = subnet_rulelist_row[iSourceIndex].split('>');
 			var vlanIP = subnet_rulelist_col[1];
 			var vlanMask = subnet_rulelist_col[2];
-			setIPConflictValue(vlanIP, vlanMask, sourceIP, sourceMask);
+			setIPConflictValue(vlanIP,vlanMask,sourceIP,sourceMask);
 		break;
 		case "SUBNET":
 			var gatewayIP = "";
@@ -166,20 +165,20 @@ function jy_checkIPConflict(CompareItem, sourceIP, sourceMask, compareIP, compar
 				netMask = compareMask;
 			}
 			else{
-				var subnet_rulelist_array = decodeURIComponent("%3C192%2E168%2E101%2E1%3E255%2E255%2E255%2E0%3E1%3E192%2E168%2E101%2E2%3E192%2E168%2E101%2E254%3E86400%3E%3E%3E%3E0%3E%3E1%3E%3C192%2E168%2E102%2E1%3E255%2E255%2E255%2E0%3E1%3E192%2E168%2E102%2E2%3E192%2E168%2E102%2E254%3E86400%3E%3E%3E%3E0%3E%3E1%3E");
+				var subnet_rulelist_array = decodeURIComponent("<% nvram_char_to_ascii("","subnet_rulelist"); %>");
 				var subnet_rulelist_row = subnet_rulelist_array.split('<');
-				for(var i = 1; i < subnet_rulelist_row.length; i++) {
+				for(var i = 1; i < subnet_rulelist_row.length; i++){
 					var subnet_rulelist_col = subnet_rulelist_row[i].split('>');
-					if(subnet_rulelist_col[0].substring(6, 7) == iSourceIndex){
+					if(subnet_rulelist_col[0].substring(6,7) == iSourceIndex){
 						gatewayIP = subnet_rulelist_col[1];
 						netMask = subnet_rulelist_col[2];
 					}
 				}
 			}
-			setIPConflictValue(gatewayIP, netMask, sourceIP, sourceMask);
+			setIPConflictValue(gatewayIP,netMask,sourceIP,sourceMask);
 		break;
 		default:
-			setIPConflictValue(compareIP, compareMask, sourceIP, sourceMask);
+			setIPConflictValue(compareIP,compareMask,sourceIP,sourceMask);
 		break;
 	}
 	return ipConflict;
