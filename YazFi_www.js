@@ -100,7 +100,7 @@ function Validate_IP(forminput,iptype){
 			var fixedip = inputvalue.substring(0,inputvalue.lastIndexOf("."))+".0";
 			$j(forminput).val(fixedip);
 			if (/(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)/.test(fixedip)){
-				if(! checkIPConflict("LAN",fixedip,"255.255.255.0",document.form.lan_ipaddr.value,document.form.lan_netmask.value).state){
+				if(! jy_checkIPConflict("LAN",fixedip,"255.255.255.0",document.form.lan_ipaddr.value,document.form.lan_netmask.value).state){
 					matchfound=false;
 					for(var i = 0; i < bands; i++){
 						for(var i2 = 1; i2 <= 3; i2++){
