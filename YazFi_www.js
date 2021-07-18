@@ -19,7 +19,7 @@ function YazHint(hintid){
 	if(hintid == 10) hinttext="Should LAN/Guest Network traffic have unrestricted access to each other? Cannot be enabled if _ONEWAYTOGUEST is enabled";
 	if(hintid == 11) hinttext="Should LAN be able to initiate connections to Guest Network clients (but not the opposite)? Cannot be enabled if _TWOWAYTOGUEST is enabled";
 	if(hintid == 12) hinttext="Should Guest Network radio prevent clients from talking to each other?";
-	return overlib(hinttext, HAUTO, VAUTO);
+	return overlib(hinttext,0,0);
 }
 
 function OptionsEnableDisable(forminput){
