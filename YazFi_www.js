@@ -290,7 +290,7 @@ function get_conf_file(){
 		url: '/ext/YazFi/config.htm',
 		dataType: 'text',
 		error: function(xhr){
-			setTimeout(get_conf_file, 1000);
+			setTimeout(get_conf_file,1000);
 		},
 		success: function(data){
 			var settings=data.split("\n");
@@ -350,9 +350,9 @@ function ScriptUpdateLayout(){
 	
 	if(localver != serverver && serverver != "N/A"){
 		$j("#yazfi_version_server").text("Updated version available: "+serverver);
-		showhide("btnChkUpdate", false);
-		showhide("yazfi_version_server", true);
-		showhide("btnDoUpdate", true);
+		showhide("btnChkUpdate",false);
+		showhide("yazfi_version_server",true);
+		showhide("btnDoUpdate",true);
 	}
 }
 
@@ -362,24 +362,24 @@ function update_status(){
 		dataType: 'script',
 		timeout: 3000,
 		error: function(xhr){
-			setTimeout(update_status, 1000);
+			setTimeout(update_status,1000);
 		},
 		success: function(){
 			if (updatestatus == "InProgress"){
-				setTimeout(update_status, 1000);
+				setTimeout(update_status,1000);
 			}
 			else{
 				document.getElementById("imgChkUpdate").style.display = "none";
-				showhide("yazfi_version_server", true);
+				showhide("yazfi_version_server",true);
 				if(updatestatus != "None"){
 					$j("#yazfi_version_server").text("Updated version available: "+updatestatus);
-					showhide("btnChkUpdate", false);
-					showhide("btnDoUpdate", true);
+					showhide("btnChkUpdate",false);
+					showhide("btnDoUpdate",true);
 				}
 				else{
 					$j("#yazfi_version_server").text("No update available");
-					showhide("btnChkUpdate", true);
-					showhide("btnDoUpdate", false);
+					showhide("btnChkUpdate",true);
+					showhide("btnDoUpdate",false);
 				}
 			}
 		}
@@ -387,18 +387,16 @@ function update_status(){
 }
 
 function CheckUpdate(){
-	showhide("btnChkUpdate", false);
+	showhide("btnChkUpdate",false);
 	document.formScriptActions.action_script.value="start_YazFicheckupdate"
 	document.formScriptActions.submit();
 	document.getElementById("imgChkUpdate").style.display = "";
-	setTimeout(update_status, 2000);
+	setTimeout(update_status,2000);
 }
 
 function DoUpdate(){
-	var action_script_tmp = "start_YazFidoupdate";
-	document.form.action_script.value = action_script_tmp;
-	var restart_time = 45;
-	document.form.action_wait.value = restart_time;
+	document.form.action_script.value = "start_YazFidoupdate";
+	document.form.action_wait.value = 45;
 	showLoading();
 	document.form.submit();
 }
@@ -421,8 +419,7 @@ function GetVersionNumber(versiontype){
 }
 
 function GetCookie(cookiename,returntype){
-	var s;
-	if ((s = cookie.get("yazfi_"+cookiename)) != null){
+	if (cookie.get("yazfi_"+cookiename) != null){
 		return cookie.get("yazfi_"+cookiename);
 	}
 	else{
@@ -443,10 +440,8 @@ function SaveConfig(){
 	if(Validate_All()){
 		$j('[name*=yazfi_]').prop("disabled",false);
 		document.getElementById('amng_custom').value = JSON.stringify($j('form').serializeObject());
-		var action_script_tmp = "start_YazFi";
-		document.form.action_script.value = action_script_tmp;
-		var restart_time = 45;
-		document.form.action_wait.value = restart_time;
+		document.form.action_script.value = "start_YazFi";
+		document.form.action_wait.value = 45;
 		showLoading();
 		document.form.submit();
 	}
@@ -640,7 +635,7 @@ function AddEventHandlers(){
 $j.fn.serializeObject = function(){
 	var o = custom_settings;
 	var a = this.serializeArray();
-	$j.each(a, function(){
+	$j.each(a,function(){
 		if (o[this.name] !== undefined && this.name.indexOf("yazfi") != -1 && this.name.indexOf("version") == -1){
 			if (!o[this.name].push){
 				o[this.name] = [o[this.name]];
