@@ -1570,6 +1570,9 @@ Routing_VPNDirector(){
 				VPN_IP_LIST_NEW="${VPN_IP_LIST_NEW}${VPN_IFACE_NVRAM}"
 			fi
 			
+			VPN_IFACE_NVRAM_SAFE="$(echo "<0>$(Get_Guest_Name "$2")>$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").0/24>>OVPN$3" | sed -e 's/\//\\\//g;s/\./\\./g;s/ /\\ /g')"
+			VPN_IP_LIST_NEW=$(echo "$VPN_IP_LIST_NEW" | sed -e "s/$VPN_IFACE_NVRAM_SAFE//g")
+			
 			COUNTER=1
 			until [ $COUNTER -gt 5 ]; do
 				if [ $COUNTER -eq "$3" ]; then
