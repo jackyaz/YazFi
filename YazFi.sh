@@ -2690,6 +2690,48 @@ Process_Upgrade(){
 	fi
 }
 
+Show_About(){
+	cat <<EOF
+About
+  $SCRIPT_NAME is a Feature expansion of guest WiFi networks on
+AsusWRT-Merlin, including SSID -> VPN, separate subnets per guest
+network, pinhole access to LAN resources (e.g. DNS) and more!
+License
+  $SCRIPT_NAME is free to use under the GNU General Public License
+  version 3 (GPL-3.0) https://opensource.org/licenses/GPL-3.0
+Help & Support
+  https://www.snbforums.com/forums/asuswrt-merlin-addons.60/?prefix_id=13
+Source code
+  https://github.com/jackyaz/$SCRIPT_NAME
+EOF
+	printf "\\n"
+}
+### ###
+
+### function based on @dave14305's FlexQoS show_help function ###
+Show_Help(){
+	cat <<EOF
+Available commands:
+  $SCRIPT_NAME about              explains functionality
+  $SCRIPT_NAME update             checks for updates
+  $SCRIPT_NAME forceupdate        updates to latest version (force update)
+  $SCRIPT_NAME startup            runs startup actions such as mount WebUI tab
+  $SCRIPT_NAME install            installs script
+  $SCRIPT_NAME uninstall          uninstalls script
+  $SCRIPT_NAME runnow             apply $SCRIPT_NAME configuration
+  $SCRIPT_NAME check              check if $SCRIPT_NAME configuration is still in effect and re-apply if not
+  $SCRIPT_NAME bounceclients      restart guest network radios
+  $SCRIPT_NAME status             print information about clients connected to $SCRIPT_NAME guest networks
+  $SCRIPT_NAME check              check if $SCRIPT_NAME configuration is still in effect and re-apply if not
+  $SCRIPT_NAME userscripts        run userscripts (if any have been created)
+  $SCRIPT_NAME rejectlogging      toggle whether rejected packets are logged to syslog
+  $SCRIPT_NAME develop            switch to development branch
+  $SCRIPT_NAME stable             switch to stable branch
+EOF
+	printf "\\n"
+}
+### ###
+
 if [ -z "$1" ]; then
 	Create_Dirs
 	Create_Symlinks
@@ -2897,7 +2939,9 @@ case "$1" in
 		exit 0
 	;;
 	*)
-		echo "Command not recognised, please try again"
+		ScriptHeader
+		Print_Output false "Command not recognised." "$ERR"
+		Print_Output false "For a list of available commands run: $SCRIPT_NAME_LOWER help"
 		exit 1
 	;;
 esac
