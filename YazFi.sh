@@ -1099,6 +1099,38 @@ Download_File(){
 	/usr/sbin/curl -fsL --retry 3 "$1" -o "$2"
 }
 
+### function based on @dave14305's FlexQoS webconfigpage function ###
+Get_WebUI_URL(){
+	urlpage=""
+	urlproto=""
+	urldomain=""
+	urlport=""
+
+	urlpage="$(sed -nE "/$SCRIPT_NAME/ s/.*url\: \"(user[0-9]+\.asp)\".*/\1/p" /tmp/menuTree.js)"
+	if [ "$(nvram get http_enable)" -eq 1 ]; then
+		urlproto="https"
+	else
+		urlproto="http"
+	fi
+	if [ -n "$(nvram get lan_domain)" ]; then
+		urldomain="$(nvram get lan_hostname).$(nvram get lan_domain)"
+	else
+		urldomain="$(nvram get lan_ipaddr)"
+	fi
+	if [ "$(nvram get ${urlproto}_lanport)" -eq 80 ] || [ "$(nvram get ${urlproto}_lanport)" -eq 443 ]; then
+		urlport=""
+	else
+		urlport=":$(nvram get ${urlproto}_lanport)"
+	fi
+
+	if echo "$urlpage" | grep -qE "user[0-9]+\.asp"; then
+		echo "${urlproto}://${urldomain}${urlport}/${urlpage}" | tr "A-Z" "a-z"
+	else
+		echo "WebUI page not found"
+	fi
+}
+### ###
+
 Get_WebUI_Page(){
 	MyPage="none"
 	for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
@@ -2045,6 +2077,7 @@ ScriptHeader(){
 }
 
 MainMenu(){
+	printf "WebUI for %s is available at:\\n${SETTING}%s${CLEARFORMAT}\\n\\n" "$SCRIPT_NAME" "$(Get_WebUI_URL)"
 	printf "1.    Apply %s settings\\n\\n" "$SCRIPT_NAME"
 	printf "2.    Show connected clients using %s\\n\\n" "$SCRIPT_NAME"
 	printf "3.    Edit %s config\\n" "$SCRIPT_NAME"
