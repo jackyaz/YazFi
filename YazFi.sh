@@ -2681,6 +2681,15 @@ Menu_Uninstall(){
 	service restart_firewall >/dev/null 2>&1
 }
 
+Process_Upgrade(){
+	if [ ! -f "$SCRIPT_DIR/S98YazFiMonitor" ]; then
+		Update_File YazFiMonitor
+		Update_File YazFiMonitord
+		Update_File sc.func
+		Update_File S98YazFiMonitor
+	fi
+}
+
 if [ -z "$1" ]; then
 	Create_Dirs
 	Create_Symlinks
@@ -2691,6 +2700,7 @@ if [ -z "$1" ]; then
 	Auto_ServiceStart create 2>/dev/null
 	Auto_OpenVPNEvent create 2>/dev/null
 	Shortcut_Script create
+	Process_Upgrade
 	ScriptHeader
 	MainMenu
 	exit 0
