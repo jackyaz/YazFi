@@ -1146,6 +1146,7 @@ Get_WebUI_Page(){
 
 ### locking mechanism code credit to Martineau (@MartineauUK) ###
 Mount_WebUI(){
+	Print_Output true "Mounting WebUI tab for $SCRIPT_NAME" "$PASS"
 	LOCKFILE=/tmp/addonwebui.lock
 	FD=386
 	eval exec "$FD>$LOCKFILE"
@@ -1157,7 +1158,7 @@ Mount_WebUI(){
 		return 1
 	fi
 	cp -f "$SCRIPT_DIR/YazFi_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
-	echo "YazFi" > "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
+	echo "$SCRIPT_NAME" > "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
 	
 	if [ "$(uname -o)" = "ASUSWRT-Merlin" ]; then
 		if [ ! -f "/tmp/menuTree.js" ]; then
@@ -1166,14 +1167,14 @@ Mount_WebUI(){
 		
 		sed -i "\\~$MyPage~d" /tmp/menuTree.js
 		
-		sed -i "/url: \"Guest_network.asp\", tabName:/a {url: \"$MyPage\", tabName: \"YazFi\"}," /tmp/menuTree.js
+		sed -i "/url: \"Guest_network.asp\", tabName:/a {url: \"$MyPage\", tabName: \"$SCRIPT_NAME\"}," /tmp/menuTree.js
 		
 		umount /www/require/modules/menuTree.js 2>/dev/null
 		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 	fi
 	
 	flock -u "$FD"
-	Print_Output true "Mounting $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
+	Print_Output true "Mounted $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
 }
 
 Conf_Download(){
@@ -1859,8 +1860,6 @@ Config_Networks(){
 	Create_Dirs
 	Create_Symlinks
 	
-	Set_Version_Custom_Settings local
-	
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_DNSMASQ create 2>/dev/null
@@ -2092,13 +2091,14 @@ MainMenu(){
 	printf "\\n"
 	
 	while true; do
-		printf "Choose an option:    "
+		printf "Choose an option:  "
 		read -r menu
 		case "$menu" in
 			1)
 				printf "\\n"
 				if Check_Lock menu; then
-					Menu_RunNow
+					Config_Networks
+					Clear_Lock
 				fi
 				PressEnter
 				break
@@ -2130,7 +2130,8 @@ MainMenu(){
 			u)
 				printf "\\n"
 				if Check_Lock menu; then
-					Menu_Update
+					Update_Version
+					Clear_Lock
 				fi
 				PressEnter
 				break
@@ -2138,7 +2139,8 @@ MainMenu(){
 			uf)
 				printf "\\n"
 				if Check_Lock menu; then
-					Menu_ForceUpdate
+					Update_Version force
+					Clear_Lock
 				fi
 				PressEnter
 				break
@@ -2151,12 +2153,12 @@ MainMenu(){
 			;;
 			e)
 				ScriptHeader
-				printf "\\n\\e[1mThanks for using %s!\\e[0m\\n\\n\\n" "$SCRIPT_NAME"
+				printf "\\n${BOLD}Thanks for using %s!${CLEARFORMAT}\\n\\n\\n" "$SCRIPT_NAME"
 				exit 0
 			;;
 			z)
 				while true; do
-					printf "\\n\\e[1mAre you sure you want to uninstall %s? (y/n)\\e[0m\\n" "$SCRIPT_NAME"
+					printf "\\n${BOLD}Are you sure you want to uninstall %s? (y/n)${CLEARFORMAT}  " "$SCRIPT_NAME"
 					read -r confirm
 					case "$confirm" in
 						y|Y)
@@ -2183,7 +2185,7 @@ Check_Requirements(){
 	CHECKSFAILED="false"
 	
 	if [ "$(nvram get sw_mode)" -ne 1 ]; then
-		Print_Output true "Device is not running in router mode - non-router modes are not supported" "$ERR"
+		Print_Output false "Device is not running in router mode - non-router modes are not supported" "$ERR"
 		CHECKSFAILED="true"
 	fi
 	
@@ -2194,7 +2196,7 @@ Check_Requirements(){
 	fi
 	
 	if [ "$(nvram get wl0_radio)" -eq 0 ] && [ "$(nvram get wl1_radio)" -eq 0 ] && [ "$(nvram get wl_radio)" -eq 0 ]; then
-		Print_Output true "No wireless radios are enabled!" "$ERR"
+		Print_Output false "No wireless radios are enabled!" "$ERR"
 		CHECKSFAILED="true"
 	fi
 	
@@ -2214,6 +2216,7 @@ Check_Requirements(){
 }
 
 Menu_Install(){
+	ScriptHeader
 	Print_Output true "Welcome to $SCRIPT_NAME $SCRIPT_VERSION, a script by JackYaz"
 	sleep 1
 	
@@ -2238,7 +2241,7 @@ Menu_Install(){
 		Update_File sc.func
 		Update_File S98YazFiMonitor
 	else
-		Print_Output true "WebUI is only support on firmware versions with addon support" "$WARN"
+		Print_Output false "WebUI is only support on firmware versions with addon support" "$WARN"
 	fi
 	
 	if ! Conf_Exists; then
@@ -2249,7 +2252,8 @@ Menu_Install(){
 	fi
 	
 	Shortcut_Script create
-	Set_Version_Custom_Settings local
+	Set_Version_Custom_Settings local "$SCRIPT_VERSION"
+	Set_Version_Custom_Settings server "$SCRIPT_VERSION"
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_DNSMASQ create 2>/dev/null
@@ -2257,10 +2261,12 @@ Menu_Install(){
 	Auto_ServiceStart create 2>/dev/null
 	Auto_OpenVPNEvent create 2>/dev/null
 	
-	Print_Output true "You can access $SCRIPT_NAME's configuration via the Guest Networks section of the WebUI" "$PASS"
-	Print_Output true "Alternativey, use $SCRIPT_NAME's menu via amtm (if installed), with /jffs/scripts/$SCRIPT_NAME or simply $SCRIPT_NAME"
-	PressEnter
+	Print_Output false "You can access $SCRIPT_NAME's configuration via the Guest Networks section of the WebUI" "$PASS"
+	Print_Output false "Alternativey, use $SCRIPT_NAME's menu via amtm (if installed), with /jffs/scripts/$SCRIPT_NAME or simply $SCRIPT_NAME"
 	Clear_Lock
+	PressEnter
+	ScriptHeader
+	MainMenu
 }
 
 Menu_Edit(){
@@ -2269,13 +2275,13 @@ Menu_Edit(){
 	if ! Conf_Exists; then
 		Conf_Download "$SCRIPT_CONF"
 	fi
-	printf "\\n\\e[1mA choice of text editors is available:\\e[0m\\n"
+	printf "\\n${BOLD}A choice of text editors is available:${CLEARFORMAT}\\n"
 	printf "1.    nano (recommended for beginners)\\n"
 	printf "2.    vi\\n"
 	printf "\\ne.    Exit to main menu\\n"
 	
 	while true; do
-		printf "\\n\\e[1mChoose an option:\\e[0m    "
+		printf "\\n${BOLD}Choose an option:${CLEARFORMAT}  "
 		read -r editor
 		case "$editor" in
 			1)
@@ -2300,81 +2306,6 @@ Menu_Edit(){
 		$texteditor "$SCRIPT_CONF"
 	fi
 	Clear_Lock
-}
-
-Menu_RunNow(){
-	Config_Networks
-	Clear_Lock
-}
-
-Menu_Startup(){
-	Create_Dirs
-	Create_Symlinks
-	"$SCRIPT_DIR/S98YazFiMonitor" start >/dev/null 2>&1
-	Mount_WebUI
-}
-
-Menu_Update(){
-	Update_Version
-	Clear_Lock
-}
-
-Menu_ForceUpdate(){
-	Update_Version force
-	Clear_Lock
-}
-
-Menu_Uninstall(){
-	Print_Output true "Removing $SCRIPT_NAME..." "$PASS"
-	Auto_Startup delete 2>/dev/null
-	Auto_Cron delete 2>/dev/null
-	Auto_DNSMASQ delete 2>/dev/null
-	Auto_ServiceEvent delete 2>/dev/null
-	Auto_ServiceStart delete 2>/dev/null
-	Auto_OpenVPNEvent delete 2>/dev/null
-	Avahi_Conf delete 2>/dev/null
-	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
-		Routing_NVRAM deleteall 2>/dev/null
-	else
-		Routing_VPNDirector deleteall 2>/dev/null
-	fi
-	Firewall_NAT deleteall 2>/dev/null
-	Routing_RPDB delete 2>/dev/null
-	Firewall_Chains deleteall 2>/dev/null
-	Firewall_NVRAM deleteall "$IFACE" 2>/dev/null
-	Iface_Manage deleteall 2>/dev/null
-	DHCP_Conf deleteall 2>/dev/null
-	Get_WebUI_Page "$SCRIPT_DIR/YazFi_www.asp"
-	if [ -n "$MyPage" ] && [ "$MyPage" != "none" ] && [ -f "/tmp/menuTree.js" ]; then
-		sed -i "\\~$MyPage~d" /tmp/menuTree.js
-		umount /www/require/modules/menuTree.js
-		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
-		rm -f "$SCRIPT_WEBPAGE_DIR/$MyPage"
-	fi
-	while true; do
-		printf "\\n\\e[1mDo you want to delete %s configuration file(s)? (y/n)\\e[0m\\n" "$SCRIPT_NAME"
-		read -r confirm
-		case "$confirm" in
-			y|Y)
-				rm -rf "/jffs/addons/$SCRIPT_NAME.d" 2>/dev/null
-				break
-			;;
-			*)
-				break
-			;;
-		esac
-	done
-	Shortcut_Script delete
-	rm -f "/jffs/scripts/$SCRIPT_NAME" 2>/dev/null
-	Clear_Lock
-	Print_Output true "Restarting firewall to complete uninstall" "$PASS"
-	service restart_dnsmasq >/dev/null 2>&1
-	service restart_firewall >/dev/null 2>&1
-}
-
-Menu_BounceClients(){
-	. "$SCRIPT_CONF"
-	Iface_BounceClients
 }
 
 Menu_GuestConfig(){
@@ -2696,10 +2627,61 @@ Menu_Diagnostics(){
 	SEC=""
 }
 
+Menu_Uninstall(){
+	Print_Output true "Removing $SCRIPT_NAME..." "$PASS"
+	Auto_Startup delete 2>/dev/null
+	Auto_Cron delete 2>/dev/null
+	Auto_DNSMASQ delete 2>/dev/null
+	Auto_ServiceEvent delete 2>/dev/null
+	Auto_ServiceStart delete 2>/dev/null
+	Auto_OpenVPNEvent delete 2>/dev/null
+	Avahi_Conf delete 2>/dev/null
+	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
+		Routing_NVRAM deleteall 2>/dev/null
+	else
+		Routing_VPNDirector deleteall 2>/dev/null
+	fi
+	Firewall_NAT deleteall 2>/dev/null
+	Routing_RPDB delete 2>/dev/null
+	Firewall_Chains deleteall 2>/dev/null
+	Firewall_NVRAM deleteall "$IFACE" 2>/dev/null
+	Iface_Manage deleteall 2>/dev/null
+	DHCP_Conf deleteall 2>/dev/null
+	Get_WebUI_Page "$SCRIPT_DIR/YazFi_www.asp"
+	if [ -n "$MyPage" ] && [ "$MyPage" != "none" ] && [ -f "/tmp/menuTree.js" ]; then
+		sed -i "\\~$MyPage~d" /tmp/menuTree.js
+		umount /www/require/modules/menuTree.js
+		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
+		rm -f "$SCRIPT_WEBPAGE_DIR/$MyPage"
+		rm -f "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
+	fi
+	while true; do
+		printf "\\n${BOLD}Do you want to delete %s configuration file(s)? (y/n)${CLEARFORMAT}  " "$SCRIPT_NAME"
+		read -r confirm
+		case "$confirm" in
+			y|Y)
+				rm -rf "/jffs/addons/$SCRIPT_NAME.d" 2>/dev/null
+				break
+			;;
+			*)
+				break
+			;;
+		esac
+	done
+	SETTINGSFILE="/jffs/addons/custom_settings.txt"
+	sed -i '/yazfi_version_local/d' "$SETTINGSFILE"
+	sed -i '/yazfi_version_server/d' "$SETTINGSFILE"
+	Shortcut_Script delete
+	rm -f "/jffs/scripts/$SCRIPT_NAME" 2>/dev/null
+	Clear_Lock
+	Print_Output true "Restarting firewall to complete uninstall" "$PASS"
+	service restart_dnsmasq >/dev/null 2>&1
+	service restart_firewall >/dev/null 2>&1
+}
+
 if [ -z "$1" ]; then
 	Create_Dirs
 	Create_Symlinks
-	Set_Version_Custom_Settings local
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_DNSMASQ create 2>/dev/null
@@ -2768,11 +2750,15 @@ case "$1" in
 	;;
 	startup)
 		sleep 12
-		Menu_Startup
+		Create_Dirs
+		Create_Symlinks
+		"$SCRIPT_DIR/S98YazFiMonitor" start >/dev/null 2>&1
+		Mount_WebUI
 		exit 0
 	;;
 	bounceclients)
-		Menu_BounceClients
+		. "$SCRIPT_CONF"
+		Iface_BounceClients
 		exit 0;
 	;;
 	service_event)
@@ -2855,15 +2841,31 @@ case "$1" in
 		exit 0
 	;;
 	setversion)
-		Set_Version_Custom_Settings local
+		Set_Version_Custom_Settings local "$SCRIPT_VERSION"
 		Set_Version_Custom_Settings server "$SCRIPT_VERSION"
-		if [ -z "$2" ]; then
-			exec "$0"
-		fi
+		Create_Dirs
+		Create_Symlinks
+		Auto_Startup create 2>/dev/null
+		Auto_Cron create 2>/dev/null
+		Auto_DNSMASQ create 2>/dev/null
+		Auto_ServiceEvent create 2>/dev/null
+		Auto_ServiceStart create 2>/dev/null
+		Auto_OpenVPNEvent create 2>/dev/null
+		Shortcut_Script create
+		Process_Upgrade
 		exit 0
 	;;
-	checkupdate)
-		Update_Check
+	postupdate)
+		Create_Dirs
+		Create_Symlinks
+		Auto_Startup create 2>/dev/null
+		Auto_Cron create 2>/dev/null
+		Auto_DNSMASQ create 2>/dev/null
+		Auto_ServiceEvent create 2>/dev/null
+		Auto_ServiceStart create 2>/dev/null
+		Auto_OpenVPNEvent create 2>/dev/null
+		Shortcut_Script create
+		Process_Upgrade
 		exit 0
 	;;
 	uninstall)
