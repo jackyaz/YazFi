@@ -28,19 +28,19 @@ function YazHint(hintid){
 	for(var i=0;i<tag_name.length;i++){
 		tag_name[i].onmouseout=nd;
 	}
-	hinttext="My text goes here";
-	if(hintid == 1) hinttext="Enable YazFi for this Guest Network";
-	if(hintid == 2) hinttext="IP address/subnet to use for Guest Network";
-	if(hintid == 3) hinttext="Start of DHCP pool (2-253)";
-	if(hintid == 4) hinttext="End of DHCP pool (3-254)";
-	if(hintid == 5) hinttext="IP address for primary DNS resolver";
-	if(hintid == 6) hinttext="IP address for secondary DNS resolver";
-	if(hintid == 7) hinttext="Should Guest Network DNS requests be forced/redirected to DNS1? N.B. This setting is ignored if sending to VPN, and VPN Client's DNS configuration is Exclusive";
-	if(hintid == 8) hinttext="Should Guest Network traffic be sent via VPN?";
-	if(hintid == 9) hinttext="The number of the VPN Client to send traffic through (1-5)";
-	if(hintid == 10) hinttext="Should LAN/Guest Network traffic have unrestricted access to each other? Cannot be enabled if _ONEWAYTOGUEST is enabled";
-	if(hintid == 11) hinttext="Should LAN be able to initiate connections to Guest Network clients (but not the opposite)? Cannot be enabled if _TWOWAYTOGUEST is enabled";
-	if(hintid == 12) hinttext="Should Guest Network radio prevent clients from talking to each other?";
+	hinttext='My text goes here';
+	if(hintid == 1) hinttext='Enable YazFi for this Guest Network';
+	if(hintid == 2) hinttext='IP address/subnet to use for Guest Network';
+	if(hintid == 3) hinttext='Start of DHCP pool (2-253)';
+	if(hintid == 4) hinttext='End of DHCP pool (3-254)';
+	if(hintid == 5) hinttext='IP address for primary DNS resolver';
+	if(hintid == 6) hinttext='IP address for secondary DNS resolver';
+	if(hintid == 7) hinttext='Should Guest Network DNS requests be forced/redirected to DNS1? N.B. This setting is ignored if sending to VPN, and VPN Client\'s DNS configuration is Exclusive';
+	if(hintid == 8) hinttext='Should Guest Network traffic be sent via VPN?';
+	if(hintid == 9) hinttext='The number of the VPN Client to send traffic through (1-5)';
+	if(hintid == 10) hinttext='Should LAN/Guest Network traffic have unrestricted access to each other? Cannot be enabled if _ONEWAYTOGUEST is enabled';
+	if(hintid == 11) hinttext='Should LAN be able to initiate connections to Guest Network clients (but not the opposite)? Cannot be enabled if _TWOWAYTOGUEST is enabled';
+	if(hintid == 12) hinttext='Should Guest Network radio prevent clients from talking to each other?';
 	return overlib(hinttext,0,0);
 }
 
@@ -49,45 +49,45 @@ function OptionsEnableDisable(forminput){
 	var inputvalue = forminput.value;
 	var prefix = inputname.substring(0,inputname.lastIndexOf('_'));
 	
-	if(inputvalue == "false"){
-		$j('input[name='+prefix+'_ipaddr]').addClass("disabled");
-		$j('input[name='+prefix+'_ipaddr]').prop("disabled",true);
-		$j('input[name='+prefix+'_dhcpstart]').addClass("disabled");
-		$j('input[name='+prefix+'_dhcpstart]').prop("disabled",true);
-		$j('input[name='+prefix+'_dhcpend]').addClass("disabled");
-		$j('input[name='+prefix+'_dhcpend]').prop("disabled",true);
-		$j('input[name='+prefix+'_dns1]').addClass("disabled");
-		$j('input[name='+prefix+'_dns1]').prop("disabled",true);
-		$j('input[name='+prefix+'_dns2]').addClass("disabled");
-		$j('input[name='+prefix+'_dns2]').prop("disabled",true);
-		$j('input[name='+prefix+'_forcedns]').prop("disabled",true);
-		$j('input[name='+prefix+'_redirectalltovpn]').prop("disabled",true);
-		$j('input[name='+prefix+'_vpnclientnumber]').addClass("disabled");
-		$j('input[name='+prefix+'_vpnclientnumber]').prop("disabled",true);
-		$j('input[name='+prefix+'_onewaytoguest]').prop("disabled",true);
-		$j('input[name='+prefix+'_twowaytoguest]').prop("disabled",true);
-		$j('input[name='+prefix+'_clientisolation]').prop("disabled",true);
+	if(inputvalue == 'false'){
+		$j('input[name='+prefix+'_ipaddr]').addClass('disabled');
+		$j('input[name='+prefix+'_ipaddr]').prop('disabled',true);
+		$j('input[name='+prefix+'_dhcpstart]').addClass('disabled');
+		$j('input[name='+prefix+'_dhcpstart]').prop('disabled',true);
+		$j('input[name='+prefix+'_dhcpend]').addClass('disabled');
+		$j('input[name='+prefix+'_dhcpend]').prop('disabled',true);
+		$j('input[name='+prefix+'_dns1]').addClass('disabled');
+		$j('input[name='+prefix+'_dns1]').prop('disabled',true);
+		$j('input[name='+prefix+'_dns2]').addClass('disabled');
+		$j('input[name='+prefix+'_dns2]').prop('disabled',true);
+		$j('input[name='+prefix+'_forcedns]').prop('disabled',true);
+		$j('input[name='+prefix+'_redirectalltovpn]').prop('disabled',true);
+		$j('input[name='+prefix+'_vpnclientnumber]').addClass('disabled');
+		$j('input[name='+prefix+'_vpnclientnumber]').prop('disabled',true);
+		$j('input[name='+prefix+'_onewaytoguest]').prop('disabled',true);
+		$j('input[name='+prefix+'_twowaytoguest]').prop('disabled',true);
+		$j('input[name='+prefix+'_clientisolation]').prop('disabled',true);
 	}
-	else if(inputvalue == "true"){
-		$j('input[name='+prefix+'_ipaddr]').removeClass("disabled");
-		$j('input[name='+prefix+'_ipaddr]').prop("disabled",false);
-		$j('input[name='+prefix+'_dhcpstart]').removeClass("disabled");
-		$j('input[name='+prefix+'_dhcpstart]').prop("disabled",false);
-		$j('input[name='+prefix+'_dhcpend]').removeClass("disabled");
-		$j('input[name='+prefix+'_dhcpend]').prop("disabled",false);
-		$j('input[name='+prefix+'_dns1]').removeClass("disabled");
-		$j('input[name='+prefix+'_dns1]').prop("disabled",false);
-		$j('input[name='+prefix+'_dns2]').removeClass("disabled");
-		$j('input[name='+prefix+'_dns2]').prop("disabled",false);
-		$j('input[name='+prefix+'_forcedns]').prop("disabled",false);
-		$j('input[name='+prefix+'_redirectalltovpn]').prop("disabled",false);
-		$j('input[name='+prefix+'_onewaytoguest]').prop("disabled",false);
-		$j('input[name='+prefix+'_twowaytoguest]').prop("disabled",false);
-		$j('input[name='+prefix+'_clientisolation]').prop("disabled",false);
+	else if(inputvalue == 'true'){
+		$j('input[name='+prefix+'_ipaddr]').removeClass('disabled');
+		$j('input[name='+prefix+'_ipaddr]').prop('disabled',false);
+		$j('input[name='+prefix+'_dhcpstart]').removeClass('disabled');
+		$j('input[name='+prefix+'_dhcpstart]').prop('disabled',false);
+		$j('input[name='+prefix+'_dhcpend]').removeClass('disabled');
+		$j('input[name='+prefix+'_dhcpend]').prop('disabled',false);
+		$j('input[name='+prefix+'_dns1]').removeClass('disabled');
+		$j('input[name='+prefix+'_dns1]').prop('disabled',false);
+		$j('input[name='+prefix+'_dns2]').removeClass('disabled');
+		$j('input[name='+prefix+'_dns2]').prop('disabled',false);
+		$j('input[name='+prefix+'_forcedns]').prop('disabled',false);
+		$j('input[name='+prefix+'_redirectalltovpn]').prop('disabled',false);
+		$j('input[name='+prefix+'_onewaytoguest]').prop('disabled',false);
+		$j('input[name='+prefix+'_twowaytoguest]').prop('disabled',false);
+		$j('input[name='+prefix+'_clientisolation]').prop('disabled',false);
 		
-		if(eval('document.form.'+prefix+'_redirectalltovpn').value == "true"){
-			$j('input[name='+prefix+'_vpnclientnumber]').removeClass("disabled");
-			$j('input[name='+prefix+'_vpnclientnumber]').prop("disabled",false);
+		if(eval('document.form.'+prefix+'_redirectalltovpn').value == 'true'){
+			$j('input[name='+prefix+'_vpnclientnumber]').removeClass('disabled');
+			$j('input[name='+prefix+'_vpnclientnumber]').prop('disabled',false);
 		}
 	}
 }
@@ -97,14 +97,14 @@ function VPNOptionsEnableDisable(forminput){
 	var inputvalue = forminput.value;
 	var prefix = inputname.substring(0,inputname.lastIndexOf('_'));
 	
-	if(eval("document.form."+prefix+"_enabled").value == "true"){
-		if(inputvalue == "false"){
-			$j('input[name='+prefix+'_vpnclientnumber]').addClass("disabled");
-			$j('input[name='+prefix+'_vpnclientnumber]').prop("disabled",true);
+	if(eval('document.form.'+prefix+'_enabled').value == 'true'){
+		if(inputvalue == 'false'){
+			$j('input[name='+prefix+'_vpnclientnumber]').addClass('disabled');
+			$j('input[name='+prefix+'_vpnclientnumber]').prop('disabled',true);
 		}
-		else if(inputvalue == "true"){
-			$j('input[name='+prefix+'_vpnclientnumber]').removeClass("disabled");
-			$j('input[name='+prefix+'_vpnclientnumber]').prop("disabled",false);
+		else if(inputvalue == 'true'){
+			$j('input[name='+prefix+'_vpnclientnumber]').removeClass('disabled');
+			$j('input[name='+prefix+'_vpnclientnumber]').prop('disabled',false);
 		}
 	}
 }
@@ -112,119 +112,119 @@ function VPNOptionsEnableDisable(forminput){
 function Validate_IP(forminput,iptype){
 	var inputvalue = forminput.value;
 	var inputname = forminput.name;
-	if(iptype == "DNS"){
-		if(inputvalue.substring(inputvalue.lastIndexOf(".")) == ".0"){
-			forminput.value = inputvalue.substring(0,inputvalue.lastIndexOf("."))+".1";
+	if(iptype == 'DNS'){
+		if(inputvalue.substring(inputvalue.lastIndexOf('.')) == '.0'){
+			forminput.value = inputvalue.substring(0,inputvalue.lastIndexOf('.'))+'.1';
 		}
 	}
 	if(/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(inputvalue)){
-		if(iptype != "DNS"){
-			var fixedip = inputvalue.substring(0,inputvalue.lastIndexOf("."))+".0";
+		if(iptype != 'DNS'){
+			var fixedip = inputvalue.substring(0,inputvalue.lastIndexOf('.'))+'.0';
 			$j(forminput).val(fixedip);
 			if (/(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)/.test(fixedip)){
-				if(! jy_checkIPConflict("LAN",fixedip,"255.255.255.0",document.form.lan_ipaddr.value,document.form.lan_netmask.value).state){
+				if(! jy_checkIPConflict('LAN',fixedip,'255.255.255.0',document.form.lan_ipaddr.value,document.form.lan_netmask.value).state){
 					matchfound=false;
 					for(var i = 0; i < bands; i++){
 						for(var i2 = 1; i2 <= 3; i2++){
-							if("yazfi_wl"+i.toString()+i2.toString()+"_ipaddr" != inputname){
-								if(eval("document.form.yazfi_wl"+i.toString()+i2.toString()+"_ipaddr.value") == fixedip){
+							if('yazfi_wl'+i.toString()+i2.toString()+'_ipaddr' != inputname){
+								if(eval('document.form.yazfi_wl'+i.toString()+i2.toString()+'_ipaddr.value') == fixedip){
 									matchfound=true;
 								}
 							}
 						}
 					}
 					if(matchfound){
-						$j(forminput).addClass("invalid");
-						failedfields.push([$j(forminput),"Conflict with another YazFi network"]);
-						$j(forminput).on('mouseover',function(){return overlib("Conflict with another YazFi network",0,0);});
+						$j(forminput).addClass('invalid');
+						failedfields.push([$j(forminput),'Conflict with another YazFi network']);
+						$j(forminput).on('mouseover',function(){return overlib('Conflict with another YazFi network',0,0);});
 						$j(forminput)[0].onmouseout = nd;
 						return false;
 					}
 					else{
-						$j(forminput).removeClass("invalid");
+						$j(forminput).removeClass('invalid');
 						$j(forminput).off('mouseover');
 						return true;
 					}
 				}
 				else{
-					$j(forminput).addClass("invalid");
-					failedfields.push([$j(forminput),"LAN IP conflict"]);
-					$j(forminput).on('mouseover',function(){return overlib("LAN IP conflict",0,0);});
+					$j(forminput).addClass('invalid');
+					failedfields.push([$j(forminput),'LAN IP conflict']);
+					$j(forminput).on('mouseover',function(){return overlib('LAN IP conflict',0,0);});
 					$j(forminput)[0].onmouseout = nd;
 					
 					return false;
 				}
 			}
 			else{
-				$j(forminput).addClass("invalid");
-				failedfields.push([$j(forminput),"Not a private IP address"]);
-				$j(forminput).on('mouseover',function(){return overlib("Not a private IP address",0,0);});
+				$j(forminput).addClass('invalid');
+				failedfields.push([$j(forminput),'Not a private IP address']);
+				$j(forminput).on('mouseover',function(){return overlib('Not a private IP address',0,0);});
 				$j(forminput)[0].onmouseout = nd;
 				return false;
 			}
 		}
 		else{
-			$j(forminput).removeClass("invalid");
+			$j(forminput).removeClass('invalid');
 			$j(forminput).off('mouseover');
 			return true;
 		}
 	}
 	else{
-		$j(forminput).addClass("invalid");
-		failedfields.push([$j(forminput),"Invalid IP Address"]);
-		$j(forminput).on('mouseover',function(){return overlib("Invalid IP Address",0,0);});
+		$j(forminput).addClass('invalid');
+		failedfields.push([$j(forminput),'Invalid IP Address']);
+		$j(forminput).on('mouseover',function(){return overlib('Invalid IP Address',0,0);});
 		$j(forminput)[0].onmouseout = nd;
 		return false;
 	}
 }
 
 function Validate_DHCP(forminput){
-	var startend = "";
+	var startend = '';
 	var inputname = forminput.name;
 	var inputvalue = forminput.value*1;
 	
-	(inputname.indexOf("start") != -1) ? startend = "start" : startend = "end";
-	if(startend == "start"){
-		if(inputvalue >= eval("document.form."+inputname.substring(0,inputname.indexOf("start"))+"end.value")*1){
-			$j(forminput).addClass("invalid");
-			failedfields.push([$j(forminput),"DHCP start is greater than DHCP end"]);
-			$j(forminput).on('mouseover',function(){return overlib("DHCP start is greater than DHCP end",0,0);});
+	(inputname.indexOf('start') != -1) ? startend = 'start' : startend = 'end';
+	if(startend == 'start'){
+		if(inputvalue >= eval('document.form.'+inputname.substring(0,inputname.indexOf('start'))+'end.value')*1){
+			$j(forminput).addClass('invalid');
+			failedfields.push([$j(forminput),'DHCP start is greater than DHCP end']);
+			$j(forminput).on('mouseover',function(){return overlib('DHCP start is greater than DHCP end',0,0);});
 			$j(forminput)[0].onmouseout = nd;
 			return false;
 		}
 		else{
 			if(inputvalue > 254 || inputvalue < 2){
-				$j(forminput).addClass("invalid");
-				failedfields.push([$j(forminput),"Value not between 2 and 254"]);
-				$j(forminput).on('mouseover',function(){return overlib("Value not between 2 and 254",0,0);});
+				$j(forminput).addClass('invalid');
+				failedfields.push([$j(forminput),'Value not between 2 and 254']);
+				$j(forminput).on('mouseover',function(){return overlib('Value not between 2 and 254',0,0);});
 				$j(forminput)[0].onmouseout = nd;
 				return false;
 			}
 			else{
-				$j(forminput).removeClass("invalid");
+				$j(forminput).removeClass('invalid');
 				$j(forminput).off('mouseover');
 				return true;
 			}
 		}
 	}
 	else{
-		if(inputvalue <= eval("document.form."+inputname.substring(0,inputname.indexOf("end"))+"start.value")*1){
-			$j(forminput).addClass("invalid");
-			failedfields.push([$j(forminput),"DHCP end is less than DHCP start"]);
-			$j(forminput).on('mouseover',function(){return overlib("DHCP end is less than DHCP start",0,0);});
+		if(inputvalue <= eval('document.form.'+inputname.substring(0,inputname.indexOf('end'))+'start.value')*1){
+			$j(forminput).addClass('invalid');
+			failedfields.push([$j(forminput),'DHCP end is less than DHCP start']);
+			$j(forminput).on('mouseover',function(){return overlib('DHCP end is less than DHCP start',0,0);});
 			$j(forminput)[0].onmouseout = nd;
 			return false;
 		}
 		else{
 			if(inputvalue > 254 || inputvalue < 2){
-				$j(forminput).addClass("invalid");
-				failedfields.push([$j(forminput),"Value not between 2 and 254"]);
-				$j(forminput).on('mouseover',function(){return overlib("Value not between 2 and 254",0,0);});
+				$j(forminput).addClass('invalid');
+				failedfields.push([$j(forminput),'Value not between 2 and 254']);
+				$j(forminput).on('mouseover',function(){return overlib('Value not between 2 and 254',0,0);});
 				$j(forminput)[0].onmouseout = nd;
 				return false;
 			}
 			else{
-				$j(forminput).removeClass("invalid");
+				$j(forminput).removeClass('invalid');
 				$j(forminput).off('mouseover');
 				return true;
 			}
@@ -237,33 +237,33 @@ function Validate_VPNClientNo(forminput){
 	var inputvalue = forminput.value*1;
 	
 	if(inputvalue > 5 || inputvalue < 1){
-		$j(forminput).addClass("invalid");
-		failedfields.push([$j(forminput),"Value not between 1 and 5"]);
-		$j(forminput).on('mouseover',function(){return overlib("Value not between 1 and 5",0,0);});
+		$j(forminput).addClass('invalid');
+		failedfields.push([$j(forminput),'Value not between 1 and 5']);
+		$j(forminput).on('mouseover',function(){return overlib('Value not between 1 and 5',0,0);});
 		$j(forminput)[0].onmouseout = nd;
 		return false;
 	}
 	else{
-		$j(forminput).removeClass("invalid");
+		$j(forminput).removeClass('invalid');
 		$j(forminput).off('mouseover');
 		return true;
 	}
 }
 
 function Validate_OneTwoWay(forminput){
-	var onetwo = "";
+	var onetwo = '';
 	var inputname = forminput.name;
 	var inputvalue = forminput.value;
 	
-	(inputname.indexOf("oneway") != -1) ? onetwo = "one" : onetwo = "two";
-	if(onetwo == "one"){
-		if(inputvalue == "true"){
-			eval("document.form."+inputname.substring(0,inputname.indexOf("one"))+"twowaytoguest.value=false");
+	(inputname.indexOf('oneway') != -1) ? onetwo = 'one' : onetwo = 'two';
+	if(onetwo == 'one'){
+		if(inputvalue == 'true'){
+			eval('document.form.'+inputname.substring(0,inputname.indexOf('one'))+'twowaytoguest.value=false');
 		}
 	}
 	else{
-		if(inputvalue == "true"){
-			eval("document.form."+inputname.substring(0,inputname.indexOf("two"))+"onewaytoguest.value=false");
+		if(inputvalue == 'true'){
+			eval('document.form.'+inputname.substring(0,inputname.indexOf('two'))+'onewaytoguest.value=false');
 		}
 	}
 }
@@ -273,27 +273,27 @@ function Validate_All(){
 	failedfields = [];
 	for(var i=0; i < bands; i++){
 		for(var i2=1; i2 <= 3; i2++){
-			if(! Validate_IP(eval("document.form.yazfi_wl"+i+i2+"_ipaddr"),"IP")){validationfailed=true;}
-			if(! Validate_DHCP(eval("document.form.yazfi_wl"+i+i2+"_dhcpstart"))){validationfailed=true;}
-			if(! Validate_DHCP(eval("document.form.yazfi_wl"+i+i2+"_dhcpend"))){validationfailed=true;}
-			if(! Validate_IP(eval("document.form.yazfi_wl"+i+i2+"_dns1"),"DNS")){validationfailed=true;}
-			if(! Validate_IP(eval("document.form.yazfi_wl"+i+i2+"_dns2"),"DNS")){validationfailed=true;}
-			if(! Validate_VPNClientNo(eval("document.form.yazfi_wl"+i+i2+"_vpnclientnumber"))){validationfailed=true;}
+			if(! Validate_IP(eval('document.form.yazfi_wl'+i+i2+'_ipaddr'),'IP')){validationfailed=true;}
+			if(! Validate_DHCP(eval('document.form.yazfi_wl'+i+i2+'_dhcpstart'))){validationfailed=true;}
+			if(! Validate_DHCP(eval('document.form.yazfi_wl'+i+i2+'_dhcpend'))){validationfailed=true;}
+			if(! Validate_IP(eval('document.form.yazfi_wl'+i+i2+'_dns1'),'DNS')){validationfailed=true;}
+			if(! Validate_IP(eval('document.form.yazfi_wl'+i+i2+'_dns2'),'DNS')){validationfailed=true;}
+			if(! Validate_VPNClientNo(eval('document.form.yazfi_wl'+i+i2+'_vpnclientnumber'))){validationfailed=true;}
 		}
 	}
 	
 	var failedfieldsstring = '';
 	for(var i=0; i < failedfields.length; i++){
 		var guestnework = '';
-		var prefix = failedfields[i][0].attr("name").split('_')[1];
+		var prefix = failedfields[i][0].attr('name').split('_')[1];
 		if(prefix.startsWith('wl0')){
-			guestnetwork = "2.4GHz Guest Network "+prefix.replace('wl0','');
+			guestnetwork = '2.4GHz Guest Network '+prefix.replace('wl0','');
 		}
 		else if(prefix.startsWith('wl1')){
-			guestnetwork = "5GHz Guest Network "+prefix.replace('wl0','');
+			guestnetwork = '5GHz Guest Network '+prefix.replace('wl0','');
 		}
 		else if(prefix.startsWith('wl2')){
-			guestnetwork = "5GHz-2 Guest Network "+prefix.replace('wl0','');
+			guestnetwork = '5GHz-2 Guest Network '+prefix.replace('wl0','');
 		}
 		failedfieldsstring += guestnetwork+' - '+failedfields[i][0].parent().parent().children().children()[0].innerHTML+' - '+failedfields[i][1]+'\n';
 	}
@@ -315,68 +315,68 @@ function get_conf_file(){
 			setTimeout(get_conf_file,1000);
 		},
 		success: function(data){
-			var settings=data.split("\n");
+			var settings = data.split('\n');
 			settings.reverse();
 			settings = settings.filter(Boolean);
 			var settingcount=settings.length;
-			window["yazfi_settings"] = [];
+			window['yazfi_settings'] = [];
 			for(var i = 0; i < settingcount; i++){
-				var commentstart=settings[i].indexOf("#");
+				var commentstart = settings[i].indexOf('#');
 				if (commentstart != -1){
 					continue;
 				}
-				var setting=settings[i].split("=");
-				window["yazfi_settings"].unshift(setting);
+				var setting=settings[i].split('=');
+				window['yazfi_settings'].unshift(setting);
 			}
 			if(typeof wl_info == 'undefined' || wl_info == null){
 				bands = 2;
-				$j("#table_config").append(BuildConfigTable("wl0","2.4GHz Guest Networks"));
-				$j("#table_config").append('<tr><td style="padding:0px;height:10px;"></td></tr>');
-				$j("#table_config").append(BuildConfigTable("wl1","5GHz Guest Networks"));
+				$j('#table_config').append(BuildConfigTable('wl0','2.4GHz Guest Networks'));
+				$j('#table_config').append('<tr><td style="padding:0px;height:10px;"></td></tr>');
+				$j('#table_config').append(BuildConfigTable('wl1','5GHz Guest Networks'));
 			}
 			else{
 				if(wl_info.band2g_support){
-					$j("#table_config").append(BuildConfigTable("wl0","2.4GHz Guest Networks"));
+					$j('#table_config').append(BuildConfigTable('wl0','2.4GHz Guest Networks'));
 					bands = bands+1;
 				}
 				if(wl_info.band5g_support){
-					$j("#table_config").append('<tr><td style="padding:0px;height:10px;"></td></tr>');
-					$j("#table_config").append(BuildConfigTable("wl1","5GHz Guest Networks"));
+					$j('#table_config').append('<tr><td style="padding:0px;height:10px;"></td></tr>');
+					$j('#table_config').append(BuildConfigTable('wl1','5GHz Guest Networks'));
 					bands = bands+1;
 				}
 				if(wl_info.band5g_2_support){
-					$j("#table_config").append('<tr><td style="padding:0px;height:10px;"></td></tr>');
-					$j("#table_config").append(BuildConfigTable("wl2","5GHz-2 Guest Networks"));
+					$j('#table_config').append('<tr><td style="padding:0px;height:10px;"></td></tr>');
+					$j('#table_config').append(BuildConfigTable('wl2','5GHz-2 Guest Networks'));
 					bands = bands+1;
 				}
 			}
 			
-			$j("#table_config").append('<tr class="apply_gen" valign="top"><td style="background-color:rgb(77,89,93);border-top:0px;border-bottom:0px;height:5px;"></td></tr>');
+			$j('#table_config').append('<tr class="apply_gen" valign="top"><td style="background-color:rgb(77,89,93);border-top:0px;border-bottom:0px;height:5px;"></td></tr>');
 			var buttonshtml = '<tr class="apply_gen" valign="top" height="35px"><td style="background-color:rgb(77,89,93);border-top:0px;">';
 			buttonshtml += '<input name="button" type="button" class="button_gen" onclick="SaveConfig();" value="Apply"/></td></tr>';
-			$j("#table_config").append(buttonshtml);
+			$j('#table_config').append(buttonshtml);
 
 			var settingcount = bands*12*3;
 			for(var i = 0; i < settingcount; i++){
-				var settingname = window["yazfi_settings"][i][0].toLowerCase();
-				var settingvalue = window["yazfi_settings"][i][1];
-				eval("document.form.yazfi_"+settingname).value = settingvalue;
-				if(settingname.indexOf("redirectalltovpn") != -1) VPNOptionsEnableDisable($j("#yazfi_"+settingname.replace("_redirectalltovpn","")+"_redir_"+settingvalue)[0]);
-				if(settingname.indexOf("enabled") != -1) OptionsEnableDisable($j("#yazfi_"+settingname.replace("_enabled","")+"_en_"+settingvalue)[0]);
+				var settingname = window['yazfi_settings'][i][0].toLowerCase();
+				var settingvalue = window['yazfi_settings'][i][1];
+				eval('document.form.yazfi_'+settingname).value = settingvalue;
+				if(settingname.indexOf('redirectalltovpn') != -1) VPNOptionsEnableDisable($j('#yazfi_'+settingname.replace('_redirectalltovpn','')+'_redir_'+settingvalue)[0]);
+				if(settingname.indexOf('enabled') != -1) OptionsEnableDisable($j('#yazfi_'+settingname.replace('_enabled','')+'_en_'+settingvalue)[0]);
 			}
 			
-			if($j("#firmver").text()*1 < 386.1){
-				if(productid == "RT-AX88U" || productid == "RT-AX3000"){
-					$j("input[name*=clientisolation][value=false]").prop("checked",true);
-					$j("input[name*=clientisolation]").attr('disabled',true);
+			if($j('#firmver').text()*1 < 386.1){
+				if(productid == 'RT-AX88U' || productid == 'RT-AX3000'){
+					$j('input[name*=clientisolation][value=false]').prop('checked',true);
+					$j('input[name*=clientisolation]').attr('disabled',true);
 				}
 			}
 			
 			for(var i = 0; i < bands; i++){
 				for(var i2 = 1; i2 <= 3; i2++){
 					if(eval('document.form.wl'+i+i2+'_bss_enabled').value == 0){
-						OptionsEnableDisable($j("#yazfi_wl"+i+i2+"_en_false")[0]);
-						$j('input[name=yazfi_wl'+i+i2+'_enabled]').prop("disabled",true);
+						OptionsEnableDisable($j('#yazfi_wl'+i+i2+'_en_false')[0]);
+						$j('input[name=yazfi_wl'+i+i2+'_enabled]').prop('disabled',true);
 					}
 				}
 			}
@@ -385,13 +385,13 @@ function get_conf_file(){
 }
 
 function get_connected_clients_file(){
-	d3.csv("/ext/YazFi/connectedclients.htm").then(function(data){
+	d3.csv('/ext/YazFi/connectedclients.htm').then(function(data){
 		if(data.length > 0){
 			var unique = [];
 			var YazFiInterfaces = [];
 			for(var i = 0; i < data.length; i++){
 				if(!unique[data[i].INTERFACE]){
-					YazFiInterfaces.push(data[i].INTERFACE.replace(".",""));
+					YazFiInterfaces.push(data[i].INTERFACE.replace('.',''));
 					unique[data[i].INTERFACE] = 1;
 				}
 			}
@@ -399,8 +399,8 @@ function get_connected_clients_file(){
 			$j('#table_connectedclients').empty();
 			
 			for(var i = 0; i < YazFiInterfaces.length; i++){
-				window["clients"+YazFiInterfaces[i]] = data.filter(function(item){
-					return item.INTERFACE.replace(".","") == YazFiInterfaces[i];
+				window['clients'+YazFiInterfaces[i]] = data.filter(function(item){
+					return item.INTERFACE.replace('.','') == YazFiInterfaces[i];
 				}).map(function(obj){
 					return {
 						Hostname: obj.HOSTNAME,
@@ -415,7 +415,7 @@ function get_connected_clients_file(){
 				});
 				
 				$j('#table_connectedclients').append(BuildConnectedClientPlaceholderTable(YazFiInterfaces[i],eval('document.form.'+YazFiInterfaces[i]+'_ssid.value')));
-				if(window["clients"+YazFiInterfaces[i]][0].IPAddress != 'NOCLIENTS'){
+				if(window['clients'+YazFiInterfaces[i]][0].IPAddress != 'NOCLIENTS'){
 					SortTable('sortTable'+YazFiInterfaces[i],'clients'+YazFiInterfaces[i],eval('sortname'+YazFiInterfaces[i])+' '+eval('sortdir'+YazFiInterfaces[i]).replace('desc','↑').replace('asc','↓').trim(),'sortname'+YazFiInterfaces[i],'sortdir'+YazFiInterfaces[i]);
 				}
 				else{
@@ -738,15 +738,15 @@ function SetCurrentPage(){
 }
 
 function ScriptUpdateLayout(){
-	var localver = GetVersionNumber("local");
-	var serverver = GetVersionNumber("server");
-	$j("#yazfi_version_local").text(localver);
+	var localver = GetVersionNumber('local');
+	var serverver = GetVersionNumber('server');
+	$j('#yazfi_version_local').text(localver);
 	
-	if(localver != serverver && serverver != "N/A"){
-		$j("#yazfi_version_server").text("Updated version available: "+serverver);
-		showhide("btnChkUpdate",false);
-		showhide("yazfi_version_server",true);
-		showhide("btnDoUpdate",true);
+	if(localver != serverver && serverver != 'N/A'){
+		$j('#yazfi_version_server').text('Updated version available: '+serverver);
+		showhide('btnChkUpdate',false);
+		showhide('yazfi_version_server',true);
+		showhide('btnDoUpdate',true);
 	}
 }
 
@@ -754,26 +754,25 @@ function update_status(){
 	$j.ajax({
 		url: '/ext/YazFi/detect_update.js',
 		dataType: 'script',
-		timeout: 3000,
 		error: function(xhr){
 			setTimeout(update_status,1000);
 		},
 		success: function(){
-			if (updatestatus == "InProgress"){
+			if (updatestatus == 'InProgress'){
 				setTimeout(update_status,1000);
 			}
 			else{
-				document.getElementById("imgChkUpdate").style.display = "none";
-				showhide("yazfi_version_server",true);
-				if(updatestatus != "None"){
-					$j("#yazfi_version_server").text("Updated version available: "+updatestatus);
-					showhide("btnChkUpdate",false);
-					showhide("btnDoUpdate",true);
+				document.getElementById('imgChkUpdate').style.display = 'none';
+				showhide('yazfi_version_server',true);
+				if(updatestatus != 'None'){
+					$j('#yazfi_version_server').text('Updated version available: '+updatestatus);
+					showhide('btnChkUpdate',false);
+					showhide('btnDoUpdate',true);
 				}
 				else{
-					$j("#yazfi_version_server").text("No update available");
-					showhide("btnChkUpdate",true);
-					showhide("btnDoUpdate",false);
+					$j('#yazfi_version_server').text('No update available');
+					showhide('btnChkUpdate',true);
+					showhide('btnDoUpdate',false);
 				}
 			}
 		}
@@ -781,15 +780,15 @@ function update_status(){
 }
 
 function CheckUpdate(){
-	showhide("btnChkUpdate",false);
-	document.formScriptActions.action_script.value="start_YazFicheckupdate"
+	showhide('btnChkUpdate',false);
+	document.formScriptActions.action_script.value='start_YazFicheckupdate'
 	document.formScriptActions.submit();
-	document.getElementById("imgChkUpdate").style.display = "";
+	document.getElementById('imgChkUpdate').style.display = '';
 	setTimeout(update_status,2000);
 }
 
 function DoUpdate(){
-	document.form.action_script.value = "start_YazFidoupdate";
+	document.form.action_script.value = 'start_YazFidoupdate';
 	document.form.action_wait.value = 45;
 	showLoading();
 	document.form.submit();
@@ -797,15 +796,15 @@ function DoUpdate(){
 
 function GetVersionNumber(versiontype){
 	var versionprop;
-	if(versiontype == "local"){
+	if(versiontype == 'local'){
 		versionprop = custom_settings.yazfi_version_local;
 	}
-	else if(versiontype == "server"){
+	else if(versiontype == 'server'){
 		versionprop = custom_settings.yazfi_version_server;
 	}
 	
 	if(typeof versionprop == 'undefined' || versionprop == null){
-		return "N/A";
+		return 'N/A';
 	}
 	else{
 		return versionprop;
@@ -813,28 +812,28 @@ function GetVersionNumber(versiontype){
 }
 
 function GetCookie(cookiename,returntype){
-	if (cookie.get("yazfi_"+cookiename) != null){
-		return cookie.get("yazfi_"+cookiename);
+	if (cookie.get('yazfi_'+cookiename) != null){
+		return cookie.get('yazfi_'+cookiename);
 	}
 	else{
-		if(returntype == "string"){
-			return "";
+		if(returntype == 'string'){
+			return '';
 		}
-		else if(returntype == "number"){
+		else if(returntype == 'number'){
 			return 0;
 		}
 	}
 }
 
 function SetCookie(cookiename,cookievalue){
-	cookie.set("yazfi_"+cookiename,cookievalue,10*365);
+	cookie.set('yazfi_'+cookiename,cookievalue,10*365);
 }
 
 function SaveConfig(){
 	if(Validate_All()){
-		$j('[name*=yazfi_]').prop("disabled",false);
+		$j('[name*=yazfi_]').prop('disabled',false);
 		document.getElementById('amng_custom').value = JSON.stringify($j('form').serializeObject());
-		document.form.action_script.value = "start_YazFi";
+		document.form.action_script.value = 'start_YazFi';
 		document.form.action_wait.value = 45;
 		showLoading();
 		document.form.submit();
@@ -845,19 +844,19 @@ function SaveConfig(){
 }
 
 function AddEventHandlers(){
-	$j(".collapsible-jquery").off('click').on('click',function(){
-		$j(this).siblings().toggle("fast",function(){
-			if($j(this).css("display") == "none"){
-				SetCookie($j(this).siblings()[0].id,"collapsed");
+	$j('.collapsible-jquery').off('click').on('click',function(){
+		$j(this).siblings().toggle('fast',function(){
+			if($j(this).css('display') == 'none'){
+				SetCookie($j(this).siblings()[0].id,'collapsed');
 			}
 			else{
-				SetCookie($j(this).siblings()[0].id,"expanded");
+				SetCookie($j(this).siblings()[0].id,'expanded');
 			}
 		})
 	});
 	
-	$j(".collapsible-jquery").each(function(index,element){
-		if(GetCookie($j(this)[0].id,"string") == "collapsed"){
+	$j('.collapsible-jquery').each(function(index,element){
+		if(GetCookie($j(this)[0].id,'string') == 'collapsed'){
 			$j(this).siblings().toggle(false);
 		}
 		else{
@@ -876,12 +875,12 @@ $j.fn.serializeObject = function(){
 	var o = custom_settings;
 	var a = this.serializeArray();
 	$j.each(a,function(){
-		if (o[this.name] !== undefined && this.name.indexOf("yazfi") != -1 && this.name.indexOf("version") == -1){
+		if (o[this.name] !== undefined && this.name.indexOf('yazfi') != -1 && this.name.indexOf('version') == -1){
 			if (!o[this.name].push){
 				o[this.name] = [o[this.name]];
 			}
 			o[this.name].push(this.value || '');
-		} else if (this.name.indexOf("yazfi") != -1 && this.name.indexOf("version") == -1){
+		} else if (this.name.indexOf('yazfi') != -1 && this.name.indexOf('version') == -1){
 			o[this.name] = this.value || '';
 		}
 	});
@@ -894,7 +893,7 @@ function StoHHMMSS(secs){
 	var minutes = Math.floor(sec_num / 60) % 60
 	var seconds = sec_num % 60
 	
-	return [hours,minutes,seconds].map(v => v < 10 ? "0"+v : v).filter((v,i) => v !== "00" || i > 0).join(":");
+	return [hours,minutes,seconds].map(v => v < 10 ? '0'+v : v).filter((v,i) => v !== '00' || i > 0).join(':');
 }
 
 function HHMMSStoS(HHMMSS){
