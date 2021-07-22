@@ -52,6 +52,9 @@ readonly CRIT="\\e[41m"
 readonly ERR="\\e[31m"
 readonly WARN="\\e[33m"
 readonly PASS="\\e[32m"
+readonly BOLD="\\e[1m"
+readonly SETTING="${BOLD}\\e[36m"
+readonly CLEARFORMAT="\\e[0m"
 ### End of output format variables ###
 
 ### Start of router environment variables ###
@@ -93,10 +96,8 @@ VPN_IP_LIST_NEW_5=""
 Print_Output(){
 	if [ "$1" = "true" ]; then
 		logger -t "$SCRIPT_NAME" "$2"
-		printf "\\e[1m$3%s: $2\\e[0m\\n\\n" "$SCRIPT_NAME"
-	else
-		printf "\\e[1m$3%s: $2\\e[0m\\n\\n" "$SCRIPT_NAME"
 	fi
+	printf "${BOLD}${3}%s${CLEARFORMAT}\\n\\n" "$2"
 }
 
 Generate_Random_String(){
@@ -105,10 +106,10 @@ Generate_Random_String(){
 		if [ "$1" -le 32 ] && [ "$1" -ge 8 ]; then
 			PASSLENGTH="$1"
 		else
-			printf "\\e[1mNumber is not between 8 and 32, using default of 16 characters\\e[0m\\n"
+			printf "${BOLD}Number is not between 8 and 32, using default of 16 characters${CLEARFORMAT}\\n"
 		fi
 	else
-		printf "\\e[1mInvalid number provided, using default of 16 characters\\e[0m\\n"
+		printf "${BOLD}Invalid number provided, using default of 16 characters${CLEARFORMAT}\\n"
 	fi
 	
 	< /dev/urandom tr -cd 'A-Za-z0-9' | head -c "$PASSLENGTH"
@@ -2013,20 +2014,20 @@ PressEnter(){
 ScriptHeader(){
 	clear
 	printf "\\n"
-	printf "\\e[1m#############################################\\e[0m\\n"
-	printf "\\e[1m##                                         ##\\e[0m\\n"
-	printf "\\e[1m##     __     __          ______  _        ##\\e[0m\\n"
-	printf "\\e[1m##     \ \   / /         |  ____|(_)       ##\\e[0m\\n"
-	printf "\\e[1m##      \ \_/ /__ _  ____| |__    _        ##\\e[0m\\n"
-	printf "\\e[1m##       \   // _  ||_  /|  __|  | |       ##\\e[0m\\n"
-	printf "\\e[1m##        | || (_| | / / | |     | |       ##\\e[0m\\n"
-	printf "\\e[1m##        |_| \__,_|/___||_|     |_|       ##\\e[0m\\n"
-	printf "\\e[1m##                                         ##\\e[0m\\n"
-	printf "\\e[1m##           %s on %-9s           ##\\e[0m\\n" "$SCRIPT_VERSION" "$ROUTER_MODEL"
-	printf "\\e[1m##                                         ##\\e[0m\\n"
-	printf "\\e[1m##    https://github.com/jackyaz/YazFi/    ##\\e[0m\\n"
-	printf "\\e[1m##                                         ##\\e[0m\\n"
-	printf "\\e[1m#############################################\\e[0m\\n"
+	printf "${BOLD}#############################################${CLEARFORMAT}\\n"
+	printf "${BOLD}##                                         ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##     __     __          ______  _        ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##     \ \   / /         |  ____|(_)       ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##      \ \_/ /__ _  ____| |__    _        ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##       \   // _  ||_  /|  __|  | |       ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##        | || (_| | / / | |     | |       ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##        |_| \__,_|/___||_|     |_|       ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##                                         ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##           %s on %-11s         ##${CLEARFORMAT}\\n" "$SCRIPT_VERSION" "$ROUTER_MODEL"
+	printf "${BOLD}##                                         ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##    https://github.com/jackyaz/YazFi/    ##${CLEARFORMAT}\\n"
+	printf "${BOLD}##                                         ##${CLEARFORMAT}\\n"
+	printf "${BOLD}#############################################${CLEARFORMAT}\\n"
 	printf "\\n"
 }
 
@@ -2041,7 +2042,7 @@ MainMenu(){
 	printf "e.    Exit %s\\n\\n" "$SCRIPT_NAME"
 	printf "z.    Uninstall %s\\n" "$SCRIPT_NAME"
 	printf "\\n"
-	printf "\\e[1m#############################################\\e[0m\\n"
+	printf "${BOLD}#############################################${CLEARFORMAT}\\n"
 	printf "\\n"
 	
 	while true; do
@@ -2337,7 +2338,7 @@ Menu_GuestConfig(){
 	
 	ScriptHeader
 	
-	printf "\\n\\e[1mPlease select a Guest Network:\\e[0m\\n\\n"
+	printf "\\n${BOLD}Please select a Guest Network:${CLEARFORMAT}\\n\\n"
 	COUNTER=1
 	for IFACE_MENU in $IFACELIST; do
 		if [ $((COUNTER % 4)) -eq 0 ]; then printf "\\n"; fi
@@ -2353,7 +2354,7 @@ Menu_GuestConfig(){
 	
 	while true; do
 		selectediface=""
-		printf "\\n\\e[1mChoose an option:\\e[0m    "
+		printf "\\n${BOLD}Choose an option:${CLEARFORMAT}  "
 		read -r selectedguest
 		
 		case "$selectedguest" in
@@ -2387,16 +2388,16 @@ Menu_GuestConfig(){
 	if [ "$exitmenu" != "true" ]; then
 		while true; do
 			ScriptHeader
-			printf "\\n\\e[1m    %s (%s)\\e[0m\\n\\n" "$(Get_Guest_Name "$selectediface")" "$selectediface"
-			printf "\\e[1mAvailable options:\\e[0m\\n\\n"
+			printf "\\n${BOLD}    %s (%s)${CLEARFORMAT}\\n\\n" "$(Get_Guest_Name "$selectediface")" "$selectediface"
+			printf "${BOLD}Available options:${CLEARFORMAT}\\n\\n"
 			printf "1.    Set SSID (current: %s)\\n" "$(nvram get "${selectediface}_ssid")"
 			printf "2.    Set passphrase (current: %s)\\n" "$(nvram get "${selectediface}_wpa_psk")"
 			printf "\\ne.    Go back\\n"
-			printf "\\n\\e[1mChoose an option:\\e[0m    "
+			printf "\\n${BOLD}Choose an option:${CLEARFORMAT}  "
 			read -r guestoption
 			case "$guestoption" in
 				1)
-					printf "\\n\\e[1mPlease enter your new SSID:\\e[0m    "
+					printf "\\n${BOLD}Please enter your new SSID:${CLEARFORMAT}  "
 					read -r newssid
 					newssidclean="$newssid"
 					if ! Validate_String "$newssid"; then
@@ -2408,17 +2409,17 @@ Menu_GuestConfig(){
 				;;
 				2)
 					while true; do
-						printf "\\n\\e[1mAvailable options:\\e[0m\\n\\n"
+						printf "\\n${BOLD}Available options:${CLEARFORMAT}\\n\\n"
 						printf "1.    Generate random passphrase\\n"
 						printf "2.    Manually set passphrase\\n"
 						printf "\\ne.    Go back\\n"
-						printf "\\n\\e[1mChoose an option:\\e[0m    "
+						printf "\\n${BOLD}Choose an option:${CLEARFORMAT}  "
 						read -r passoption
 						case "$passoption" in
 							1)
 								validpasslength=""
 								while true; do
-									printf "\\n\\e[1mHow many characters? (8-32)\\e[0m    "
+									printf "\\n${BOLD}How many characters? (8-32)${CLEARFORMAT}  "
 									read -r passlength
 									if Validate_Number "" "$passlength" silent; then
 										if [ "$passlength" -le 32 ] && [ "$passlength" -ge 8 ]; then
@@ -2443,7 +2444,7 @@ Menu_GuestConfig(){
 								fi
 							;;
 							2)
-								printf "\\n\\e[1mPlease enter your new passphrase:\\e[0m    "
+								printf "\\n${BOLD}Please enter your new passphrase:${CLEARFORMAT}  "
 								read -r newpassphrase
 								newpassphraseclean="$newpassphrase"
 								if ! Validate_String "$newpassphrase"; then
@@ -2466,7 +2467,7 @@ Menu_GuestConfig(){
 				e)
 					if [ "$changesmade" = "true" ]; then
 						while true; do
-							printf "\\n\\e[1mDo you want to restart wireless services now? (y/n)\\e[0m\\n"
+							printf "\\n${BOLD}Do you want to restart wireless services now? (y/n)${CLEARFORMAT}  "
 							read -r confirmrestart
 							case "$confirmrestart" in
 								y|Y)
@@ -2506,7 +2507,7 @@ Menu_Status(){
 	fi
 	
 	[ -z "$1" ] && ScriptHeader
-	[ -z "$1" ] && printf "\\e[1m$PASS%sQuerying router for connected WiFi clients...\\e[0m\\n\\n" ""
+	[ -z "$1" ] && printf "${BOLD}$PASS%sQuerying router for connected WiFi clients...${CLEARFORMAT}\\n\\n" ""
 	printf "INTERFACE,HOSTNAME,IP,MAC,CONNECTED,RX,TX,RSSI,PHY\\n" >> "$STATUSOUTPUTFILE"
 	
 	ARPDUMP="$(arp -an)"
@@ -2514,12 +2515,12 @@ Menu_Status(){
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ] && Validate_Exists_IFACE "$IFACE" silent && Validate_Enabled_IFACE "$IFACE" silent; then
 			[ -z "$1" ] && printf "%75s\\n\\n" "" | tr " " "-"
-			[ -z "$1" ] && printf "\\e[1mINTERFACE: %-5s\\e[0m\\n" "$IFACE"
-			[ -z "$1" ] && printf "\\e[1mSSID: %-20s\\e[0m\\n\\n" "$(nvram get "${IFACE}_ssid")"
+			[ -z "$1" ] && printf "${BOLD}INTERFACE: %-5s${CLEARFORMAT}\\n" "$IFACE"
+			[ -z "$1" ] && printf "${BOLD}SSID: %-20s${CLEARFORMAT}\\n\\n" "$(nvram get "${IFACE}_ssid")"
 			
 			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
 			if [ "$IFACE_MACS" != "" ]; then
-				[ -z "$1" ] && printf "\\e[1m%-30s%-20s%-20s%-15s%-15s%-10s%-5s\\e[0m\\n" "HOSTNAME" "IP" "MAC" "CONNECTED" "RX/TX" "RSSI" "PHY"
+				[ -z "$1" ] && printf "${BOLD}%-30s%-20s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\\n" "HOSTNAME" "IP" "MAC" "CONNECTED" "RX/TX" "RSSI" "PHY"
 				IFS=$'\n'
 				for GUEST_MAC in $IFACE_MACS; do
 					GUEST_MACADDR="$(echo "$GUEST_MAC" | awk '{print $2}')"
@@ -2570,39 +2571,39 @@ Menu_Status(){
 						GUEST_PHY="Unknown"
 					fi
 					
-					[ -z "$1" ] && printf "%-30s%-20s%-20s%-15s%-15s%-10s%-5s\\e[0m\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED_PRINT" "$GUEST_RX/$GUEST_TX Mbps" "$GUEST_RSSI dBm" "$GUEST_PHY"
+					[ -z "$1" ] && printf "%-30s%-20s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED_PRINT" "$GUEST_RX/$GUEST_TX Mbps" "$GUEST_RSSI dBm" "$GUEST_PHY"
 					printf "%s,%s,%s,%s,%s,%s,%s,%s,%s\\n" "$IFACE" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED" "$GUEST_RX" "$GUEST_TX" "$GUEST_RSSI" "$GUEST_PHY" >> "$STATUSOUTPUTFILE"
 				done
 				unset IFS
 			else
-				[ -z "$1" ] && printf "\\e[1m${WARN}No clients connected\\e[0m\\n\\n"
+				[ -z "$1" ] && printf "${BOLD}${WARN}No clients connected${CLEARFORMAT}\\n\\n"
 				printf "%s,,NOCLIENTS,,,,,,\\n" "$IFACE" >> "$STATUSOUTPUTFILE"
 			fi
 		fi
 	done
 	
 	[ -z "$1" ] && printf "%75s\\n\\n" "" | tr " " "-"
-	[ -z "$1" ] && printf "\\e[1m$PASS%sQuery complete, please see above for results\\e[0m\\n\\n" ""
+	[ -z "$1" ] && printf "${BOLD}$PASS%sQuery complete, please see above for results${CLEARFORMAT}\\n\\n" ""
 	#######################################################################################################
 }
 
 Menu_Diagnostics(){
-	printf "\\n\\e[1mThis will collect the following. Files are encrypted with a unique random passphrase.\\e[0m\\n"
-	printf "\\n\\e[1m - iptables rules\\e[0m"
-	printf "\\n\\e[1m - ebtables rules\\e[0m"
-	printf "\\n\\e[1m - %s\\e[0m" "$SCRIPT_CONF"
-	printf "\\n\\e[1m - %s\\e[0m" "$DNSCONF"
-	printf "\\n\\e[1m - /jffs/scripts/firewall-start\\e[0m"
-	printf "\\n\\e[1m - /jffs/scripts/service-event\\e[0m\\n\\n"
+	printf "\\n${BOLD}This will collect the following. Files are encrypted with a unique random passphrase.${CLEARFORMAT}\\n"
+	printf "\\n${BOLD} - iptables rules${CLEARFORMAT}"
+	printf "\\n${BOLD} - ebtables rules${CLEARFORMAT}"
+	printf "\\n${BOLD} - %s${CLEARFORMAT}" "$SCRIPT_CONF"
+	printf "\\n${BOLD} - %s${CLEARFORMAT}" "$DNSCONF"
+	printf "\\n${BOLD} - /jffs/scripts/firewall-start${CLEARFORMAT}"
+	printf "\\n${BOLD} - /jffs/scripts/service-event${CLEARFORMAT}\\n\\n"
 	while true; do
-		printf "\\n\\e[1mDo you want to continue? (y/n)\\e[0m\\n"
+		printf "\\n${BOLD}Do you want to continue? (y/n)${CLEARFORMAT}  "
 		read -r confirm
 		case "$confirm" in
 			y|Y)
 				break
 			;;
 			n|N)
-				printf "\\n\\e[1mUser declined, returning to menu\\e[0m\\n\\n"
+				printf "\\n${BOLD}User declined, returning to menu${CLEARFORMAT}\\n\\n"
 				return 1
 			;;
 			*)
@@ -2611,7 +2612,7 @@ Menu_Diagnostics(){
 		esac
 	done
 	
-	printf "\\n\\n\\e[1mGenerating %s diagnostics...\\e[0m\\n\\n" "$SCRIPT_NAME"
+	printf "\\n\\n${BOLD}Generating %s diagnostics...${CLEARFORMAT}\\n\\n" "$SCRIPT_NAME"
 	
 	DIAGPATH="/tmp/${SCRIPT_NAME}Diag"
 	mkdir -p "$DIAGPATH"
