@@ -479,19 +479,19 @@ Clear_Lock(){
 ############################################################################
 
 Set_Version_Custom_Settings(){
-	SETTINGSFILE=/jffs/addons/custom_settings.txt
+	SETTINGSFILE="/jffs/addons/custom_settings.txt"
 	case "$1" in
 		local)
 			if [ -f "$SETTINGSFILE" ]; then
 				if [ "$(grep -c "yazfi_version_local" $SETTINGSFILE)" -gt 0 ]; then
 					if [ "$SCRIPT_VERSION" != "$(grep "yazfi_version_local" /jffs/addons/custom_settings.txt | cut -f2 -d' ')" ]; then
-						sed -i "s/yazfi_version_local.*/yazfi_version_local $SCRIPT_VERSION/" "$SETTINGSFILE"
+						sed -i "s/yazfi_version_local.*/yazfi_version_local $2/" "$SETTINGSFILE"
 					fi
 				else
-					echo "yazfi_version_local $SCRIPT_VERSION" >> "$SETTINGSFILE"
+					echo "yazfi_version_local $2" >> "$SETTINGSFILE"
 				fi
 			else
-				echo "yazfi_version_local $SCRIPT_VERSION" >> "$SETTINGSFILE"
+				echo "yazfi_version_local $2" >> "$SETTINGSFILE"
 			fi
 		;;
 		server)
@@ -513,7 +513,7 @@ Set_Version_Custom_Settings(){
 Update_Check(){
 	echo 'var updatestatus = "InProgress";' > "$SCRIPT_WEB_DIR/detect_update.js"
 	doupdate="false"
-	localver=$(grep "SCRIPT_VERSION=" /jffs/scripts/"$SCRIPT_NAME" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+	localver=$(grep "SCRIPT_VERSION=" "/jffs/scripts/$SCRIPT_NAME" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 	/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep -qF "jackyaz" || { Print_Output true "404 error detected - stopping update" "$ERR"; return 1; }
 	serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 	if [ "$localver" != "$serverver" ]; then
@@ -536,42 +536,52 @@ Update_Check(){
 }
 
 Update_Version(){
-	if [ -z "$1" ] || [ "$1" = "unattended" ]; then
+	if [ -z "$1" ]; then
 		updatecheckresult="$(Update_Check)"
 		isupdate="$(echo "$updatecheckresult" | cut -f1 -d',')"
 		localver="$(echo "$updatecheckresult" | cut -f2 -d',')"
 		serverver="$(echo "$updatecheckresult" | cut -f3 -d',')"
 		
 		if [ "$isupdate" = "version" ]; then
-			Print_Output true "New version of $SCRIPT_NAME available - updating to $serverver" "$PASS"
+			Print_Output true "New version of $SCRIPT_NAME available - $serverver" "$PASS"
 		elif [ "$isupdate" = "md5" ]; then
-			Print_Output true "MD5 hash of $SCRIPT_NAME does not match - downloading updated $serverver" "$PASS"
+			Print_Output true "MD5 hash of $SCRIPT_NAME does not match - hotfix available - $serverver" "$PASS"
 		fi
 		
 		if [ "$isupdate" != "false" ]; then
-			if Firmware_Version_WebUI ; then
-				Update_File shared-jy.tar.gz
-				Update_File YazFi_www.asp
-				Update_File YazFiMonitor
-				Update_File YazFiMonitord
-				Update_File sc.func
-				Update_File S98YazFiMonitor
-			else
-				Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
-			fi
-			
-			/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
-			chmod 0755 /jffs/scripts/"$SCRIPT_NAME"
-			Clear_Lock
-			service restart_firewall >/dev/null 2>&1
-			if [ -z "$1" ]; then
-				exec "$0" setversion
-			elif [ "$1" = "unattended" ]; then
-				exec "$0" setversion unattended
-			fi
-			exit 0
+			printf "\\n${BOLD}Do you want to continue with the update? (y/n)${CLEARFORMAT}  "
+			read -r confirm
+			case "$confirm" in
+				y|Y)
+					if Firmware_Version_WebUI ; then
+						Update_File shared-jy.tar.gz
+						Update_File YazFi_www.asp
+						Update_File YazFiMonitor
+						Update_File YazFiMonitord
+						Update_File sc.func
+						Update_File S98YazFiMonitor
+					else
+						Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
+					fi
+					
+					/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
+					chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
+					Set_Version_Custom_Settings local "$serverver"
+					Set_Version_Custom_Settings server "$serverver"
+					Clear_Lock
+					service restart_firewall >/dev/null 2>&1
+					PressEnter
+					exec "$0"
+					exit 0
+				;;
+				*)
+					printf "\\n"
+					Clear_Lock
+					return 1
+				;;
+			esac
 		else
-			Print_Output true "No new version - latest is $localver" "$WARN"
+			Print_Output true "No updates available - latest is $localver" "$WARN"
 			Clear_Lock
 		fi
 	fi
@@ -590,13 +600,16 @@ Update_Version(){
 			Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
 		fi
 		/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
-		chmod 0755 /jffs/scripts/"$SCRIPT_NAME"
+		chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
+		Set_Version_Custom_Settings local "$serverver"
+		Set_Version_Custom_Settings server "$serverver"
 		Clear_Lock
 		service restart_firewall >/dev/null 2>&1
 		if [ -z "$2" ]; then
-			exec "$0" setversion
+			PressEnter
+			exec "$0"
 		elif [ "$2" = "unattended" ]; then
-			exec "$0" setversion unattended
+			exec "$0" postupdate
 		fi
 		exit 0
 	fi
