@@ -14,7 +14,7 @@
 #############################################
 ##   Credit to @RMerlin for the original   ##
 ##    guest network DHCP script and for    ##
-##        AsusWRT-Merlin firmware          ##
+##         AsusWRT-Merlin firmware         ##
 #############################################
 
 ######        Shellcheck directives    ######
