@@ -17,7 +17,7 @@
 ##         AsusWRT-Merlin firmware         ##
 #############################################
 
-######        Shellcheck directives    ######
+######       Shellcheck directives     ######
 # shellcheck disable=SC1003
 # shellcheck disable=SC1090
 # shellcheck disable=SC2005
@@ -2266,7 +2266,7 @@ Menu_Install(){
 	Auto_OpenVPNEvent create 2>/dev/null
 	
 	Print_Output false "You can access $SCRIPT_NAME's configuration via the Guest Networks section of the WebUI" "$PASS"
-	Print_Output false "Alternativey, use $SCRIPT_NAME's menu via amtm (if installed), with /jffs/scripts/$SCRIPT_NAME or simply $SCRIPT_NAME"
+	Print_Output false "Alternatively, use $SCRIPT_NAME's menu via amtm (if installed), with /jffs/scripts/$SCRIPT_NAME or simply $SCRIPT_NAME"
 	Clear_Lock
 	PressEnter
 	ScriptHeader
