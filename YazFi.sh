@@ -1016,7 +1016,7 @@ Conf_Validate(){
 						if ! Validate_VPNClientNo "${IFACETMP}_VPNCLIENTNUMBER" "$(eval echo '$'"${IFACETMP}_VPNCLIENTNUMBER")"; then
 							IFACE_PASS="false"
 						else
-							if [ "$(nvram get vpn_client"$(eval echo '$'"${IFACETMP}_VPNCLIENTNUMBER")"_rgw)" -lt 2 ]; then
+							if [ "$(nvram get vpn_client"$(eval echo '$'"${IFACETMP}_VPNCLIENTNUMBER")"_rgw)" -ne 2 ]; then
 								Print_Output false "VPN Client $(eval echo '$'"${IFACETMP}_VPNCLIENTNUMBER") is not configured for Policy Routing, enabling it..." "$WARN"
 								nvram set vpn_client"$(eval echo '$'"${IFACETMP}_VPNCLIENTNUMBER")"_rgw=2
 								nvram commit
@@ -1664,7 +1664,7 @@ Routing_VPNDirector(){
 				COUNTER=1
 				until [ $COUNTER -gt 5 ]; do
 					if ifconfig "tun1$COUNTER" >/dev/null 2>&1; then
-						if [ "$(nvram get vpn_client"$COUNTER"_rgw)" -lt 2 ]; then
+						if [ "$(nvram get vpn_client"$COUNTER"_rgw)" -ne 2 ]; then
 							nvram set vpn_client"$COUNTER"_rgw=2
 							nvram commit
 						fi
@@ -1764,7 +1764,7 @@ Routing_NVRAM(){
 						nvram set vpn_client"$COUNTER"_clientlist="$(eval echo '$'"VPN_IP_LIST_NEW_$COUNTER")"
 					fi
 					
-					if [ "$(nvram get vpn_client"$COUNTER"_rgw)" -lt 2 ]; then
+					if [ "$(nvram get vpn_client"$COUNTER"_rgw)" -ne 2 ]; then
 						nvram set vpn_client"$COUNTER"_rgw=2
 					fi
 					nvram commit
