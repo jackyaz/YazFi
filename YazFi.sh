@@ -2651,6 +2651,10 @@ Menu_Uninstall(){
 	Firewall_NVRAM deleteall "$IFACE" 2>/dev/null
 	Iface_Manage deleteall 2>/dev/null
 	DHCP_Conf deleteall 2>/dev/null
+	LOCKFILE=/tmp/addonwebui.lock
+	FD=386
+	eval exec "$FD>$LOCKFILE"
+	flock -x "$FD"
 	Get_WebUI_Page "$SCRIPT_DIR/YazFi_www.asp"
 	if [ -n "$MyPage" ] && [ "$MyPage" != "none" ] && [ -f "/tmp/menuTree.js" ]; then
 		sed -i "\\~$MyPage~d" /tmp/menuTree.js
@@ -2659,6 +2663,8 @@ Menu_Uninstall(){
 		rm -f "$SCRIPT_WEBPAGE_DIR/$MyPage"
 		rm -f "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
 	fi
+	flock -u "$FD"
+	rm -f "$SCRIPT_DIR/YazFi_www.asp" 2>/dev/null
 	while true; do
 		printf "\\n${BOLD}Do you want to delete %s configuration file(s)? (y/n)${CLEARFORMAT}  " "$SCRIPT_NAME"
 		read -r confirm
