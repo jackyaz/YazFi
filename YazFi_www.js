@@ -109,6 +109,23 @@ function VPNOptionsEnableDisable(forminput){
 	}
 }
 
+function ForceDNSEnableDisable(forminput){
+	var inputname = forminput.name;
+	var inputvalue = forminput.value;
+	var prefix = inputname.substring(0,inputname.lastIndexOf('_'));
+	
+	if(eval('document.form.'+prefix+'_enabled').value == 'true'){
+		if(inputvalue == 'true'){
+			$j('input[name='+prefix+'_dns2]').addClass('disabled');
+			$j('input[name='+prefix+'_dns2]').prop('disabled',true);
+		}
+		else if(inputvalue == 'false'){
+			$j('input[name='+prefix+'_dns2]').removeClass('disabled');
+			$j('input[name='+prefix+'_dns2]').prop('disabled',false);
+		}
+	}
+}
+
 function Validate_IP(forminput,iptype){
 	var inputvalue = forminput.value;
 	var inputname = forminput.name;
@@ -355,12 +372,13 @@ function get_conf_file(){
 			var buttonshtml = '<tr class="apply_gen" valign="top" height="35px"><td style="background-color:rgb(77,89,93);border-top:0px;">';
 			buttonshtml += '<input name="button" type="button" class="button_gen" onclick="SaveConfig();" value="Apply"/></td></tr>';
 			$j('#table_config').append(buttonshtml);
-
+			
 			var settingcount = bands*12*3;
 			for(var i = 0; i < settingcount; i++){
 				var settingname = window['yazfi_settings'][i][0].toLowerCase();
 				var settingvalue = window['yazfi_settings'][i][1];
 				eval('document.form.yazfi_'+settingname).value = settingvalue;
+				if(settingname.indexOf('forcedns') != -1) ForceDNSEnableDisable($j('#yazfi_'+settingname.replace('_forcedns','')+'_fdns_'+settingvalue)[0]);
 				if(settingname.indexOf('redirectalltovpn') != -1) VPNOptionsEnableDisable($j('#yazfi_'+settingname.replace('_redirectalltovpn','')+'_redir_'+settingvalue)[0]);
 				if(settingname.indexOf('enabled') != -1) OptionsEnableDisable($j('#yazfi_'+settingname.replace('_enabled','')+'_en_'+settingvalue)[0]);
 			}
@@ -682,9 +700,9 @@ function BuildConfigTable(prefix,title){
 	
 	/* FORCEDNS */
 	tablehtml+='<tr>';
-	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(7);">Force DNS</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_forcedns" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_forcedns" class="input" value="false" checked>No</td>';
-	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_forcedns" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_forcedns" class="input" value="false" checked>No</td>';
-	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_forcedns" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_forcedns" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(7);">Force DNS</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_forcedns" id="yazfi_'+prefix+'1_fdns_true" onChange="ForceDNSEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_forcedns" id="yazfi_'+prefix+'1_fdns_false" onChange="ForceDNSEnableDisable(this)" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_forcedns" id="yazfi_'+prefix+'2_fdns_true" onChange="ForceDNSEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_forcedns" id="yazfi_'+prefix+'2_fdns_false" onChange="ForceDNSEnableDisable(this)" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_forcedns" id="yazfi_'+prefix+'3_fdns_true" onChange="ForceDNSEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_forcedns" id="yazfi_'+prefix+'3_fdns_false" onChange="ForceDNSEnableDisable(this)" class="input" value="false" checked>No</td>';
 	tablehtml+='</tr>';
 	
 	/* REDIRECTALLTOVPN */
