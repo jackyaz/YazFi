@@ -2524,7 +2524,7 @@ Menu_Status(){
 						
 						if [ -f /opt/bin/dig ]; then
 							if [ -z "$GUEST_HOST" ]; then
-								GUEST_HOST="$(dig +short +answer -x "$GUEST_IPADDR" '@'"$(nvram get lan_ipaddr)" | cut -f1 -d'.')"
+								GUEST_HOST="$(/opt/bin/dig +short +answer -x "$GUEST_IPADDR" '@'"$(nvram get lan_ipaddr)" | cut -f1 -d'.')"
 							fi
 						fi
 					else
