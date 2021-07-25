@@ -1358,7 +1358,7 @@ Firewall_Rules(){
 		
 		iptables "$ACTION" "$INPT" -i "$IFACE" -j "$LGRJT"
 		iptables "$ACTION" "$INPT" -i "$IFACE" -p icmp -j ACCEPT
-		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT
+		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,68,123 -j ACCEPT
 		
 		ENABLED_WINS="$(nvram get smbd_wins)"
 		ENABLED_SAMBA="$(nvram get enable_samba)"
