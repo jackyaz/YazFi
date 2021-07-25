@@ -1,0 +1,19 @@
+#!/bin/sh
+# shellcheck disable=SC2034
+
+if [ "$1" = "restart" ] || [ "$1" = "stop" ] || [ "$1" = "kill" ]; then
+	killall -q YazFiMonitord
+	killall -q YazFiMonitor
+	rm -f /tmp/YazFiMonitor
+fi
+
+ENABLED=yes
+PROCS=/jffs/addons/YazFi.d/YazFiMonitord
+ARGS=""
+PREARGS=""
+PRECMD=""
+POSTCMD=""
+DESC=$PROCS
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+. /jffs/addons/YazFi.d/sc.func
