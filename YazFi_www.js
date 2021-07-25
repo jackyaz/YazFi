@@ -444,7 +444,7 @@ function get_connected_clients_file(){
 			}
 		}
 		if(document.getElementById('auto_refresh').checked){
-			tout = setTimeout(get_connected_clients_file,10000);
+			tout = setTimeout(get_connected_clients_file,5000);
 		}
 		AddEventHandlers();
 	}).catch(function(){setTimeout(get_connected_clients_file,1000);});
