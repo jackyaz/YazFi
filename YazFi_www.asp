@@ -242,7 +242,7 @@ var tout,clientswl01=[],sortnamewl01="Hostname",sortdirwl01="asc",clientswl02=[]
 <tr><td colspan="2">Connected Guests (click to expand/collapse)</td></tr>
 </thead>
 <tr class="even">
-<th style="width:40%;">Update automatically?</th>
+<th style="width:35%;">Update automatically?</th>
 <td>
 <label style="color:#FFCC00;display:block;">
 <input type="checkbox" checked="" id="auto_refresh" style="padding:0;margin:0;vertical-align:middle;position:relative;top:-1px;" />&nbsp;&nbsp;Table will refresh every 5s</label>
