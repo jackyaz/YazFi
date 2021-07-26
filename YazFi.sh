@@ -36,8 +36,8 @@
 ### Start of script variables ###
 readonly SCRIPT_NAME="YazFi"
 readonly SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
-readonly YAZFI_VERSION="v4.3.0"
-readonly SCRIPT_VERSION="v4.3.0"
+readonly YAZFI_VERSION="v4.3.1"
+readonly SCRIPT_VERSION="v4.3.1"
 SCRIPT_BRANCH="master"
 SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
@@ -2484,6 +2484,7 @@ Menu_Status(){
 	### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
 	STATUSOUTPUTFILE="$SCRIPT_DIR/.connectedclients"
 	rm -f "$STATUSOUTPUTFILE"
+	TMPSTATUSOUTPUTFILE="/tmp/.connectedclients"
 	. "$SCRIPT_CONF"
 	
 	if [ ! -f /opt/bin/dig ] && [ -f /opt/bin/opkg ]; then
@@ -2493,7 +2494,7 @@ Menu_Status(){
 	
 	[ -z "$1" ] && ScriptHeader
 	[ -z "$1" ] && printf "${BOLD}$PASS%sQuerying router for connected WiFi clients...${CLEARFORMAT}\\n\\n" ""
-	printf "INTERFACE,HOSTNAME,IP,MAC,CONNECTED,RX,TX,RSSI,PHY\\n" >> "$STATUSOUTPUTFILE"
+	printf "INTERFACE,HOSTNAME,IP,MAC,CONNECTED,RX,TX,RSSI,PHY\\n" >> "$TMPSTATUSOUTPUTFILE"
 	
 	ARPDUMP="$(arp -an)"
 	
@@ -2524,7 +2525,7 @@ Menu_Status(){
 						
 						if [ -f /opt/bin/dig ]; then
 							if [ -z "$GUEST_HOST" ]; then
-								GUEST_HOST="$(dig +short +answer -x "$GUEST_IPADDR" '@'"$(nvram get lan_ipaddr)" | cut -f1 -d'.')"
+								GUEST_HOST="$(/opt/bin/dig +short +answer -x "$GUEST_IPADDR" '@'"$(nvram get lan_ipaddr)" | cut -f1 -d'.')"
 							fi
 						fi
 					else
@@ -2557,16 +2558,17 @@ Menu_Status(){
 					fi
 					
 					[ -z "$1" ] && printf "%-30s%-20s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED_PRINT" "$GUEST_RX/$GUEST_TX Mbps" "$GUEST_RSSI dBm" "$GUEST_PHY"
-					printf "%s,%s,%s,%s,%s,%s,%s,%s,%s\\n" "$IFACE" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED" "$GUEST_RX" "$GUEST_TX" "$GUEST_RSSI" "$GUEST_PHY" >> "$STATUSOUTPUTFILE"
+					printf "%s,%s,%s,%s,%s,%s,%s,%s,%s\\n" "$IFACE" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED" "$GUEST_RX" "$GUEST_TX" "$GUEST_RSSI" "$GUEST_PHY" >> "$TMPSTATUSOUTPUTFILE"
 				done
 				unset IFS
 			else
 				[ -z "$1" ] && printf "${BOLD}${WARN}No clients connected${CLEARFORMAT}\\n\\n"
-				printf "%s,,NOCLIENTS,,,,,,\\n" "$IFACE" >> "$STATUSOUTPUTFILE"
+				printf "%s,,NOCLIENTS,,,,,,\\n" "$IFACE" >> "$TMPSTATUSOUTPUTFILE"
 			fi
 		fi
 	done
 	
+	mv "$TMPSTATUSOUTPUTFILE" "$STATUSOUTPUTFILE" 2>/dev/null
 	[ -z "$1" ] && printf "%75s\\n\\n" "" | tr " " "-"
 	[ -z "$1" ] && printf "${BOLD}$PASS%sQuery complete, please see above for results${CLEARFORMAT}\\n\\n" ""
 	#######################################################################################################
@@ -2845,12 +2847,6 @@ case "$1" in
 			exit 0
 		elif [ "$2" = "start" ] && [ "$3" = "${SCRIPT_NAME}doupdate" ]; then
 			Update_Version force unattended
-			exit 0
-		elif [ "$2" = "start" ] && [ "$3" = "${SCRIPT_NAME}connectedclients" ]; then
-			STATUSOUTPUTFILE="$SCRIPT_DIR/.connectedclients"
-			rm -f "$STATUSOUTPUTFILE"
-			sleep 3
-			Menu_Status outputtofile
 			exit 0
 		fi
 		exit 0

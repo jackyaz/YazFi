@@ -416,30 +416,36 @@ function get_connected_clients_file(){
 			
 			$j('#table_connectedclients').empty();
 			
-			for(var i = 0; i < YazFiInterfaces.length; i++){
-				window['clients'+YazFiInterfaces[i]] = data.filter(function(item){
-					return item.INTERFACE.replace('.','') == YazFiInterfaces[i];
-				}).map(function(obj){
-					return {
-						Hostname: obj.HOSTNAME,
-						IPAddress: obj.IP,
-						MACAddress: obj.MAC,
-						Connected: obj.CONNECTED,
-						Rx: obj.RX,
-						Tx: obj.TX,
-						RSSI: obj.RSSI,
-						PHY: obj.PHY
+			for(var i = 0; i < bands; i++){
+				for(var i2 = 1; i2 <= 3; i2++){
+					YazFiInterface = 'wl'+i.toString()+i2.toString();
+					window['clients'+YazFiInterface] = data.filter(function(item){
+						return item.INTERFACE.replace('.','') == YazFiInterface;
+					}).map(function(obj){
+						return {
+							Hostname: obj.HOSTNAME,
+							IPAddress: obj.IP,
+							MACAddress: obj.MAC,
+							Connected: obj.CONNECTED,
+							Rx: obj.RX,
+							Tx: obj.TX,
+							RSSI: obj.RSSI,
+							PHY: obj.PHY
+						}
+					});
+					
+					if(eval('document.form.yazfi_'+YazFiInterface+'_enabled.value') == "true" && eval('document.form.'+YazFiInterface+'_bss_enabled.value') == 1){
+						$j('#table_connectedclients').append(BuildConnectedClientPlaceholderTable(YazFiInterface,eval('document.form.'+YazFiInterface+'_ssid.value')));
+						
+						if(window['clients'+YazFiInterface].length > 0 && window['clients'+YazFiInterface][0].IPAddress != 'NOCLIENTS'){
+							SortTable('sortTable'+YazFiInterface,'clients'+YazFiInterface,eval('sortname'+YazFiInterface)+' '+eval('sortdir'+YazFiInterface).replace('desc','↑').replace('asc','↓').trim(),'sortname'+YazFiInterface,'sortdir'+YazFiInterface);
+						}
+						else{
+							$j('#sortTable'+YazFiInterface).css('height','30px');
+							$j('#sortTable'+YazFiInterface).css('overflow-y','hidden');
+							$j('#sortTable'+YazFiInterface).append(BuildConnectedClientsTableNoData('sortTable'+YazFiInterface));
+						}
 					}
-				});
-				
-				$j('#table_connectedclients').append(BuildConnectedClientPlaceholderTable(YazFiInterfaces[i],eval('document.form.'+YazFiInterfaces[i]+'_ssid.value')));
-				if(window['clients'+YazFiInterfaces[i]][0].IPAddress != 'NOCLIENTS'){
-					SortTable('sortTable'+YazFiInterfaces[i],'clients'+YazFiInterfaces[i],eval('sortname'+YazFiInterfaces[i])+' '+eval('sortdir'+YazFiInterfaces[i]).replace('desc','↑').replace('asc','↓').trim(),'sortname'+YazFiInterfaces[i],'sortdir'+YazFiInterfaces[i]);
-				}
-				else{
-					$j('#sortTable'+YazFiInterfaces[i]).css('height','30px');
-					$j('#sortTable'+YazFiInterfaces[i]).css('overflow-y','hidden');
-					$j('#sortTable'+YazFiInterfaces[i]).append(BuildConnectedClientsTableNoData('sortTable'+YazFiInterfaces[i]));
 				}
 			}
 		}

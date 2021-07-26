@@ -2,3 +2,4 @@
 *.md text eol=lf
 *.asp text eol=lf
 *.config.example text eol=lf
+* text=auto eol=lf
