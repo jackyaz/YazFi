@@ -558,10 +558,6 @@ Update_Version(){
 					if Firmware_Version_WebUI ; then
 						Update_File shared-jy.tar.gz
 						Update_File YazFi_www.asp
-						Update_File YazFiMonitor
-						Update_File YazFiMonitord
-						Update_File sc.func
-						Update_File S98YazFiMonitor
 					else
 						Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
 					fi
@@ -594,10 +590,6 @@ Update_Version(){
 		if Firmware_Version_WebUI ; then
 			Update_File shared-jy.tar.gz
 			Update_File YazFi_www.asp
-			Update_File YazFiMonitor
-			Update_File YazFiMonitord
-			Update_File sc.func
-			Update_File S98YazFiMonitor
 		else
 			Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
 		fi
@@ -649,33 +641,6 @@ Update_File(){
 				rm -f "$SHARED_DIR/$1"
 				Print_Output true "New version of $1 downloaded" "$PASS"
 			fi
-		fi
-	elif [ "$1" = "S98YazFiMonitor" ]; then
-		tmpfile="/tmp/$1"
-		Download_File "$SCRIPT_REPO/$1" "$tmpfile"
-		if ! diff -q "$tmpfile" "$SCRIPT_DIR/$1" >/dev/null 2>&1; then
-			if [ -f "$SCRIPT_DIR/S98YazFiMonitor" ]; then
-				"$SCRIPT_DIR/S98YazFiMonitor" stop >/dev/null 2>&1
-				sleep 2
-			fi
-			Download_File "$SCRIPT_REPO/$1" "$SCRIPT_DIR/$1"
-			chmod 0755 "$SCRIPT_DIR/$1"
-			"$SCRIPT_DIR/S98YazFiMonitor" start >/dev/null 2>&1
-			Print_Output true "New version of $1 downloaded" "$PASS"
-		fi
-		rm -f "$tmpfile"
-	elif [ "$1" = "YazFiMonitor" ] || [ "$1" = "YazFiMonitord" ] || [ "$1" = "sc.func" ]; then
-		tmpfile="/tmp/$1"
-		Download_File "$SCRIPT_REPO/$1" "$tmpfile"
-		if ! diff -q "$tmpfile" "$SCRIPT_DIR/$1" >/dev/null 2>&1; then
-			if [ -f "$SCRIPT_DIR/S98YazFiMonitor" ]; then
-				"$SCRIPT_DIR/S98YazFiMonitor" stop >/dev/null 2>&1
-				sleep 2
-			fi
-			Download_File "$SCRIPT_REPO/$1" "$SCRIPT_DIR/$1"
-			chmod 0755 "$SCRIPT_DIR/$1"
-			Print_Output true "New version of $1 downloaded" "$PASS"
-			"$SCRIPT_DIR/S98YazFiMonitor" start >/dev/null 2>&1
 		fi
 	else
 		return 1
@@ -2244,10 +2209,6 @@ Menu_Install(){
 	if Firmware_Version_WebUI ; then
 		Update_File shared-jy.tar.gz
 		Update_File YazFi_www.asp
-		Update_File YazFiMonitor
-		Update_File YazFiMonitord
-		Update_File sc.func
-		Update_File S98YazFiMonitor
 	else
 		Print_Output false "WebUI is only support on firmware versions with addon support" "$WARN"
 	fi
@@ -2695,15 +2656,6 @@ Menu_Uninstall(){
 	service restart_firewall >/dev/null 2>&1
 }
 
-Process_Upgrade(){
-	if [ ! -f "$SCRIPT_DIR/S98YazFiMonitor" ]; then
-		Update_File YazFiMonitor
-		Update_File YazFiMonitord
-		Update_File sc.func
-		Update_File S98YazFiMonitor
-	fi
-}
-
 Show_About(){
 	cat <<EOF
 About
@@ -2756,7 +2708,6 @@ if [ -z "$1" ]; then
 	Auto_ServiceStart create 2>/dev/null
 	Auto_OpenVPNEvent create 2>/dev/null
 	Shortcut_Script create
-	Process_Upgrade
 	ScriptHeader
 	MainMenu
 	exit 0
@@ -2820,7 +2771,6 @@ case "$1" in
 		sleep 12
 		Create_Dirs
 		Create_Symlinks
-		"$SCRIPT_DIR/S98YazFiMonitor" start >/dev/null 2>&1
 		Mount_WebUI
 		exit 0
 	;;
@@ -2914,7 +2864,6 @@ case "$1" in
 		Auto_ServiceStart create 2>/dev/null
 		Auto_OpenVPNEvent create 2>/dev/null
 		Shortcut_Script create
-		Process_Upgrade
 		exit 0
 	;;
 	postupdate)
@@ -2927,7 +2876,6 @@ case "$1" in
 		Auto_ServiceStart create 2>/dev/null
 		Auto_OpenVPNEvent create 2>/dev/null
 		Shortcut_Script create
-		Process_Upgrade
 		exit 0
 	;;
 	uninstall)
