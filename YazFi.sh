@@ -2700,6 +2700,13 @@ EOF
 }
 ### ###
 
+if [ -f "$SCRIPT_DIR/S98YazFiMonitor" ]; then
+	rm -f "$SCRIPT_DIR/YazFiMonitor"
+	rm -f "$SCRIPT_DIR/YazFiMonitord"
+	rm -f "$SCRIPT_DIR/sc.func"
+	rm -f "$SCRIPT_DIR/S98YazFiMonitor"
+fi
+
 if [ -z "$1" ]; then
 	Create_Dirs
 	Create_Symlinks
