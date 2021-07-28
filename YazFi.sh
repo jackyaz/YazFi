@@ -2442,6 +2442,7 @@ Menu_GuestConfig(){
 }
 
 Menu_Status(){
+	renice 15 $$
 	### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
 	STATUSOUTPUTFILE="$SCRIPT_DIR/.connectedclients"
 	rm -f "$STATUSOUTPUTFILE"
@@ -2533,6 +2534,7 @@ Menu_Status(){
 	[ -z "$1" ] && printf "%75s\\n\\n" "" | tr " " "-"
 	[ -z "$1" ] && printf "${BOLD}$PASS%sQuery complete, please see above for results${CLEARFORMAT}\\n\\n" ""
 	#######################################################################################################
+	renice 0 $$
 }
 
 Menu_Diagnostics(){
