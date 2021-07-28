@@ -2478,7 +2478,7 @@ Menu_Status(){
 					if [ -n "$GUEST_IPADDR" ]; then
 						GUEST_HOST="$(arp "$GUEST_IPADDR" | grep "$IFACE" | awk '{print $1}' | cut -f1 -d ".")"
 						if [ "$GUEST_HOST" = "?" ]; then
-							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | grep -v "\*" | awk '{print $4}')
+							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
 						fi
 						
 						if [ "$GUEST_HOST" = "?" ] || [ "$(printf "%s" "$GUEST_HOST" | wc -m)" -le 1 ]; then
