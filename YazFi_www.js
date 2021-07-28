@@ -20,7 +20,9 @@ function initial(){
 	get_conf_file();
 	ScriptUpdateLayout();
 	
-	get_connected_clients_file();
+	document.formScriptActions.action_script.value='start_YazFiconnectedclients';
+	document.formScriptActions.submit();
+	tout = setTimeout(get_connected_clients_file,5000);
 }
 
 function YazHint(hintid){
@@ -450,10 +452,12 @@ function get_connected_clients_file(){
 			}
 		}
 		if(document.getElementById('auto_refresh').checked){
+			document.formScriptActions.action_script.value='start_YazFiconnectedclients';
+			document.formScriptActions.submit();
 			tout = setTimeout(get_connected_clients_file,5000);
 		}
 		AddEventHandlers();
-	}).catch(function(){setTimeout(get_connected_clients_file,1000);});
+	}).catch(function(){tout = setTimeout(get_connected_clients_file,1000);});
 }
 
 function SortTable(tableid,arrayid,sorttext,sortname,sortdir){
@@ -892,7 +896,14 @@ function AddEventHandlers(){
 }
 
 function ToggleRefresh(){
-	$j('#auto_refresh').prop('checked',function(i,v){ if(v){get_connected_clients_file();} else{clearTimeout(tout);} });
+	if($j('#auto_refresh').prop('checked') == true){
+		document.formScriptActions.action_script.value='start_YazFiconnectedclients';
+		document.formScriptActions.submit();
+		tout = setTimeout(get_connected_clients_file,5000);
+	}
+	else{
+		clearTimeout(tout);
+	}
 }
 
 $j.fn.serializeObject = function(){
