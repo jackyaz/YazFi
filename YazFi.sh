@@ -2475,6 +2475,11 @@ Menu_Status(){
 					GUEST_ARPINFO="$(echo "$ARPDUMP" | grep "$IFACE" | grep -i "$GUEST_MACADDR" | grep -v "$(nvram get lan_ipaddr | cut -d'.' -f1-3)")"
 					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed 's/(//g;s/)//g')"
 					GUEST_HOST=""
+					
+					if [ -z "$GUEST_IPADDR" ]; then
+						GUEST_IPADDR=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $3}')
+					fi
+					
 					if [ -n "$GUEST_IPADDR" ]; then
 						GUEST_HOST="$(arp "$GUEST_IPADDR" | grep "$IFACE" | awk '{print $1}' | cut -f1 -d ".")"
 						if [ "$GUEST_HOST" = "?" ]; then
