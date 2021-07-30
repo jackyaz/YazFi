@@ -36,8 +36,8 @@
 ### Start of script variables ###
 readonly SCRIPT_NAME="YazFi"
 readonly SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
-readonly YAZFI_VERSION="v4.3.1"
-readonly SCRIPT_VERSION="v4.3.1"
+readonly YAZFI_VERSION="v4.3.2"
+readonly SCRIPT_VERSION="v4.3.2"
 SCRIPT_BRANCH="master"
 SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
@@ -558,10 +558,6 @@ Update_Version(){
 					if Firmware_Version_WebUI ; then
 						Update_File shared-jy.tar.gz
 						Update_File YazFi_www.asp
-						Update_File YazFiMonitor
-						Update_File YazFiMonitord
-						Update_File sc.func
-						Update_File S98YazFiMonitor
 					else
 						Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
 					fi
@@ -594,10 +590,6 @@ Update_Version(){
 		if Firmware_Version_WebUI ; then
 			Update_File shared-jy.tar.gz
 			Update_File YazFi_www.asp
-			Update_File YazFiMonitor
-			Update_File YazFiMonitord
-			Update_File sc.func
-			Update_File S98YazFiMonitor
 		else
 			Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
 		fi
@@ -649,33 +641,6 @@ Update_File(){
 				rm -f "$SHARED_DIR/$1"
 				Print_Output true "New version of $1 downloaded" "$PASS"
 			fi
-		fi
-	elif [ "$1" = "S98YazFiMonitor" ]; then
-		tmpfile="/tmp/$1"
-		Download_File "$SCRIPT_REPO/$1" "$tmpfile"
-		if ! diff -q "$tmpfile" "$SCRIPT_DIR/$1" >/dev/null 2>&1; then
-			if [ -f "$SCRIPT_DIR/S98YazFiMonitor" ]; then
-				"$SCRIPT_DIR/S98YazFiMonitor" stop >/dev/null 2>&1
-				sleep 2
-			fi
-			Download_File "$SCRIPT_REPO/$1" "$SCRIPT_DIR/$1"
-			chmod 0755 "$SCRIPT_DIR/$1"
-			"$SCRIPT_DIR/S98YazFiMonitor" start >/dev/null 2>&1
-			Print_Output true "New version of $1 downloaded" "$PASS"
-		fi
-		rm -f "$tmpfile"
-	elif [ "$1" = "YazFiMonitor" ] || [ "$1" = "YazFiMonitord" ] || [ "$1" = "sc.func" ]; then
-		tmpfile="/tmp/$1"
-		Download_File "$SCRIPT_REPO/$1" "$tmpfile"
-		if ! diff -q "$tmpfile" "$SCRIPT_DIR/$1" >/dev/null 2>&1; then
-			if [ -f "$SCRIPT_DIR/S98YazFiMonitor" ]; then
-				"$SCRIPT_DIR/S98YazFiMonitor" stop >/dev/null 2>&1
-				sleep 2
-			fi
-			Download_File "$SCRIPT_REPO/$1" "$SCRIPT_DIR/$1"
-			chmod 0755 "$SCRIPT_DIR/$1"
-			Print_Output true "New version of $1 downloaded" "$PASS"
-			"$SCRIPT_DIR/S98YazFiMonitor" start >/dev/null 2>&1
 		fi
 	else
 		return 1
@@ -2244,10 +2209,6 @@ Menu_Install(){
 	if Firmware_Version_WebUI ; then
 		Update_File shared-jy.tar.gz
 		Update_File YazFi_www.asp
-		Update_File YazFiMonitor
-		Update_File YazFiMonitord
-		Update_File sc.func
-		Update_File S98YazFiMonitor
 	else
 		Print_Output false "WebUI is only support on firmware versions with addon support" "$WARN"
 	fi
@@ -2481,6 +2442,7 @@ Menu_GuestConfig(){
 }
 
 Menu_Status(){
+	renice 15 $$
 	### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
 	STATUSOUTPUTFILE="$SCRIPT_DIR/.connectedclients"
 	rm -f "$STATUSOUTPUTFILE"
@@ -2513,10 +2475,15 @@ Menu_Status(){
 					GUEST_ARPINFO="$(echo "$ARPDUMP" | grep "$IFACE" | grep -i "$GUEST_MACADDR" | grep -v "$(nvram get lan_ipaddr | cut -d'.' -f1-3)")"
 					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed 's/(//g;s/)//g')"
 					GUEST_HOST=""
+					
+					if [ -z "$GUEST_IPADDR" ]; then
+						GUEST_IPADDR=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $3}')
+					fi
+					
 					if [ -n "$GUEST_IPADDR" ]; then
 						GUEST_HOST="$(arp "$GUEST_IPADDR" | grep "$IFACE" | awk '{print $1}' | cut -f1 -d ".")"
 						if [ "$GUEST_HOST" = "?" ]; then
-							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | grep -v "\*" | awk '{print $4}')
+							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
 						fi
 						
 						if [ "$GUEST_HOST" = "?" ] || [ "$(printf "%s" "$GUEST_HOST" | wc -m)" -le 1 ]; then
@@ -2572,6 +2539,7 @@ Menu_Status(){
 	[ -z "$1" ] && printf "%75s\\n\\n" "" | tr " " "-"
 	[ -z "$1" ] && printf "${BOLD}$PASS%sQuery complete, please see above for results${CLEARFORMAT}\\n\\n" ""
 	#######################################################################################################
+	renice 0 $$
 }
 
 Menu_Diagnostics(){
@@ -2695,15 +2663,6 @@ Menu_Uninstall(){
 	service restart_firewall >/dev/null 2>&1
 }
 
-Process_Upgrade(){
-	if [ ! -f "$SCRIPT_DIR/S98YazFiMonitor" ]; then
-		Update_File YazFiMonitor
-		Update_File YazFiMonitord
-		Update_File sc.func
-		Update_File S98YazFiMonitor
-	fi
-}
-
 Show_About(){
 	cat <<EOF
 About
@@ -2746,6 +2705,13 @@ EOF
 }
 ### ###
 
+if [ -f "$SCRIPT_DIR/S98YazFiMonitor" ]; then
+	rm -f "$SCRIPT_DIR/YazFiMonitor"
+	rm -f "$SCRIPT_DIR/YazFiMonitord"
+	rm -f "$SCRIPT_DIR/sc.func"
+	rm -f "$SCRIPT_DIR/S98YazFiMonitor"
+fi
+
 if [ -z "$1" ]; then
 	Create_Dirs
 	Create_Symlinks
@@ -2756,7 +2722,6 @@ if [ -z "$1" ]; then
 	Auto_ServiceStart create 2>/dev/null
 	Auto_OpenVPNEvent create 2>/dev/null
 	Shortcut_Script create
-	Process_Upgrade
 	ScriptHeader
 	MainMenu
 	exit 0
@@ -2820,7 +2785,6 @@ case "$1" in
 		sleep 12
 		Create_Dirs
 		Create_Symlinks
-		"$SCRIPT_DIR/S98YazFiMonitor" start >/dev/null 2>&1
 		Mount_WebUI
 		exit 0
 	;;
@@ -2847,6 +2811,12 @@ case "$1" in
 			exit 0
 		elif [ "$2" = "start" ] && [ "$3" = "${SCRIPT_NAME}doupdate" ]; then
 			Update_Version force unattended
+			exit 0
+		elif [ "$2" = "start" ] && [ "$3" = "${SCRIPT_NAME}connectedclients" ]; then
+			STATUSOUTPUTFILE="$SCRIPT_DIR/.connectedclients"
+			rm -f "$STATUSOUTPUTFILE"
+			sleep 2
+			Menu_Status outputtofile
 			exit 0
 		fi
 		exit 0
@@ -2914,7 +2884,6 @@ case "$1" in
 		Auto_ServiceStart create 2>/dev/null
 		Auto_OpenVPNEvent create 2>/dev/null
 		Shortcut_Script create
-		Process_Upgrade
 		exit 0
 	;;
 	postupdate)
@@ -2927,7 +2896,6 @@ case "$1" in
 		Auto_ServiceStart create 2>/dev/null
 		Auto_OpenVPNEvent create 2>/dev/null
 		Shortcut_Script create
-		Process_Upgrade
 		exit 0
 	;;
 	uninstall)
