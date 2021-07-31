@@ -2025,6 +2025,8 @@ Generate_QRCode(){
 	
 	if [ "$QRSSID" != "" ]; then
 		qrencode -t ANSI -o - "WIFI:${QRTYPE}${QRSSID}${QRPASS}${QRHIDE};"
+	else
+		printf "\\nQR Code generation not supported for this guest network. Please check configuration.\\n"
 	fi
 	QRTYPE=""
 	QRSSID=""
