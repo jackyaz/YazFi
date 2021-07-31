@@ -1999,6 +1999,40 @@ Execute_UserScripts(){
 	done
 }
 
+### Code adapted from firmware WebUI function, credit to @RMerlin ###
+Generate_QRCode(){
+	QRGUEST_WL="$1"
+	QRSSID="S:$(nvram get "$QRGUEST_WL"_ssid | sed 's/[\\":;,]/\\$&/g');"
+	QRAUTHMODE=$(nvram get "$QRGUEST_WL"_auth_mode_x)
+	
+	if [ "$QRAUTHMODE" == 'psk' ] || [ "$QRAUTHMODE" == 'psk2' ] || [ "$QRAUTHMODE" == 'sae' ] || [ "$QRAUTHMODE" == 'pskpsk2' ] || [ "$QRAUTHMODE" == 'psk2sae' ]; then
+		QRTYPE="T:WPA;"
+		QRPASS="P:$(nvram get "$QRGUEST_WL"_wpa_psk | sed 's/[\\":;,]/\\$&/g');"
+	elif [ "$QRAUTHMODE" == "open" ] && [ "$(nvram get "$QRGUEST_WL"_wep_x)" -eq 0 ]; then
+		QRTYPE="T:;"
+		QRPASS="P:;"
+	elif [ "$QRAUTHMODE" == "shared" ] || [ "$QRAUTHMODE" == "open" ]; then
+		QRTYPE="T:WEP;"
+		QRKEYINDEX=$(nvram get "$QRGUEST_WL"_key)
+		QRPASS="$(nvram get "$QRGUEST_WL"_key"$QRKEYINDEX");"
+	else
+		QRSSID="" # Unsupported
+	fi
+	
+	if [ "$(nvram get "$QRGUEST_WL"_closed)" -eq 1 ]; then
+		QRHIDE="H:true;"
+	fi
+	
+	if [ "$QRSSID" != "" ]; then
+		qrencode -t ANSI -o - "WIFI:${QRTYPE}${QRSSID}${QRPASS}${QRHIDE};"
+	fi
+	QRTYPE=""
+	QRSSID=""
+	QRPASS=""
+	QRHIDE=""
+}
+### ###
+
 Shortcut_Script(){
 	case $1 in
 		create)
@@ -2054,6 +2088,11 @@ MainMenu(){
 	printf "2.    Show connected clients using %s\\n\\n" "$SCRIPT_NAME"
 	printf "3.    Edit %s config\\n" "$SCRIPT_NAME"
 	printf "4.    Edit Guest Network config (SSID + passphrase)\\n\\n"
+	if [ -f /opt/bin/qrencode ]; then
+		printf "5.    Show QR Code for Guest Network\\n\\n"
+	else
+		printf "\\nQR Code generation not supported.\\n\\n"
+	fi
 	printf "u.    Check for updates\\n"
 	printf "uf.   Update %s with latest version (force update)\\n\\n" "$SCRIPT_NAME"
 	printf "d.    Generate %s diagnostics\\n\\n" "$SCRIPT_NAME"
@@ -2096,6 +2135,17 @@ MainMenu(){
 				if Check_Lock menu; then
 					Menu_GuestConfig
 				else
+					PressEnter
+				fi
+				break
+			;;
+			5)
+				if [ -f /opt/bin/qrencode ]; then
+					Menu_QRCode
+					printf "\\n"
+					PressEnter
+				else
+					printf "\\nQR Code generation not supported.\\n\\n"
 					PressEnter
 				fi
 				break
@@ -2334,7 +2384,7 @@ Menu_GuestConfig(){
 	if [ "$exitmenu" != "true" ]; then
 		while true; do
 			ScriptHeader
-			printf "\\n${BOLD}    %s (%s)${CLEARFORMAT}\\n\\n" "$(Get_Guest_Name "$selectediface")" "$selectediface"
+			printf "\\n${BOLD}%s (%s)${CLEARFORMAT}\\n\\n" "$(Get_Guest_Name "$selectediface")" "$selectediface"
 			printf "${BOLD}Available options:${CLEARFORMAT}\\n\\n"
 			printf "1.    Set SSID (current: %s)\\n" "$(nvram get "${selectediface}_ssid")"
 			printf "2.    Set passphrase (current: %s)\\n" "$(nvram get "${selectediface}_wpa_psk")"
@@ -2439,6 +2489,69 @@ Menu_GuestConfig(){
 		Menu_GuestConfig
 	fi
 	Clear_Lock
+}
+
+Menu_QRCode(){
+	exitmenu="false"
+	selectediface=""
+	
+	ScriptHeader
+	
+	printf "\\n${BOLD}Please select a Guest Network:${CLEARFORMAT}\\n\\n"
+	COUNTER=1
+	for IFACE_MENU in $IFACELIST; do
+		if [ $((COUNTER % 4)) -eq 0 ]; then printf "\\n"; fi
+		IFACE_MENU_TEST="$(nvram get "${IFACE_MENU}_bss_enabled")"
+		if ! Validate_Number "" "$IFACE_MENU_TEST" silent; then IFACE_MENU_TEST=0; fi
+		if [ "$IFACE_MENU_TEST" -eq 1 ]; then
+			printf "%s.    %s (SSID: %s)\\n" "$COUNTER" "$(Get_Guest_Name "$IFACE_MENU")" "$(nvram get "${IFACE_MENU}_ssid")"
+		fi
+		COUNTER=$((COUNTER + 1))
+	done
+	
+	printf "\\ne.    Go back\\n"
+	
+	while true; do
+		selectediface=""
+		printf "\\n${BOLD}Choose an option:${CLEARFORMAT}  "
+		read -r selectedguest
+		
+		case "$selectedguest" in
+			1|2|3|4|5|6|7|8|9)
+				selectediface="$(echo "$IFACELIST" | awk '{print $'"$selectedguest"'}')"
+			;;
+			e)
+				exitmenu="true"
+				break
+			;;
+			*)
+				printf "\\nPlease choose a valid option\\n\\n"
+			;;
+		esac
+			
+		if [ -n "$selectediface" ]; then
+			if ! Validate_Exists_IFACE "$selectediface" silent; then
+				printf "\\nSelected guest (%s) not supported on your router, please choose a different option\\n" "$selectediface"
+			else
+				selectediface_TEST="$(nvram get "${selectediface}_bss_enabled")"
+				if ! Validate_Number "" "$selectediface_TEST" silent; then selectediface_TEST=0; fi
+				if [ "$selectediface_TEST" -eq 1 ]; then
+					break
+				else
+					printf "\\nSelected guest (%s) not enabled on your router, please choose a different option\\n" "$selectediface"
+				fi
+			fi
+		fi
+	done
+		
+	if [ "$exitmenu" != "true" ]; then
+		if [ -f /opt/bin/qrencode ]; then
+			printf "\\n"
+			Generate_QRCode "${selectediface}"
+		else
+			printf "\\nQR Code generation not supported.\\n"
+		fi
+	fi
 }
 
 Menu_Status(){
@@ -2710,6 +2823,11 @@ if [ -f "$SCRIPT_DIR/S98YazFiMonitor" ]; then
 	rm -f "$SCRIPT_DIR/YazFiMonitord"
 	rm -f "$SCRIPT_DIR/sc.func"
 	rm -f "$SCRIPT_DIR/S98YazFiMonitor"
+fi
+
+if [ ! -f /opt/bin/qrencode ] && [ -f /opt/bin/opkg ]; then
+	opkg update
+	opkg install qrencode
 fi
 
 if [ -z "$1" ]; then
