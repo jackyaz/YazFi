@@ -2005,13 +2005,13 @@ Generate_QRCode(){
 	QRSSID="S:$(nvram get "$QRGUEST_WL"_ssid | sed 's/[\\":;,]/\\$&/g');"
 	QRAUTHMODE=$(nvram get "$QRGUEST_WL"_auth_mode_x)
 	
-	if [ "$QRAUTHMODE" == 'psk' ] || [ "$QRAUTHMODE" == 'psk2' ] || [ "$QRAUTHMODE" == 'sae' ] || [ "$QRAUTHMODE" == 'pskpsk2' ] || [ "$QRAUTHMODE" == 'psk2sae' ]; then
+	if [ "$QRAUTHMODE" = 'psk' ] || [ "$QRAUTHMODE" = 'psk2' ] || [ "$QRAUTHMODE" = 'sae' ] || [ "$QRAUTHMODE" = 'pskpsk2' ] || [ "$QRAUTHMODE" = 'psk2sae' ]; then
 		QRTYPE="T:WPA;"
 		QRPASS="P:$(nvram get "$QRGUEST_WL"_wpa_psk | sed 's/[\\":;,]/\\$&/g');"
-	elif [ "$QRAUTHMODE" == "open" ] && [ "$(nvram get "$QRGUEST_WL"_wep_x)" -eq 0 ]; then
+	elif [ "$QRAUTHMODE" = "open" ] && [ "$(nvram get "$QRGUEST_WL"_wep_x)" -eq 0 ]; then
 		QRTYPE="T:;"
 		QRPASS="P:;"
-	elif [ "$QRAUTHMODE" == "shared" ] || [ "$QRAUTHMODE" == "open" ]; then
+	elif [ "$QRAUTHMODE" = "shared" ] || [ "$QRAUTHMODE" = "open" ]; then
 		QRTYPE="T:WEP;"
 		QRKEYINDEX=$(nvram get "$QRGUEST_WL"_key)
 		QRPASS="$(nvram get "$QRGUEST_WL"_key"$QRKEYINDEX");"
