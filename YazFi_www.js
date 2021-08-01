@@ -863,6 +863,8 @@ function SaveConfig(){
 		document.getElementById('amng_custom').value = JSON.stringify($j('form').serializeObject());
 		document.form.action_script.value = 'start_YazFi';
 		document.form.action_wait.value = 45;
+		$j('#auto_refresh').prop('checked',false);
+		clearTimeout(tout);
 		showLoading();
 		document.form.submit();
 	}
