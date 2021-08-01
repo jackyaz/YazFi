@@ -1025,12 +1025,11 @@ Conf_Validate(){
 		fi
 	done
 	
-	if [ "$NETWORKS_ENABLED" = "true" ]; then
-		return 0
-	else
+	if [ "$NETWORKS_ENABLED" = "false" ]; then
 		Print_Output true "No $SCRIPT_NAME guests are enabled in the configuration file!" "$CRIT"
-		return 1
 	fi
+	
+	return 0
 }
 
 Create_Dirs(){
