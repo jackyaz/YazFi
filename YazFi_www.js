@@ -91,6 +91,11 @@ function OptionsEnableDisable(forminput){
 			$j('input[name='+prefix+'_vpnclientnumber]').removeClass('disabled');
 			$j('input[name='+prefix+'_vpnclientnumber]').prop('disabled',false);
 		}
+		
+		if(eval('document.form.'+prefix+'_forcedns').value == 'false'){
+			$j('input[name='+prefix+'_dns2]').removeClass('disabled');
+			$j('input[name='+prefix+'_dns2]').prop('disabled',false);
+		}
 	}
 }
 
