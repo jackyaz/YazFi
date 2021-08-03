@@ -968,6 +968,11 @@ Conf_Validate(){
 					
 					if ! Validate_TrueFalse "${IFACETMP}_FORCEDNS" "$(eval echo '$'"${IFACETMP}_FORCEDNS")"; then
 						IFACE_PASS="false"
+					else
+						if [ "$(eval echo '$'"${IFACETMP}_FORCEDNS")" = "true" ]; then
+							Print_Output false "$IFACE has FORCEDNS enabled, setting DNS2 to match DNS1..." "$WARN"
+							sed -i -e "s/${IFACETMP}_DNS2=/${IFACETMP}_DNS2=$(eval echo '$'"${IFACETMP}_DNS1")/" "$SCRIPT_CONF"
+						fi
 					fi
 					
 					if ! Validate_TrueFalse "${IFACETMP}_REDIRECTALLTOVPN" "$(eval echo '$'"${IFACETMP}_REDIRECTALLTOVPN")"; then
