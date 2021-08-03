@@ -971,7 +971,7 @@ Conf_Validate(){
 					else
 						if [ "$(eval echo '$'"${IFACETMP}_FORCEDNS")" = "true" ]; then
 							Print_Output false "$IFACE has FORCEDNS enabled, setting DNS2 to match DNS1..." "$WARN"
-							sed -i -e "s/${IFACETMP}_DNS2=/${IFACETMP}_DNS2=$(eval echo '$'"${IFACETMP}_DNS1")/" "$SCRIPT_CONF"
+							sed -i -e "s/${IFACETMP}_DNS2=.*/${IFACETMP}_DNS2=$(eval echo '$'"${IFACETMP}_DNS1")/" "$SCRIPT_CONF"
 						fi
 					fi
 					
