@@ -1371,13 +1371,6 @@ Firewall_Rules(){
 Firewall_DNS(){
 	ACTIONS=""
 	IFACE="$2"
-	IFACE_WAN=""
-	
-	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
-		IFACE_WAN="ppp0"
-	else
-		IFACE_WAN="$(nvram get wan0_ifname)"
-	fi
 	
 	case $1 in
 		create)
