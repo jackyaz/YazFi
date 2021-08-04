@@ -121,6 +121,7 @@ function ForceDNSEnableDisable(forminput){
 	
 	if(eval('document.form.'+prefix+'_enabled').value == 'true'){
 		if(inputvalue == 'true'){
+			$j('input[name='+prefix+'_dns2]').val($j('input[name='+prefix+'_dns1]').val());
 			$j('input[name='+prefix+'_dns2]').addClass('disabled');
 			$j('input[name='+prefix+'_dns2]').prop('disabled',true);
 		}
