@@ -820,6 +820,8 @@ function CheckUpdate(){
 }
 
 function DoUpdate(){
+	$j('#auto_refresh').prop('checked',false);
+	clearTimeout(tout);
 	document.form.action_script.value = 'start_YazFidoupdate';
 	document.form.action_wait.value = 45;
 	showLoading();
