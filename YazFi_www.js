@@ -79,8 +79,6 @@ function OptionsEnableDisable(forminput){
 		$j('input[name='+prefix+'_dhcpend]').prop('disabled',false);
 		$j('input[name='+prefix+'_dns1]').removeClass('disabled');
 		$j('input[name='+prefix+'_dns1]').prop('disabled',false);
-		$j('input[name='+prefix+'_dns2]').removeClass('disabled');
-		$j('input[name='+prefix+'_dns2]').prop('disabled',false);
 		$j('input[name='+prefix+'_forcedns]').prop('disabled',false);
 		$j('input[name='+prefix+'_redirectalltovpn]').prop('disabled',false);
 		$j('input[name='+prefix+'_onewaytoguest]').prop('disabled',false);
@@ -90,6 +88,11 @@ function OptionsEnableDisable(forminput){
 		if(eval('document.form.'+prefix+'_redirectalltovpn').value == 'true'){
 			$j('input[name='+prefix+'_vpnclientnumber]').removeClass('disabled');
 			$j('input[name='+prefix+'_vpnclientnumber]').prop('disabled',false);
+		}
+		
+		if(eval('document.form.'+prefix+'_forcedns').value == 'false'){
+			$j('input[name='+prefix+'_dns2]').removeClass('disabled');
+			$j('input[name='+prefix+'_dns2]').prop('disabled',false);
 		}
 	}
 }
@@ -118,6 +121,7 @@ function ForceDNSEnableDisable(forminput){
 	
 	if(eval('document.form.'+prefix+'_enabled').value == 'true'){
 		if(inputvalue == 'true'){
+			$j('input[name='+prefix+'_dns2]').val($j('input[name='+prefix+'_dns1]').val());
 			$j('input[name='+prefix+'_dns2]').addClass('disabled');
 			$j('input[name='+prefix+'_dns2]').prop('disabled',true);
 		}
