@@ -1630,10 +1630,11 @@ Routing_VPNDirector(){
 							nvram set vpn_client"$COUNTER"_rgw=2
 							nvram commit
 						fi
-						service restart_vpnclient$COUNTER >/dev/null 2>&1
 					fi
 					COUNTER=$((COUNTER + 1))
 				done
+				
+				service vpnrouting0 >/dev/null 2>&1
 			fi
 		;;
 	esac
