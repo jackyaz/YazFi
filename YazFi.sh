@@ -1634,7 +1634,7 @@ Routing_VPNDirector(){
 					COUNTER=$((COUNTER + 1))
 				done
 				
-				service vpnrouting0 >/dev/null 2>&1
+				service restart_vpnrouting0 >/dev/null 2>&1
 			fi
 		;;
 	esac
