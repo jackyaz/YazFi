@@ -3032,10 +3032,20 @@ case "$1" in
 		Update_Version force
 		exit 0
 	;;
+	about)
+		ScriptHeader
+		Show_About
+		exit 0
+	;;
+	help)
+		ScriptHeader
+		Show_Help
+		exit 0
+	;;
 	*)
 		ScriptHeader
 		Print_Output false "Command not recognised." "$ERR"
-		Print_Output false "For a list of available commands run: $SCRIPT_NAME_LOWER help"
+		Print_Output false "For a list of available commands run: $SCRIPT_NAME help"
 		exit 1
 	;;
 esac
