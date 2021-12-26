@@ -1390,12 +1390,10 @@ Firewall_Rules(){
 		if [ "$ENABLED_NTPD" -eq 1 ]; then
 			iptables -t nat "$ACTION" PREROUTING -i "$IFACE" -p udp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
 			iptables -t nat "$ACTION" PREROUTING -i "$IFACE" -p tcp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
-			
 			iptables "$ACTION" "$FWRD" -i "$IFACE" -p tcp --dport 123 -j REJECT
 			iptables "$ACTION" "$FWRD" -i "$IFACE" -p udp --dport 123 -j REJECT
 			ip6tables "$ACTION" FORWARD -i "$IFACE" -p tcp --dport 123 -j REJECT
 			ip6tables "$ACTION" FORWARD -i "$IFACE" -p udp --dport 123 -j REJECT
-			##
 		else
 			iptables -t nat -D PREROUTING -i "$IFACE" -p udp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
 			iptables -t nat -D PREROUTING -i "$IFACE" -p tcp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
@@ -1404,6 +1402,33 @@ Firewall_Rules(){
 			ip6tables -D FORWARD -i "$IFACE" -p tcp --dport 123 -j REJECT
 			ip6tables -D FORWARD -i "$IFACE" -p udp --dport 123 -j REJECT
 		fi
+	done
+}
+
+Firewall_BlockInternet(){
+	ACTIONS=""
+	IFACE="$2"
+	
+	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
+		IFACE_WAN="ppp0"
+	else
+		IFACE_WAN="$(nvram get wan0_ifname)"
+	fi
+	
+	case $1 in
+		create)
+			ACTIONS="-D -I"
+		;;
+		delete)
+			ACTIONS="-D"
+		;;
+	esac
+	
+	for ACTION in $ACTIONS; do
+		iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_WAN" -j "$LGRJT"
+		iptables "$ACTION" "$FWRD" -i "$IFACE" -o tun1+ -j "$LGRJT"
+		iptables "$ACTION" "$FWRD" -i "$IFACE_WAN" -o "$IFACE" -j DROP
+		iptables "$ACTION" "$FWRD" -i tun1+ -o "$IFACE" -j DROP
 	done
 }
 
@@ -1903,19 +1928,29 @@ Config_Networks(){
 			
 			Firewall_Rules create "$IFACE" 2>/dev/null
 			
-			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_REDIRECTALLTOVPN")" = "true" ]; then
-				Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
-				
-				if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
-					Routing_NVRAM create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
+			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ALLOWINTERNET")" = "true" ]; then
+				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_REDIRECTALLTOVPN")" = "true" ]; then
+					Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
+					
+					if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
+						Routing_NVRAM create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
+					else
+						Routing_VPNDirector create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
+					fi
+					
+					Firewall_NAT create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
 				else
-					Routing_VPNDirector create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
+					Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - sending all interface internet traffic over WAN interface"
+					
+					Firewall_NAT delete "$IFACE" 2>/dev/null
+					
+					if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
+						Routing_NVRAM delete "$IFACE" 2>/dev/null
+					else
+						Routing_VPNDirector delete "$IFACE" 2>/dev/null
+					fi
 				fi
-				
-				Firewall_NAT create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
 			else
-				Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - sending all interface internet traffic over WAN interface"
-				
 				Firewall_NAT delete "$IFACE" 2>/dev/null
 				
 				if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
@@ -1926,6 +1961,13 @@ Config_Networks(){
 			fi
 			
 			Firewall_DNS create "$IFACE" 2>/dev/null
+			
+			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ALLOWINTERNET")" = "false" ]; then
+				Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - allow internet disabled, blocking all interface internet traffic"
+				Firewall_BlockInternet create "$IFACE" 2>/dev/null
+			else
+				Firewall_BlockInternet delete "$IFACE" 2>/dev/null
+			fi
 			
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_CLIENTISOLATION")" = "true" ]; then
 				ISOBEFORE="$(nvram get "${IFACE}_ap_isolate")"
@@ -1967,6 +2009,8 @@ Config_Networks(){
 			Firewall_Rules delete "$IFACE" 2>/dev/null
 			
 			Firewall_DNS delete "$IFACE" 2>/dev/null
+			
+			Firewall_BlockInternet delete "$IFACE" 2>/dev/null
 			
 			#Reset guest interface ISOLATION
 			ISOBEFORE="$(nvram get "${IFACE}_ap_isolate")"
