@@ -886,6 +886,12 @@ Conf_FixBlanks(){
 			Print_Output false "${IFACETMPBLANK}_FORCEDNS is blank, setting to false" "$WARN"
 		fi
 		
+		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_ALLOWINTERNET")" ]; then
+			ALLOWINTERNETTMP="true"
+			sed -i -e "s/${IFACETMPBLANK}_ALLOWINTERNET=/${IFACETMPBLANK}_ALLOWINTERNET=true/" "$SCRIPT_CONF"
+			Print_Output false "${IFACETMPBLANK}_ALLOWINTERNET is blank, setting to true" "$WARN"
+		fi
+		
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_REDIRECTALLTOVPN")" ]; then
 			REDIRECTTMP="false"
 			sed -i -e "s/${IFACETMPBLANK}_REDIRECTALLTOVPN=/${IFACETMPBLANK}_REDIRECTALLTOVPN=false/" "$SCRIPT_CONF"
@@ -989,6 +995,23 @@ Conf_Validate(){
 						IFACE_PASS="false"
 					fi
 					
+					if ! Validate_TrueFalse "${IFACETMP}_ALLOWINTERNET" "$(eval echo '$'"${IFACETMP}_ALLOWINTERNET")"; then
+						ALLOWINTERNETTMP="true"
+						IFACE_PASS="false"
+					else
+						ALLOWINTERNETTMP="$(eval echo '$'"${IFACETMP}_ALLOWINTERNET")"
+					fi
+					
+					if [ "$ALLOWINTERNETTMP" = "false" ] && ! IP_Local "${IFACETMP}_DNS1"; then
+						Print_Output false "$IFACE has internet access disabled and a non-local IP has been set for DNS1" "$ERR"
+						IFACE_PASS="false"
+					fi
+					
+					if [ "$ALLOWINTERNETTMP" = "false" ] && ! IP_Local "${IFACETMP}_DNS2"; then
+						Print_Output false "$IFACE has internet access disabled and a non-local IP has been set for DNS2" "$ERR"
+						IFACE_PASS="false"
+					fi
+					
 					if ! Validate_TrueFalse "${IFACETMP}_REDIRECTALLTOVPN" "$(eval echo '$'"${IFACETMP}_REDIRECTALLTOVPN")"; then
 						REDIRECTTMP="false"
 						IFACE_PASS="false"
@@ -996,7 +1019,7 @@ Conf_Validate(){
 						REDIRECTTMP="$(eval echo '$'"${IFACETMP}_REDIRECTALLTOVPN")"
 					fi
 					
-					if [ "$REDIRECTTMP" = "true" ]; then
+					if [ "$REDIRECTTMP" = "true" ] && [ "$ALLOWINTERNETTMP" = "true" ]; then
 						if ! Validate_VPNClientNo "${IFACETMP}_VPNCLIENTNUMBER" "$(eval echo '$'"${IFACETMP}_VPNCLIENTNUMBER")"; then
 							IFACE_PASS="false"
 						else
