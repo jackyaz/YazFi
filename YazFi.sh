@@ -2818,13 +2818,6 @@ EOF
 }
 ### ###
 
-if [ -f "$SCRIPT_DIR/S98YazFiMonitor" ]; then
-	rm -f "$SCRIPT_DIR/YazFiMonitor"
-	rm -f "$SCRIPT_DIR/YazFiMonitord"
-	rm -f "$SCRIPT_DIR/sc.func"
-	rm -f "$SCRIPT_DIR/S98YazFiMonitor"
-fi
-
 if [ ! -f /opt/bin/qrencode ] && [ -f /opt/bin/opkg ]; then
 	opkg update
 	opkg install qrencode
