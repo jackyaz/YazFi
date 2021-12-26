@@ -278,6 +278,53 @@ Auto_ServiceEvent(){
 	esac
 }
 
+Auto_ServiceEventEnd(){
+	case $1 in
+		create)
+			if [ -f /jffs/scripts/firewall-start ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/firewall-start)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
+				fi
+			fi
+			if [ -f /jffs/scripts/service-event-end ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME Guest Networks" /jffs/scripts/service-event-end)
+				STARTUPLINECOUNTEX=$(grep -cx 'if { \[ "$1" = "start" \] || \[ "$1" = "restart" \]; } && \[ "$2" = "firewall" \]; then { /jffs/scripts/'"$SCRIPT_NAME"' runnow & }; fi # '"$SCRIPT_NAME Guest Networks" /jffs/scripts/service-event-end)
+				
+				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
+					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/service-event-end
+				fi
+				
+				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
+					echo 'if { [ "$1" = "start" ] || [ "$1" = "restart" ]; } && [ "$2" = "firewall" ]; then { /jffs/scripts/'"$SCRIPT_NAME"' runnow & }; fi # '"$SCRIPT_NAME Guest Networks" >> /jffs/scripts/service-event-end
+				fi
+			else
+				echo "#!/bin/sh" > /jffs/scripts/service-event-end
+				echo "" >> /jffs/scripts/service-event-end
+				echo 'if { [ "$1" = "start" ] || [ "$1" = "restart" ]; } && [ "$2" = "firewall" ]; then { /jffs/scripts/'"$SCRIPT_NAME"' runnow & }; fi # '"$SCRIPT_NAME Guest Networks" >> /jffs/scripts/service-event-end
+				chmod 0755 /jffs/scripts/service-event-end
+			fi
+		;;
+		delete)
+			if [ -f /jffs/scripts/firewall-start ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/firewall-start)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
+				fi
+			fi
+			if [ -f /jffs/scripts/service-event ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/service-event)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/service-event
+				fi
+			fi
+		;;
+	esac
+}
+
 Auto_ServiceStart(){
 	case $1 in
 		create)
@@ -305,39 +352,6 @@ Auto_ServiceStart(){
 				
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/services-start
-				fi
-			fi
-		;;
-	esac
-}
-
-Auto_Startup(){
-	case $1 in
-		create)
-			if [ -f /jffs/scripts/firewall-start ]; then
-				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/firewall-start)
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME runnow & # $SCRIPT_NAME Guest Networks" /jffs/scripts/firewall-start)
-				
-				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
-					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
-				fi
-				
-				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					echo "/jffs/scripts/$SCRIPT_NAME runnow & # $SCRIPT_NAME Guest Networks" >> /jffs/scripts/firewall-start
-				fi
-			else
-				echo "#!/bin/sh" > /jffs/scripts/firewall-start
-				echo "" >> /jffs/scripts/firewall-start
-				echo "/jffs/scripts/$SCRIPT_NAME runnow & # $SCRIPT_NAME Guest Networks" >> /jffs/scripts/firewall-start
-				chmod 0755 /jffs/scripts/firewall-start
-			fi
-		;;
-		delete)
-			if [ -f /jffs/scripts/firewall-start ]; then
-				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/firewall-start)
-				
-				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
-					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
 				fi
 			fi
 		;;
@@ -1828,7 +1842,7 @@ Config_Networks(){
 	Create_Dirs
 	Create_Symlinks
 	
-	Auto_Startup create 2>/dev/null
+	Auto_ServiceEventEnd create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_DNSMASQ create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
@@ -2270,7 +2284,7 @@ Menu_Install(){
 	Shortcut_Script create
 	Set_Version_Custom_Settings local "$SCRIPT_VERSION"
 	Set_Version_Custom_Settings server "$SCRIPT_VERSION"
-	Auto_Startup create 2>/dev/null
+	Auto_ServiceEventEnd create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_DNSMASQ create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
@@ -2717,7 +2731,7 @@ Menu_Diagnostics(){
 
 Menu_Uninstall(){
 	Print_Output true "Removing $SCRIPT_NAME..." "$PASS"
-	Auto_Startup delete 2>/dev/null
+	Auto_ServiceEventEnd delete 2>/dev/null
 	Auto_Cron delete 2>/dev/null
 	Auto_DNSMASQ delete 2>/dev/null
 	Auto_ServiceEvent delete 2>/dev/null
@@ -2823,7 +2837,7 @@ fi
 if [ -z "$1" ]; then
 	Create_Dirs
 	Create_Symlinks
-	Auto_Startup create 2>/dev/null
+	Auto_ServiceEventEnd create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_DNSMASQ create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
@@ -2842,8 +2856,8 @@ case "$1" in
 	;;
 	runnow)
 		Check_Lock
-		Print_Output true "Firewall restarted - sleeping 30s before running $SCRIPT_NAME" "$PASS"
-		sleep 30
+		Print_Output true "Firewall restarted - sleeping 10s before running $SCRIPT_NAME" "$PASS"
+		sleep 10
 		Config_Networks
 		Clear_Lock
 		exit 0
@@ -2985,7 +2999,7 @@ case "$1" in
 		Set_Version_Custom_Settings server "$SCRIPT_VERSION"
 		Create_Dirs
 		Create_Symlinks
-		Auto_Startup create 2>/dev/null
+		Auto_ServiceEventEnd create 2>/dev/null
 		Auto_Cron create 2>/dev/null
 		Auto_DNSMASQ create 2>/dev/null
 		Auto_ServiceEvent create 2>/dev/null
@@ -2997,7 +3011,7 @@ case "$1" in
 	postupdate)
 		Create_Dirs
 		Create_Symlinks
-		Auto_Startup create 2>/dev/null
+		Auto_ServiceEventEnd create 2>/dev/null
 		Auto_Cron create 2>/dev/null
 		Auto_DNSMASQ create 2>/dev/null
 		Auto_ServiceEvent create 2>/dev/null
