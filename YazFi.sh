@@ -1162,15 +1162,6 @@ Conf_Download(){
 }
 
 Conf_Exists(){
-	if [ -d "/jffs/configs/$SCRIPT_NAME" ]; then
-		mv "/jffs/configs/$SCRIPT_NAME/$SCRIPT_NAME.config" "/jffs/configs/$SCRIPT_NAME/config"
-		mv "/jffs/configs/$SCRIPT_NAME/$SCRIPT_NAME.config.blank" "/jffs/configs/$SCRIPT_NAME/config.blank"
-		mv "/jffs/configs/$SCRIPT_NAME/$SCRIPT_NAME.config.example" "/jffs/configs/$SCRIPT_NAME/config.example"
-		mkdir -p "/jffs/addons/$SCRIPT_NAME.d"
-		cp -a "/jffs/configs/$SCRIPT_NAME/"* "/jffs/addons/$SCRIPT_NAME.d/."
-		rm -rf "/jffs/configs/$SCRIPT_NAME"
-	fi
-	
 	if [ -f "$SCRIPT_CONF" ]; then
 		dos2unix "$SCRIPT_CONF"
 		chmod 0644 "$SCRIPT_CONF"
