@@ -45,7 +45,7 @@ readonly USER_SCRIPT_DIR="$SCRIPT_DIR/userscripts.d"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
 readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$SCRIPT_NAME"
 readonly SHARED_DIR="/jffs/addons/shared-jy"
-readonly SHARED_REPO="https://jackyaz.gateway.scarf.sh/shared-jy/master/"
+readonly SHARED_REPO="https://jackyaz.gateway.scarf.sh/shared-jy/master"
 readonly SHARED_WEB_DIR="$SCRIPT_WEBPAGE_DIR/shared-jy"
 ### End of script variables ###
 
