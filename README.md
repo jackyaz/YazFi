@@ -21,8 +21,6 @@ Love the script and want to support future development? Any and all donations gr
 
 [**PayPal donation**](https://paypal.me/jackyaz21)
 
-[**Buy me a coffee**](https://www.buymeacoffee.com/jackyaz)
-
 ## Supported firmware versions
 ### Core YazFi features
 You must be running firmware no older than:
