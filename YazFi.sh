@@ -1175,6 +1175,12 @@ Conf_Exists(){
 				sed -i "/^${CONFIFACETMP}_TWOWAYTOGUEST=/a ${CONFIFACETMP}_ONEWAYTOGUEST=" "$SCRIPT_CONF"
 			done
 		fi
+		if ! grep -q "_ALLOWINTERNET" "$SCRIPT_CONF" ; then
+			for CONFIFACE in $IFACELIST_FULL ; do
+				CONFIFACETMP="$(Get_Iface_Var "$CONFIFACE")"
+				sed -i "/^${CONFIFACETMP}_FORCEDNS=/a ${CONFIFACETMP}_ALLOWINTERNET=true" "$SCRIPT_CONF"
+			done
+		fi
 		sed -i -e 's/"//g' "$SCRIPT_CONF"
 		. "$SCRIPT_CONF"
 		return 0
