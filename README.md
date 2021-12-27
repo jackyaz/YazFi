@@ -124,3 +124,7 @@ The above will work if "One way" access to the guest enabled. With no access ena
 iptables -I YazFiFORWARD -i wl0.1 -o br0 -d 192.168.1.50 -j ACCEPT
 iptables -I YazFiFORWARD -i br0 -o wl0.1 -s 192.168.1.50 -j ACCEPT
 ```
+
+### Scarf Gateway
+Installs and updates for this addon are redirected via the [Scarf Gateway](https://about.scarf.sh/scarf-gateway) by [Scarf](https://about.scarf.sh/about). This allows me to gather data on the number of new installations of my addons, how often users check for updates and more. This is purely for my use to actually see some usage data from my addons so that I can see the value provided by my continued work. It does not mean I am going to start charging, my addons have been, are, and will always be completely free to use.
+Please refer to Scarf's [Privacy Policy](https://about.scarf.sh/privacy) for more information about the data that is collected and how it is processed.
