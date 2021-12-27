@@ -1002,12 +1002,12 @@ Conf_Validate(){
 						ALLOWINTERNETTMP="$(eval echo '$'"${IFACETMP}_ALLOWINTERNET")"
 					fi
 					
-					if [ "$ALLOWINTERNETTMP" = "false" ] && ! IP_Local "${IFACETMP}_DNS1"; then
+					if [ "$ALLOWINTERNETTMP" = "false" ] && ! IP_Local "$(eval echo '$'"${IFACETMP}_DNS1")"; then
 						Print_Output false "$IFACE has internet access disabled and a non-local IP has been set for DNS1" "$ERR"
 						IFACE_PASS="false"
 					fi
 					
-					if [ "$ALLOWINTERNETTMP" = "false" ] && ! IP_Local "${IFACETMP}_DNS2"; then
+					if [ "$ALLOWINTERNETTMP" = "false" ] && ! IP_Local "$(eval echo '$'"${IFACETMP}_DNS2")"; then
 						Print_Output false "$IFACE has internet access disabled and a non-local IP has been set for DNS2" "$ERR"
 						IFACE_PASS="false"
 					fi
