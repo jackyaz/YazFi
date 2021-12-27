@@ -1424,11 +1424,12 @@ Firewall_BlockInternet(){
 		;;
 	esac
 	
+	modprobe xt_comment
 	for ACTION in $ACTIONS; do
-		iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_WAN" -j "$LGRJT"
-		iptables "$ACTION" "$FWRD" -i "$IFACE" -o tun1+ -j "$LGRJT"
-		iptables "$ACTION" "$FWRD" -i "$IFACE_WAN" -o "$IFACE" -j DROP
-		iptables "$ACTION" "$FWRD" -i tun1+ -o "$IFACE" -j DROP
+		iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_WAN" -m comment --comment "$(Get_Guest_Name "$IFACE") block internet" -j "$LGRJT"
+		iptables "$ACTION" "$FWRD" -i "$IFACE" -o tun1+ -m comment --comment "$(Get_Guest_Name "$IFACE") block internet" -j "$LGRJT"
+		iptables "$ACTION" "$FWRD" -i "$IFACE_WAN" -o "$IFACE" -m comment --comment "$(Get_Guest_Name "$IFACE") block internet" -j DROP
+		iptables "$ACTION" "$FWRD" -i tun1+ -o "$IFACE" -m comment --comment "$(Get_Guest_Name "$IFACE") block internet" -j DROP
 	done
 }
 
