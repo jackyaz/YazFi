@@ -21,8 +21,6 @@ Love the script and want to support future development? Any and all donations gr
 
 [**PayPal donation**](https://paypal.me/jackyaz21)
 
-[**Buy me a coffee**](https://www.buymeacoffee.com/jackyaz)
-
 ## Supported firmware versions
 ### Core YazFi features
 You must be running firmware no older than:
@@ -36,7 +34,7 @@ You must be running firmware Merlin 384.15/384.13_4 or Fork 43E5 (or later) [Asu
 Using your preferred SSH client/terminal, copy and paste the following command, then press Enter:
 
 ```sh
-/usr/sbin/curl --retry 3 "https://raw.githubusercontent.com/jackyaz/YazFi/master/YazFi.sh" -o "/jffs/scripts/YazFi" && chmod 0755 /jffs/scripts/YazFi && /jffs/scripts/YazFi install
+/usr/sbin/curl --retry 3 "https://jackyaz.gateway.scarf.sh/YazFi/master/install/YazFi.sh" -o "/jffs/scripts/YazFi" && chmod 0755 /jffs/scripts/YazFi && /jffs/scripts/YazFi install
 ```
 
 Please then follow instructions shown on-screen. An explanation of the settings is provided in the [FAQs](#explanation-of-yazfi-settings)
@@ -126,3 +124,8 @@ The above will work if "One way" access to the guest enabled. With no access ena
 iptables -I YazFiFORWARD -i wl0.1 -o br0 -d 192.168.1.50 -j ACCEPT
 iptables -I YazFiFORWARD -i br0 -o wl0.1 -s 192.168.1.50 -j ACCEPT
 ```
+
+### Scarf Gateway
+Installs and updates for this addon are redirected via the [Scarf Gateway](https://about.scarf.sh/scarf-gateway) by [Scarf](https://about.scarf.sh/about). This allows me to gather data on the number of new installations of my addons, how often users check for updates and more. This is purely for my use to actually see some usage data from my addons so that I can see the value provided by my continued work. It does not mean I am going to start charging to use my addons. My addons have been, are, and will always be completely free to use.
+
+Please refer to Scarf's [Privacy Policy](https://about.scarf.sh/privacy) for more information about the data that is collected and how it is processed.
