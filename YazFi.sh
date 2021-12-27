@@ -201,7 +201,7 @@ Iface_BounceClients(){
 	done
 	
 	ip -s -s neigh flush all >/dev/null 2>&1
-	killall networkmap
+	killall -q networkmap
 	sleep 5
 	if [ -z "$(pidof networkmap)" ]; then
 		networkmap >/dev/null 2>&1 &
