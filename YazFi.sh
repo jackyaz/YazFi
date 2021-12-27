@@ -1919,6 +1919,7 @@ Config_Networks(){
 	fi
 	
 	Firewall_Chains create 2>/dev/null
+	iptables -F "$DNSFLTR_DOT" 2>/dev/null
 	
 	for IFACE in $IFACELIST; do
 		VPNCLIENTNO=$(eval echo '$'"$(Get_Iface_Var "$IFACE")_VPNCLIENTNUMBER")
