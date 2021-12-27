@@ -607,7 +607,7 @@ Update_Version(){
 		else
 			Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
 		fi
-		/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/updateforce/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
+		/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/update/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
 		chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
 		Set_Version_Custom_Settings local "$serverver"
 		Set_Version_Custom_Settings server "$serverver"
@@ -626,14 +626,14 @@ Update_Version(){
 Update_File(){
 	if [ "$1" = "YazFi_www.asp" ]; then
 		tmpfile="/tmp/$1"
-		Download_File "$SCRIPT_REPO/webuicheck/$1" "$tmpfile"
+		Download_File "$SCRIPT_REPO/files/$1" "$tmpfile"
 		if ! diff -q "$tmpfile" "$SCRIPT_DIR/$1" >/dev/null 2>&1; then
 			if [ -f "$SCRIPT_DIR/$1" ]; then
 				Get_WebUI_Page "$SCRIPT_DIR/$1"
 				sed -i "\\~$MyPage~d" /tmp/menuTree.js
 				rm -f "$SCRIPT_WEBPAGE_DIR/$MyPage" 2>/dev/null
 			fi
-			Download_File "$SCRIPT_REPO/webuiupdate/$1" "$SCRIPT_DIR/$1"
+			Download_File "$SCRIPT_REPO/files/$1" "$SCRIPT_DIR/$1"
 			Print_Output true "New version of $1 downloaded" "$PASS"
 			Mount_WebUI
 		fi
@@ -1191,7 +1191,7 @@ Mount_WebUI(){
 
 Conf_Download(){
 	mkdir -p "/jffs/addons/$SCRIPT_NAME.d"
-	/usr/sbin/curl -s --retry 3 "$SCRIPT_REPO/config/$SCRIPT_NAME.config.example" -o "$1"
+	/usr/sbin/curl -s --retry 3 "$SCRIPT_REPO/files/$SCRIPT_NAME.config.example" -o "$1"
 	chmod 0644 "$1"
 	dos2unix "$1"
 	sleep 1
