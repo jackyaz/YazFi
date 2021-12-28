@@ -2376,6 +2376,7 @@ Menu_Install(){
 	Print_Output false "Alternatively, use $SCRIPT_NAME's menu via amtm (if installed), with /jffs/scripts/$SCRIPT_NAME or simply $SCRIPT_NAME"
 	Clear_Lock
 	PressEnter
+	Download_File "$SCRIPT_REPO/install-success/LICENSE" "$SCRIPT_DIR/LICENSE"
 	ScriptHeader
 	MainMenu
 }
