@@ -1154,7 +1154,7 @@ Mount_WebUI(){
 
 Conf_Download(){
 	mkdir -p "/jffs/addons/$SCRIPT_NAME.d"
-	/usr/sbin/curl -s --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.config.example" -o "$1"
+	/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.config.example" -o "$1"
 	chmod 0644 "$1"
 	dos2unix "$1"
 	sleep 1
