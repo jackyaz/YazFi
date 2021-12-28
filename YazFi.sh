@@ -576,7 +576,9 @@ Update_Version(){
 						Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
 					fi
 					
-					/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/update/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
+					Update_File README.md
+					
+					Download_File "$SCRIPT_REPO/update/$SCRIPT_NAME.sh" "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
 					chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
 					Set_Version_Custom_Settings local "$serverver"
 					Set_Version_Custom_Settings server "$serverver"
@@ -607,7 +609,8 @@ Update_Version(){
 		else
 			Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
 		fi
-		/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/update/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
+		Update_File README.md
+		Download_File "$SCRIPT_REPO/update/$SCRIPT_NAME.sh" "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
 		chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
 		Set_Version_Custom_Settings local "$serverver"
 		Set_Version_Custom_Settings server "$serverver"
@@ -656,6 +659,13 @@ Update_File(){
 				Print_Output true "New version of $1 downloaded" "$PASS"
 			fi
 		fi
+	elif [ "$1" = "README.md" ]; then
+		tmpfile="/tmp/$1"
+		Download_File "$SCRIPT_REPO/files/$1" "$tmpfile"
+		if ! diff -q "$tmpfile" "$SCRIPT_DIR/$1" >/dev/null 2>&1; then
+			Download_File "$SCRIPT_REPO/files/$1" "$SCRIPT_DIR/$1"
+		fi
+		rm -f "$tmpfile"
 	else
 		return 1
 	fi
@@ -2349,6 +2359,8 @@ Menu_Install(){
 		Print_Output false "Existing $SCRIPT_CONF found. This will be kept by $SCRIPT_NAME"
 		Conf_Download "$SCRIPT_CONF.example"
 	fi
+	
+	Update_File README.md
 	
 	Shortcut_Script create
 	Set_Version_Custom_Settings local "$SCRIPT_VERSION"
