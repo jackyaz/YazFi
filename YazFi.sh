@@ -39,13 +39,13 @@ readonly SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
 readonly YAZFI_VERSION="v4.4.0"
 readonly SCRIPT_VERSION="v4.4.0"
 SCRIPT_BRANCH="develop"
-SCRIPT_REPO="https://jackyaz.gateway.scarf.sh/$SCRIPT_NAME/$SCRIPT_BRANCH"
+SCRIPT_REPO="https://jackyaz.io/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
 readonly USER_SCRIPT_DIR="$SCRIPT_DIR/userscripts.d"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
 readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$SCRIPT_NAME"
 readonly SHARED_DIR="/jffs/addons/shared-jy"
-readonly SHARED_REPO="https://jackyaz.gateway.scarf.sh/shared-jy/master"
+readonly SHARED_REPO="https://jackyaz.io/shared-jy/master"
 readonly SHARED_WEB_DIR="$SCRIPT_WEBPAGE_DIR/shared-jy"
 ### End of script variables ###
 
@@ -3108,13 +3108,13 @@ case "$1" in
 	;;
 	develop)
 		SCRIPT_BRANCH="develop"
-		SCRIPT_REPO="https://jackyaz.gateway.scarf.sh/$SCRIPT_NAME/$SCRIPT_BRANCH"
+		SCRIPT_REPO="https://jackyaz.io/$SCRIPT_NAME/$SCRIPT_BRANCH"
 		Update_Version force
 		exit 0
 	;;
 	stable)
 		SCRIPT_BRANCH="master"
-		SCRIPT_REPO="https://jackyaz.gateway.scarf.sh/$SCRIPT_NAME/$SCRIPT_BRANCH"
+		SCRIPT_REPO="https://jackyaz.io/$SCRIPT_NAME/$SCRIPT_BRANCH"
 		Update_Version force
 		exit 0
 	;;
