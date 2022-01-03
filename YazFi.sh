@@ -3022,6 +3022,7 @@ case "$1" in
 		sleep 12
 		Create_Dirs
 		Create_Symlinks
+		Auto_Cron create 2>/dev/null
 		Mount_WebUI
 		exit 0
 	;;
