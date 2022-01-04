@@ -610,6 +610,7 @@ Update_Version(){
 					fi
 					
 					Update_File README.md
+					Update_File LICENSE
 					
 					Download_File "$SCRIPT_REPO/update/$SCRIPT_NAME.sh" "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
 					chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
@@ -643,6 +644,7 @@ Update_Version(){
 			Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
 		fi
 		Update_File README.md
+		Update_File LICENSE
 		Download_File "$SCRIPT_REPO/update/$SCRIPT_NAME.sh" "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
 		chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
 		Set_Version_Custom_Settings local "$serverver"
@@ -692,7 +694,7 @@ Update_File(){
 				Print_Output true "New version of $1 downloaded" "$PASS"
 			fi
 		fi
-	elif [ "$1" = "README.md" ]; then
+	elif [ "$1" = "README.md" ] || [ "$1" = "LICENSE" ]; then
 		tmpfile="/tmp/$1"
 		Download_File "$SCRIPT_REPO/files/$1" "$tmpfile"
 		if ! diff -q "$tmpfile" "$SCRIPT_DIR/$1" >/dev/null 2>&1; then
