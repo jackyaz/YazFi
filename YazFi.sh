@@ -36,16 +36,16 @@
 ### Start of script variables ###
 readonly SCRIPT_NAME="YazFi"
 readonly SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
-readonly YAZFI_VERSION="v4.3.4"
-readonly SCRIPT_VERSION="v4.3.4"
+readonly YAZFI_VERSION="v4.4.0"
+readonly SCRIPT_VERSION="v4.4.0"
 SCRIPT_BRANCH="master"
-SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
+SCRIPT_REPO="https://jackyaz.io/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
 readonly USER_SCRIPT_DIR="$SCRIPT_DIR/userscripts.d"
 readonly SCRIPT_WEBPAGE_DIR="$(readlink /www/user)"
 readonly SCRIPT_WEB_DIR="$SCRIPT_WEBPAGE_DIR/$SCRIPT_NAME"
 readonly SHARED_DIR="/jffs/addons/shared-jy"
-readonly SHARED_REPO="https://raw.githubusercontent.com/jackyaz/shared-jy/master"
+readonly SHARED_REPO="https://jackyaz.io/shared-jy/master"
 readonly SHARED_WEB_DIR="$SCRIPT_WEBPAGE_DIR/shared-jy"
 ### End of script variables ###
 
@@ -201,7 +201,7 @@ Iface_BounceClients(){
 	done
 	
 	ip -s -s neigh flush all >/dev/null 2>&1
-	killall networkmap
+	killall -q networkmap
 	sleep 5
 	if [ -z "$(pidof networkmap)" ]; then
 		networkmap >/dev/null 2>&1 &
@@ -278,39 +278,6 @@ Auto_ServiceEvent(){
 	esac
 }
 
-Auto_ServiceStart(){
-	case $1 in
-		create)
-			if [ -f /jffs/scripts/services-start ]; then
-				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/services-start)
-				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME startup & # $SCRIPT_NAME" /jffs/scripts/services-start)
-				
-				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
-					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/services-start
-				fi
-				
-				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
-					echo "/jffs/scripts/$SCRIPT_NAME startup & # $SCRIPT_NAME" >> /jffs/scripts/services-start
-				fi
-			else
-				echo "#!/bin/sh" > /jffs/scripts/services-start
-				echo "" >> /jffs/scripts/services-start
-				echo "/jffs/scripts/$SCRIPT_NAME startup & # $SCRIPT_NAME" >> /jffs/scripts/services-start
-				chmod 0755 /jffs/scripts/services-start
-			fi
-		;;
-		delete)
-			if [ -f /jffs/scripts/services-start ]; then
-				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/services-start)
-				
-				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
-					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/services-start
-				fi
-			fi
-		;;
-	esac
-}
-
 Auto_Startup(){
 	case $1 in
 		create)
@@ -338,6 +305,86 @@ Auto_Startup(){
 				
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
+				fi
+			fi
+		;;
+	esac
+}
+
+Auto_ServiceEventEnd(){
+	case $1 in
+		create)
+			if [ -f /jffs/scripts/firewall-start ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/firewall-start)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
+				fi
+			fi
+			if [ -f /jffs/scripts/service-event-end ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME Guest Networks" /jffs/scripts/service-event-end)
+				STARTUPLINECOUNTEX=$(grep -cx 'if { \[ "$1" = "start" \] || \[ "$1" = "restart" \]; } && \[ "$2" = "firewall" \]; then { /jffs/scripts/'"$SCRIPT_NAME"' runnow & }; fi # '"$SCRIPT_NAME Guest Networks" /jffs/scripts/service-event-end)
+				
+				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
+					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/service-event-end
+				fi
+				
+				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
+					echo 'if { [ "$1" = "start" ] || [ "$1" = "restart" ]; } && [ "$2" = "firewall" ]; then { /jffs/scripts/'"$SCRIPT_NAME"' runnow & }; fi # '"$SCRIPT_NAME Guest Networks" >> /jffs/scripts/service-event-end
+				fi
+			else
+				echo "#!/bin/sh" > /jffs/scripts/service-event-end
+				echo "" >> /jffs/scripts/service-event-end
+				echo 'if { [ "$1" = "start" ] || [ "$1" = "restart" ]; } && [ "$2" = "firewall" ]; then { /jffs/scripts/'"$SCRIPT_NAME"' runnow & }; fi # '"$SCRIPT_NAME Guest Networks" >> /jffs/scripts/service-event-end
+				chmod 0755 /jffs/scripts/service-event-end
+			fi
+		;;
+		delete)
+			if [ -f /jffs/scripts/firewall-start ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/firewall-start)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
+				fi
+			fi
+			if [ -f /jffs/scripts/service-event ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/service-event)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/service-event
+				fi
+			fi
+		;;
+	esac
+}
+
+Auto_ServiceStart(){
+	case $1 in
+		create)
+			if [ -f /jffs/scripts/services-start ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/services-start)
+				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME startup & # $SCRIPT_NAME" /jffs/scripts/services-start)
+				
+				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
+					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/services-start
+				fi
+				
+				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
+					echo "/jffs/scripts/$SCRIPT_NAME startup & # $SCRIPT_NAME" >> /jffs/scripts/services-start
+				fi
+			else
+				echo "#!/bin/sh" > /jffs/scripts/services-start
+				echo "" >> /jffs/scripts/services-start
+				echo "/jffs/scripts/$SCRIPT_NAME startup & # $SCRIPT_NAME" >> /jffs/scripts/services-start
+				chmod 0755 /jffs/scripts/services-start
+			fi
+		;;
+		delete)
+			if [ -f /jffs/scripts/services-start ]; then
+				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/services-start)
+				
+				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
+					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/services-start
 				fi
 			fi
 		;;
@@ -516,15 +563,15 @@ Update_Check(){
 	echo 'var updatestatus = "InProgress";' > "$SCRIPT_WEB_DIR/detect_update.js"
 	doupdate="false"
 	localver=$(grep "SCRIPT_VERSION=" "/jffs/scripts/$SCRIPT_NAME" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
-	/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep -qF "jackyaz" || { Print_Output true "404 error detected - stopping update" "$ERR"; return 1; }
-	serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+	/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/404/$SCRIPT_NAME.sh" | grep -qF "jackyaz" || { Print_Output true "404 error detected - stopping update" "$ERR"; return 1; }
+	serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/version/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 	if [ "$localver" != "$serverver" ]; then
 		doupdate="version"
 		Set_Version_Custom_Settings server "$serverver"
 		echo 'var updatestatus = "'"$serverver"'";'  > "$SCRIPT_WEB_DIR/detect_update.js"
 	else
 		localmd5="$(md5sum "/jffs/scripts/$SCRIPT_NAME" | awk '{print $1}')"
-		remotemd5="$(curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | md5sum | awk '{print $1}')"
+		remotemd5="$(curl -fsL --retry 3 "$SCRIPT_REPO/md5/$SCRIPT_NAME.sh" | md5sum | awk '{print $1}')"
 		if [ "$localmd5" != "$remotemd5" ]; then
 			doupdate="md5"
 			Set_Version_Custom_Settings server "$serverver-hotfix"
@@ -562,7 +609,10 @@ Update_Version(){
 						Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
 					fi
 					
-					/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
+					Update_File README.md
+					Update_File LICENSE
+					
+					Download_File "$SCRIPT_REPO/update/$SCRIPT_NAME.sh" "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
 					chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
 					Set_Version_Custom_Settings local "$serverver"
 					Set_Version_Custom_Settings server "$serverver"
@@ -585,7 +635,7 @@ Update_Version(){
 	fi
 	
 	if [ "$1" = "force" ]; then
-		serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
+		serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/version/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 		Print_Output true "Downloading latest version ($serverver) of $SCRIPT_NAME" "$PASS"
 		if Firmware_Version_WebUI ; then
 			Update_File shared-jy.tar.gz
@@ -593,7 +643,9 @@ Update_Version(){
 		else
 			Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
 		fi
-		/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.sh" -o "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
+		Update_File README.md
+		Update_File LICENSE
+		Download_File "$SCRIPT_REPO/update/$SCRIPT_NAME.sh" "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
 		chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
 		Set_Version_Custom_Settings local "$serverver"
 		Set_Version_Custom_Settings server "$serverver"
@@ -612,14 +664,14 @@ Update_Version(){
 Update_File(){
 	if [ "$1" = "YazFi_www.asp" ]; then
 		tmpfile="/tmp/$1"
-		Download_File "$SCRIPT_REPO/$1" "$tmpfile"
+		Download_File "$SCRIPT_REPO/files/$1" "$tmpfile"
 		if ! diff -q "$tmpfile" "$SCRIPT_DIR/$1" >/dev/null 2>&1; then
 			if [ -f "$SCRIPT_DIR/$1" ]; then
 				Get_WebUI_Page "$SCRIPT_DIR/$1"
 				sed -i "\\~$MyPage~d" /tmp/menuTree.js
 				rm -f "$SCRIPT_WEBPAGE_DIR/$MyPage" 2>/dev/null
 			fi
-			Download_File "$SCRIPT_REPO/$1" "$SCRIPT_DIR/$1"
+			Download_File "$SCRIPT_REPO/files/$1" "$SCRIPT_DIR/$1"
 			Print_Output true "New version of $1 downloaded" "$PASS"
 			Mount_WebUI
 		fi
@@ -642,6 +694,13 @@ Update_File(){
 				Print_Output true "New version of $1 downloaded" "$PASS"
 			fi
 		fi
+	elif [ "$1" = "README.md" ] || [ "$1" = "LICENSE" ]; then
+		tmpfile="/tmp/$1"
+		Download_File "$SCRIPT_REPO/files/$1" "$tmpfile"
+		if ! diff -q "$tmpfile" "$SCRIPT_DIR/$1" >/dev/null 2>&1; then
+			Download_File "$SCRIPT_REPO/files/$1" "$SCRIPT_DIR/$1"
+		fi
+		rm -f "$tmpfile"
 	else
 		return 1
 	fi
@@ -872,6 +931,12 @@ Conf_FixBlanks(){
 			Print_Output false "${IFACETMPBLANK}_FORCEDNS is blank, setting to false" "$WARN"
 		fi
 		
+		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_ALLOWINTERNET")" ]; then
+			ALLOWINTERNETTMP="true"
+			sed -i -e "s/${IFACETMPBLANK}_ALLOWINTERNET=/${IFACETMPBLANK}_ALLOWINTERNET=true/" "$SCRIPT_CONF"
+			Print_Output false "${IFACETMPBLANK}_ALLOWINTERNET is blank, setting to true" "$WARN"
+		fi
+		
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_REDIRECTALLTOVPN")" ]; then
 			REDIRECTTMP="false"
 			sed -i -e "s/${IFACETMPBLANK}_REDIRECTALLTOVPN=/${IFACETMPBLANK}_REDIRECTALLTOVPN=false/" "$SCRIPT_CONF"
@@ -975,6 +1040,23 @@ Conf_Validate(){
 						IFACE_PASS="false"
 					fi
 					
+					if ! Validate_TrueFalse "${IFACETMP}_ALLOWINTERNET" "$(eval echo '$'"${IFACETMP}_ALLOWINTERNET")"; then
+						ALLOWINTERNETTMP="true"
+						IFACE_PASS="false"
+					else
+						ALLOWINTERNETTMP="$(eval echo '$'"${IFACETMP}_ALLOWINTERNET")"
+					fi
+					
+					if [ "$ALLOWINTERNETTMP" = "false" ] && ! IP_Local "$(eval echo '$'"${IFACETMP}_DNS1")"; then
+						Print_Output false "$IFACE has internet access disabled and a non-local IP has been set for DNS1" "$ERR"
+						IFACE_PASS="false"
+					fi
+					
+					if [ "$ALLOWINTERNETTMP" = "false" ] && ! IP_Local "$(eval echo '$'"${IFACETMP}_DNS2")"; then
+						Print_Output false "$IFACE has internet access disabled and a non-local IP has been set for DNS2" "$ERR"
+						IFACE_PASS="false"
+					fi
+					
 					if ! Validate_TrueFalse "${IFACETMP}_REDIRECTALLTOVPN" "$(eval echo '$'"${IFACETMP}_REDIRECTALLTOVPN")"; then
 						REDIRECTTMP="false"
 						IFACE_PASS="false"
@@ -982,7 +1064,7 @@ Conf_Validate(){
 						REDIRECTTMP="$(eval echo '$'"${IFACETMP}_REDIRECTALLTOVPN")"
 					fi
 					
-					if [ "$REDIRECTTMP" = "true" ]; then
+					if [ "$REDIRECTTMP" = "true" ] && [ "$ALLOWINTERNETTMP" = "true" ]; then
 						if ! Validate_VPNClientNo "${IFACETMP}_VPNCLIENTNUMBER" "$(eval echo '$'"${IFACETMP}_VPNCLIENTNUMBER")"; then
 							IFACE_PASS="false"
 						else
@@ -1154,7 +1236,7 @@ Mount_WebUI(){
 
 Conf_Download(){
 	mkdir -p "/jffs/addons/$SCRIPT_NAME.d"
-	/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/$SCRIPT_NAME.config.example" -o "$1"
+	/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/files/$SCRIPT_NAME.config.example" -o "$1"
 	chmod 0644 "$1"
 	dos2unix "$1"
 	sleep 1
@@ -1162,15 +1244,6 @@ Conf_Download(){
 }
 
 Conf_Exists(){
-	if [ -d "/jffs/configs/$SCRIPT_NAME" ]; then
-		mv "/jffs/configs/$SCRIPT_NAME/$SCRIPT_NAME.config" "/jffs/configs/$SCRIPT_NAME/config"
-		mv "/jffs/configs/$SCRIPT_NAME/$SCRIPT_NAME.config.blank" "/jffs/configs/$SCRIPT_NAME/config.blank"
-		mv "/jffs/configs/$SCRIPT_NAME/$SCRIPT_NAME.config.example" "/jffs/configs/$SCRIPT_NAME/config.example"
-		mkdir -p "/jffs/addons/$SCRIPT_NAME.d"
-		cp -a "/jffs/configs/$SCRIPT_NAME/"* "/jffs/addons/$SCRIPT_NAME.d/."
-		rm -rf "/jffs/configs/$SCRIPT_NAME"
-	fi
-	
 	if [ -f "$SCRIPT_CONF" ]; then
 		dos2unix "$SCRIPT_CONF"
 		chmod 0644 "$SCRIPT_CONF"
@@ -1182,6 +1255,12 @@ Conf_Exists(){
 			for CONFIFACE in $IFACELIST_FULL ; do
 				CONFIFACETMP="$(Get_Iface_Var "$CONFIFACE")"
 				sed -i "/^${CONFIFACETMP}_TWOWAYTOGUEST=/a ${CONFIFACETMP}_ONEWAYTOGUEST=" "$SCRIPT_CONF"
+			done
+		fi
+		if ! grep -q "_ALLOWINTERNET" "$SCRIPT_CONF" ; then
+			for CONFIFACE in $IFACELIST_FULL ; do
+				CONFIFACETMP="$(Get_Iface_Var "$CONFIFACE")"
+				sed -i "/^${CONFIFACETMP}_FORCEDNS=/a ${CONFIFACETMP}_ALLOWINTERNET=true" "$SCRIPT_CONF"
 			done
 		fi
 		sed -i -e 's/"//g' "$SCRIPT_CONF"
@@ -1356,12 +1435,10 @@ Firewall_Rules(){
 		if [ "$ENABLED_NTPD" -eq 1 ]; then
 			iptables -t nat "$ACTION" PREROUTING -i "$IFACE" -p udp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
 			iptables -t nat "$ACTION" PREROUTING -i "$IFACE" -p tcp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
-			
 			iptables "$ACTION" "$FWRD" -i "$IFACE" -p tcp --dport 123 -j REJECT
 			iptables "$ACTION" "$FWRD" -i "$IFACE" -p udp --dport 123 -j REJECT
 			ip6tables "$ACTION" FORWARD -i "$IFACE" -p tcp --dport 123 -j REJECT
 			ip6tables "$ACTION" FORWARD -i "$IFACE" -p udp --dport 123 -j REJECT
-			##
 		else
 			iptables -t nat -D PREROUTING -i "$IFACE" -p udp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
 			iptables -t nat -D PREROUTING -i "$IFACE" -p tcp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
@@ -1370,6 +1447,34 @@ Firewall_Rules(){
 			ip6tables -D FORWARD -i "$IFACE" -p tcp --dport 123 -j REJECT
 			ip6tables -D FORWARD -i "$IFACE" -p udp --dport 123 -j REJECT
 		fi
+	done
+}
+
+Firewall_BlockInternet(){
+	ACTIONS=""
+	IFACE="$2"
+	
+	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
+		IFACE_WAN="ppp0"
+	else
+		IFACE_WAN="$(nvram get wan0_ifname)"
+	fi
+	
+	case $1 in
+		create)
+			ACTIONS="-D -I"
+		;;
+		delete)
+			ACTIONS="-D"
+		;;
+	esac
+	
+	modprobe xt_comment
+	for ACTION in $ACTIONS; do
+		iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_WAN" -m comment --comment "$(Get_Guest_Name "$IFACE") block internet" -j "$LGRJT"
+		iptables "$ACTION" "$FWRD" -i "$IFACE" -o tun1+ -m comment --comment "$(Get_Guest_Name "$IFACE") block internet" -j "$LGRJT"
+		iptables "$ACTION" "$FWRD" -i "$IFACE_WAN" -o "$IFACE" -m comment --comment "$(Get_Guest_Name "$IFACE") block internet" -j DROP
+		iptables "$ACTION" "$FWRD" -i tun1+ -o "$IFACE" -m comment --comment "$(Get_Guest_Name "$IFACE") block internet" -j DROP
 	done
 }
 
@@ -1388,12 +1493,12 @@ Firewall_DNS(){
 	
 	for ACTION in $ACTIONS; do
 		if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")" || IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS2")"; then
-			RULES=$(iptables -nvL "$INPT" --line-number | grep "$IFACE" | grep "pt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -nvL "$INPT" --line-number | grep "$IFACE" | grep "pt:53" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -D "$INPT" "$RULENO"
 			done
 			
-			RULES=$(iptables -nvL "$FWRD" --line-number | grep "$IFACE" | grep "pt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -nvL "$FWRD" --line-number | grep "$IFACE" | grep "pt:53" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -D "$FWRD" "$RULENO"
 			done
@@ -1403,7 +1508,7 @@ Firewall_DNS(){
 					IP_PXLSRV=$(ifconfig br0:pixelserv-tls | grep "inet addr:" | cut -d: -f2 | awk '{print $1}')
 					iptables "$ACTION" "$INPT" -i "$IFACE" -d "$IP_PXLSRV" -p tcp -m multiport --dports 80,443 -j ACCEPT
 				else
-					RULES=$(iptables -nvL "$INPT" --line-number | grep "$IFACE" | grep "multiport dports 80,443" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+					RULES=$(iptables -nvL "$INPT" --line-number | grep "$IFACE" | grep "multiport dports 80,443" | awk '{print $1}' | sort -nr)
 					for RULENO in $RULES; do
 						iptables -D "$INPT" "$RULENO"
 					done
@@ -1435,12 +1540,12 @@ Firewall_DNS(){
 				fi
 			fi
 		else
-			RULES=$(iptables -nvL "$INPT" --line-number | grep "$IFACE" | grep "pt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -nvL "$INPT" --line-number | grep "$IFACE" | grep "pt:53" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -D "$INPT" "$RULENO"
 			done
 			
-			RULES=$(iptables -nvL "$FWRD" --line-number | grep "$IFACE" | grep "pt:53" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -nvL "$FWRD" --line-number | grep "$IFACE" | grep "pt:53" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -D "$FWRD" "$RULENO"
 			done
@@ -1448,12 +1553,12 @@ Firewall_DNS(){
 		
 		### DNSFilter rules - credit to @RMerlin for the original implementation in Asuswrt ###
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_FORCEDNS")" = "true" ]; then
-			RULES=$(iptables -t nat -nvL "$DNSFLTR" --line-number | grep "$IFACE" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -t nat -nvL "$DNSFLTR" --line-number | grep "$IFACE" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -t nat -D "$DNSFLTR" "$RULENO"
 			done
 			
-			RULES=$(iptables -nvL $DNSFLTR_DOT --line-number | grep "$IFACE" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -nvL $DNSFLTR_DOT --line-number | grep "$IFACE" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -t nat -D "$DNSFLTR_DOT" "$RULENO"
 			done
@@ -1461,12 +1566,12 @@ Firewall_DNS(){
 			iptables -t nat "$ACTION" "$DNSFLTR" -i "$IFACE" -j DNAT --to-destination "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")"
 			iptables "$ACTION" "$DNSFLTR_DOT" -i "$IFACE" ! -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")" -j "$LGRJT"
 		else
-			RULES=$(iptables -t nat -nvL "$DNSFLTR" --line-number | grep "$IFACE" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -t nat -nvL "$DNSFLTR" --line-number | grep "$IFACE" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -t nat -D "$DNSFLTR" "$RULENO"
 			done
 			
-			RULES=$(iptables -nvL $DNSFLTR_DOT --line-number | grep "$IFACE" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -nvL $DNSFLTR_DOT --line-number | grep "$IFACE" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -t nat -D "$DNSFLTR_DOT" "$RULENO"
 			done
@@ -1513,17 +1618,17 @@ Firewall_NAT(){
 			done
 		;;
 		delete)
-			RULES=$(iptables -t nat -nvL POSTROUTING --line-number | grep "$(Get_Guest_Name_Old "$2") VPN" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -t nat -nvL POSTROUTING --line-number | grep "$(Get_Guest_Name_Old "$2") VPN" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -t nat -D POSTROUTING "$RULENO"
 			done
 			
-			RULES=$(iptables -t nat -nvL POSTROUTING --line-number | grep "$(Get_Guest_Name "$2") VPN" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -t nat -nvL POSTROUTING --line-number | grep "$(Get_Guest_Name "$2") VPN" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -t nat -D POSTROUTING "$RULENO"
 			done
 			
-			RULES=$(iptables -nvL "$FWRD" --line-number | grep "$2" | grep "tun1" | awk '{print $1}' | awk '{for(i=NF;i>0;--i)printf "%s%s",$i,(i>1?OFS:ORS)}')
+			RULES=$(iptables -nvL "$FWRD" --line-number | grep "$2" | grep "tun1" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -D "$FWRD" "$RULENO"
 			done
@@ -1860,6 +1965,7 @@ Config_Networks(){
 	fi
 	
 	Firewall_Chains create 2>/dev/null
+	iptables -F "$DNSFLTR_DOT" 2>/dev/null
 	
 	for IFACE in $IFACELIST; do
 		VPNCLIENTNO=$(eval echo '$'"$(Get_Iface_Var "$IFACE")_VPNCLIENTNUMBER")
@@ -1869,19 +1975,29 @@ Config_Networks(){
 			
 			Firewall_Rules create "$IFACE" 2>/dev/null
 			
-			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_REDIRECTALLTOVPN")" = "true" ]; then
-				Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
-				
-				if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
-					Routing_NVRAM create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
+			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ALLOWINTERNET")" = "true" ]; then
+				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_REDIRECTALLTOVPN")" = "true" ]; then
+					Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
+					
+					if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
+						Routing_NVRAM create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
+					else
+						Routing_VPNDirector create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
+					fi
+					
+					Firewall_NAT create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
 				else
-					Routing_VPNDirector create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
+					Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - sending all interface internet traffic over WAN interface"
+					
+					Firewall_NAT delete "$IFACE" 2>/dev/null
+					
+					if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
+						Routing_NVRAM delete "$IFACE" 2>/dev/null
+					else
+						Routing_VPNDirector delete "$IFACE" 2>/dev/null
+					fi
 				fi
-				
-				Firewall_NAT create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
 			else
-				Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - sending all interface internet traffic over WAN interface"
-				
 				Firewall_NAT delete "$IFACE" 2>/dev/null
 				
 				if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
@@ -1892,6 +2008,13 @@ Config_Networks(){
 			fi
 			
 			Firewall_DNS create "$IFACE" 2>/dev/null
+			
+			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ALLOWINTERNET")" = "false" ]; then
+				Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - allow internet disabled, blocking all interface internet traffic"
+				Firewall_BlockInternet create "$IFACE" 2>/dev/null
+			else
+				Firewall_BlockInternet delete "$IFACE" 2>/dev/null
+			fi
 			
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_CLIENTISOLATION")" = "true" ]; then
 				ISOBEFORE="$(nvram get "${IFACE}_ap_isolate")"
@@ -1933,6 +2056,8 @@ Config_Networks(){
 			Firewall_Rules delete "$IFACE" 2>/dev/null
 			
 			Firewall_DNS delete "$IFACE" 2>/dev/null
+			
+			Firewall_BlockInternet delete "$IFACE" 2>/dev/null
 			
 			#Reset guest interface ISOLATION
 			ISOBEFORE="$(nvram get "${IFACE}_ap_isolate")"
@@ -2270,6 +2395,8 @@ Menu_Install(){
 		Conf_Download "$SCRIPT_CONF.example"
 	fi
 	
+	Update_File README.md
+	
 	Shortcut_Script create
 	Set_Version_Custom_Settings local "$SCRIPT_VERSION"
 	Set_Version_Custom_Settings server "$SCRIPT_VERSION"
@@ -2284,6 +2411,7 @@ Menu_Install(){
 	Print_Output false "Alternatively, use $SCRIPT_NAME's menu via amtm (if installed), with /jffs/scripts/$SCRIPT_NAME or simply $SCRIPT_NAME"
 	Clear_Lock
 	PressEnter
+	Download_File "$SCRIPT_REPO/install-success/LICENSE" "$SCRIPT_DIR/LICENSE"
 	ScriptHeader
 	MainMenu
 }
@@ -2818,13 +2946,6 @@ EOF
 }
 ### ###
 
-if [ -f "$SCRIPT_DIR/S98YazFiMonitor" ]; then
-	rm -f "$SCRIPT_DIR/YazFiMonitor"
-	rm -f "$SCRIPT_DIR/YazFiMonitord"
-	rm -f "$SCRIPT_DIR/sc.func"
-	rm -f "$SCRIPT_DIR/S98YazFiMonitor"
-fi
-
 if [ ! -f /opt/bin/qrencode ] && [ -f /opt/bin/opkg ]; then
 	opkg update
 	opkg install qrencode
@@ -2852,8 +2973,8 @@ case "$1" in
 	;;
 	runnow)
 		Check_Lock
-		Print_Output true "Firewall restarted - sleeping 30s before running $SCRIPT_NAME" "$PASS"
-		sleep 30
+		Print_Output true "Firewall restarted - sleeping 10s before running $SCRIPT_NAME" "$PASS"
+		sleep 10
 		Config_Networks
 		Clear_Lock
 		exit 0
@@ -2903,6 +3024,7 @@ case "$1" in
 		sleep 12
 		Create_Dirs
 		Create_Symlinks
+		Auto_Cron create 2>/dev/null
 		Mount_WebUI
 		exit 0
 	;;
@@ -3022,13 +3144,13 @@ case "$1" in
 	;;
 	develop)
 		SCRIPT_BRANCH="develop"
-		SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
+		SCRIPT_REPO="https://jackyaz.io/$SCRIPT_NAME/$SCRIPT_BRANCH"
 		Update_Version force
 		exit 0
 	;;
 	stable)
 		SCRIPT_BRANCH="master"
-		SCRIPT_REPO="https://raw.githubusercontent.com/jackyaz/$SCRIPT_NAME/$SCRIPT_BRANCH"
+		SCRIPT_REPO="https://jackyaz.io/$SCRIPT_NAME/$SCRIPT_BRANCH"
 		Update_Version force
 		exit 0
 	;;

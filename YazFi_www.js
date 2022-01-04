@@ -43,6 +43,7 @@ function YazHint(hintid){
 	if(hintid == 10) hinttext='Should LAN/Guest Network traffic have unrestricted access to each other? Cannot be enabled if _ONEWAYTOGUEST is enabled';
 	if(hintid == 11) hinttext='Should LAN be able to initiate connections to Guest Network clients (but not the opposite)? Cannot be enabled if _TWOWAYTOGUEST is enabled';
 	if(hintid == 12) hinttext='Should Guest Network radio prevent clients from talking to each other?';
+	if(hintid == 13) hinttext='Should Guest Network be allowed to access the internet?';
 	return overlib(hinttext,0,0);
 }
 
@@ -51,39 +52,27 @@ function OptionsEnableDisable(forminput){
 	var inputvalue = forminput.value;
 	var prefix = inputname.substring(0,inputname.lastIndexOf('_'));
 	
+	var fieldnames = ['ipaddr','dhcpstart','dhcpend','dns1','dns2','vpnclientnumber'];
+	var fieldnames2 = ['allowinternet','forcedns','redirectalltovpn','onewaytoguest','twowaytoguest','clientisolation'];
+	
 	if(inputvalue == 'false'){
-		$j('input[name='+prefix+'_ipaddr]').addClass('disabled');
-		$j('input[name='+prefix+'_ipaddr]').prop('disabled',true);
-		$j('input[name='+prefix+'_dhcpstart]').addClass('disabled');
-		$j('input[name='+prefix+'_dhcpstart]').prop('disabled',true);
-		$j('input[name='+prefix+'_dhcpend]').addClass('disabled');
-		$j('input[name='+prefix+'_dhcpend]').prop('disabled',true);
-		$j('input[name='+prefix+'_dns1]').addClass('disabled');
-		$j('input[name='+prefix+'_dns1]').prop('disabled',true);
-		$j('input[name='+prefix+'_dns2]').addClass('disabled');
-		$j('input[name='+prefix+'_dns2]').prop('disabled',true);
-		$j('input[name='+prefix+'_forcedns]').prop('disabled',true);
-		$j('input[name='+prefix+'_redirectalltovpn]').prop('disabled',true);
-		$j('input[name='+prefix+'_vpnclientnumber]').addClass('disabled');
-		$j('input[name='+prefix+'_vpnclientnumber]').prop('disabled',true);
-		$j('input[name='+prefix+'_onewaytoguest]').prop('disabled',true);
-		$j('input[name='+prefix+'_twowaytoguest]').prop('disabled',true);
-		$j('input[name='+prefix+'_clientisolation]').prop('disabled',true);
+		for(var index = 0; index < fieldnames.length; index++){
+			$j('input[name='+prefix+'_'+fieldnames[index]+']').addClass('disabled');
+			$j('input[name='+prefix+'_'+fieldnames[index]+']').prop('disabled',true);
+		}
+		for(var index = 0; index < fieldnames2.length; index++){
+			$j('input[name='+prefix+'_'+fieldnames2[index]+']').prop('disabled',true);
+		}
 	}
 	else if(inputvalue == 'true'){
-		$j('input[name='+prefix+'_ipaddr]').removeClass('disabled');
-		$j('input[name='+prefix+'_ipaddr]').prop('disabled',false);
-		$j('input[name='+prefix+'_dhcpstart]').removeClass('disabled');
-		$j('input[name='+prefix+'_dhcpstart]').prop('disabled',false);
-		$j('input[name='+prefix+'_dhcpend]').removeClass('disabled');
-		$j('input[name='+prefix+'_dhcpend]').prop('disabled',false);
-		$j('input[name='+prefix+'_dns1]').removeClass('disabled');
-		$j('input[name='+prefix+'_dns1]').prop('disabled',false);
-		$j('input[name='+prefix+'_forcedns]').prop('disabled',false);
-		$j('input[name='+prefix+'_redirectalltovpn]').prop('disabled',false);
-		$j('input[name='+prefix+'_onewaytoguest]').prop('disabled',false);
-		$j('input[name='+prefix+'_twowaytoguest]').prop('disabled',false);
-		$j('input[name='+prefix+'_clientisolation]').prop('disabled',false);
+		for(var index = 0; index < fieldnames.length; index++){
+			if(fieldnames2[index] == 'dns2' || fieldnames2[index] == 'vpnclientnumber'){continue;}
+			$j('input[name='+prefix+'_'+fieldnames[index]+']').removeClass('disabled');
+			$j('input[name='+prefix+'_'+fieldnames[index]+']').prop('disabled',false);
+		}
+		for(var index = 0; index < fieldnames2.length; index++){
+			$j('input[name='+prefix+'_'+fieldnames2[index]+']').prop('disabled',false);
+		}
 		
 		if(eval('document.form.'+prefix+'_redirectalltovpn').value == 'true'){
 			$j('input[name='+prefix+'_vpnclientnumber]').removeClass('disabled');
@@ -94,40 +83,60 @@ function OptionsEnableDisable(forminput){
 			$j('input[name='+prefix+'_dns2]').removeClass('disabled');
 			$j('input[name='+prefix+'_dns2]').prop('disabled',false);
 		}
+		
+		if(eval('document.form.'+prefix+'_allowinternet').value == 'false'){
+			$j('input[name='+prefix+'_redirectalltovpn]').addClass('disabled');
+			$j('input[name='+prefix+'_redirectalltovpn]').prop('disabled',true);
+			$j('input[name='+prefix+'_vpnclientnumber]').addClass('disabled');
+			$j('input[name='+prefix+'_vpnclientnumber]').prop('disabled',true);
+			Validate_IP(eval('document.form.'+prefix+'_dns1'),'DNS');
+			Validate_IP(eval('document.form.'+prefix+'_dns2'),'DNS');
+		}
 	}
 }
 
-function VPNOptionsEnableDisable(forminput){
+function SubOptionsEnableDisable(forminput,optiontype){
 	var inputname = forminput.name;
 	var inputvalue = forminput.value;
 	var prefix = inputname.substring(0,inputname.lastIndexOf('_'));
 	
 	if(eval('document.form.'+prefix+'_enabled').value == 'true'){
 		if(inputvalue == 'false'){
-			$j('input[name='+prefix+'_vpnclientnumber]').addClass('disabled');
-			$j('input[name='+prefix+'_vpnclientnumber]').prop('disabled',true);
+			if(optiontype == 'vpn'){
+				$j('input[name='+prefix+'_vpnclientnumber]').addClass('disabled');
+				$j('input[name='+prefix+'_vpnclientnumber]').prop('disabled',true);
+			}
+			else if(optiontype == 'dns'){
+				$j('input[name='+prefix+'_dns2]').removeClass('disabled');
+				$j('input[name='+prefix+'_dns2]').prop('disabled',false);
+			}
+			else if(optiontype == 'allowinternet'){
+				$j('input[name='+prefix+'_redirectalltovpn]').addClass('disabled');
+				$j('input[name='+prefix+'_redirectalltovpn]').prop('disabled',true);
+				$j('input[name='+prefix+'_vpnclientnumber]').addClass('disabled');
+				$j('input[name='+prefix+'_vpnclientnumber]').prop('disabled',true);
+				Validate_IP(eval('document.form.'+prefix+'_dns1'),'DNS');
+				Validate_IP(eval('document.form.'+prefix+'_dns2'),'DNS');
+			}
 		}
 		else if(inputvalue == 'true'){
-			$j('input[name='+prefix+'_vpnclientnumber]').removeClass('disabled');
-			$j('input[name='+prefix+'_vpnclientnumber]').prop('disabled',false);
-		}
-	}
-}
-
-function ForceDNSEnableDisable(forminput){
-	var inputname = forminput.name;
-	var inputvalue = forminput.value;
-	var prefix = inputname.substring(0,inputname.lastIndexOf('_'));
-	
-	if(eval('document.form.'+prefix+'_enabled').value == 'true'){
-		if(inputvalue == 'true'){
-			$j('input[name='+prefix+'_dns2]').val($j('input[name='+prefix+'_dns1]').val());
-			$j('input[name='+prefix+'_dns2]').addClass('disabled');
-			$j('input[name='+prefix+'_dns2]').prop('disabled',true);
-		}
-		else if(inputvalue == 'false'){
-			$j('input[name='+prefix+'_dns2]').removeClass('disabled');
-			$j('input[name='+prefix+'_dns2]').prop('disabled',false);
+			if(optiontype == 'vpn'){
+				$j('input[name='+prefix+'_vpnclientnumber]').removeClass('disabled');
+				$j('input[name='+prefix+'_vpnclientnumber]').prop('disabled',false);
+			}
+			else if(optiontype == 'dns'){
+				$j('input[name='+prefix+'_dns2]').val($j('input[name='+prefix+'_dns1]').val());
+				$j('input[name='+prefix+'_dns2]').addClass('disabled');
+				$j('input[name='+prefix+'_dns2]').prop('disabled',true);
+			}
+			else if(optiontype == 'allowinternet'){
+				$j('input[name='+prefix+'_redirectalltovpn]').removeClass('disabled');
+				$j('input[name='+prefix+'_redirectalltovpn]').prop('disabled',false);
+				$j('input[name='+prefix+'_vpnclientnumber]').removeClass('disabled');
+				$j('input[name='+prefix+'_vpnclientnumber]').prop('disabled',false);
+				Validate_IP(eval('document.form.'+prefix+'_dns1'),'DNS');
+				Validate_IP(eval('document.form.'+prefix+'_dns2'),'DNS');
+			}
 		}
 	}
 }
@@ -135,6 +144,7 @@ function ForceDNSEnableDisable(forminput){
 function Validate_IP(forminput,iptype){
 	var inputvalue = forminput.value;
 	var inputname = forminput.name;
+	var prefix = inputname.substring(0,inputname.lastIndexOf('_'));
 	if(iptype == 'DNS'){
 		if(inputvalue.substring(inputvalue.lastIndexOf('.')) == '.0'){
 			forminput.value = inputvalue.substring(0,inputvalue.lastIndexOf('.'))+'.1';
@@ -185,6 +195,13 @@ function Validate_IP(forminput,iptype){
 				$j(forminput)[0].onmouseout = nd;
 				return false;
 			}
+		}
+		else if (iptype == 'DNS' && ! /(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)/.test(inputvalue) && eval('document.form.'+prefix+'_allowinternet.value') == 'false'){
+			$j(forminput).addClass('invalid');
+			failedfields.push([$j(forminput),'Allow internet disabled and non-private IP address used']);
+			$j(forminput).on('mouseover',function(){return overlib('Allow internet disabled and non-private IP address used',0,0);});
+			$j(forminput)[0].onmouseout = nd;
+			return false;
 		}
 		else{
 			$j(forminput).removeClass('invalid');
@@ -384,8 +401,9 @@ function get_conf_file(){
 				var settingname = window['yazfi_settings'][i][0].toLowerCase();
 				var settingvalue = window['yazfi_settings'][i][1];
 				eval('document.form.yazfi_'+settingname).value = settingvalue;
-				if(settingname.indexOf('forcedns') != -1) ForceDNSEnableDisable($j('#yazfi_'+settingname.replace('_forcedns','')+'_fdns_'+settingvalue)[0]);
-				if(settingname.indexOf('redirectalltovpn') != -1) VPNOptionsEnableDisable($j('#yazfi_'+settingname.replace('_redirectalltovpn','')+'_redir_'+settingvalue)[0]);
+				if(settingname.indexOf('forcedns') != -1) SubOptionsEnableDisable($j('#yazfi_'+settingname.replace('_forcedns','')+'_fdns_'+settingvalue)[0],'dns');
+				if(settingname.indexOf('redirectalltovpn') != -1) SubOptionsEnableDisable($j('#yazfi_'+settingname.replace('_redirectalltovpn','')+'_redir_'+settingvalue)[0],'vpn');
+				if(settingname.indexOf('allowinternet') != -1) SubOptionsEnableDisable($j('#yazfi_'+settingname.replace('_allowinternet','')+'_allowinet_'+settingvalue)[0],'allowinternet');
 				if(settingname.indexOf('enabled') != -1) OptionsEnableDisable($j('#yazfi_'+settingname.replace('_enabled','')+'_en_'+settingvalue)[0]);
 			}
 			
@@ -714,16 +732,23 @@ function BuildConfigTable(prefix,title){
 	
 	/* FORCEDNS */
 	tablehtml+='<tr>';
-	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(7);">Force DNS</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_forcedns" id="yazfi_'+prefix+'1_fdns_true" onChange="ForceDNSEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_forcedns" id="yazfi_'+prefix+'1_fdns_false" onChange="ForceDNSEnableDisable(this)" class="input" value="false" checked>No</td>';
-	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_forcedns" id="yazfi_'+prefix+'2_fdns_true" onChange="ForceDNSEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_forcedns" id="yazfi_'+prefix+'2_fdns_false" onChange="ForceDNSEnableDisable(this)" class="input" value="false" checked>No</td>';
-	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_forcedns" id="yazfi_'+prefix+'3_fdns_true" onChange="ForceDNSEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_forcedns" id="yazfi_'+prefix+'3_fdns_false" onChange="ForceDNSEnableDisable(this)" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(7);">Force DNS</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_forcedns" id="yazfi_'+prefix+'1_fdns_true" onChange="SubOptionsEnableDisable(this,\'dns\')" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_forcedns" id="yazfi_'+prefix+'1_fdns_false" onChange="SubOptionsEnableDisable(this,\'dns\')" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_forcedns" id="yazfi_'+prefix+'2_fdns_true" onChange="SubOptionsEnableDisable(this,\'dns\')" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_forcedns" id="yazfi_'+prefix+'2_fdns_false" onChange="SubOptionsEnableDisable(this,\'dns\')" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_forcedns" id="yazfi_'+prefix+'3_fdns_true" onChange="SubOptionsEnableDisable(this,\'dns\')" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_forcedns" id="yazfi_'+prefix+'3_fdns_false" onChange="SubOptionsEnableDisable(this,\'dns\')" class="input" value="false" checked>No</td>';
+	tablehtml+='</tr>';
+	
+	/* ALLOWINTERNET */
+	tablehtml+='<tr>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(13);">Allow Internet access</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_allowinternet" id="yazfi_'+prefix+'1_allowinet_true" onChange="SubOptionsEnableDisable(this,\'allowinternet\')" class="input" value="true" checked>Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_allowinternet" id="yazfi_'+prefix+'1_allowinet_false" onChange="SubOptionsEnableDisable(this,\'allowinternet\')" class="input" value="false">No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_allowinternet" id="yazfi_'+prefix+'2_allowinet_true" onChange="SubOptionsEnableDisable(this,\'allowinternet\')" class="input" value="true" checked>Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_allowinternet" id="yazfi_'+prefix+'2_allowinet_false" onChange="SubOptionsEnableDisable(this,\'allowinternet\')" class="input" value="false">No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_allowinternet" id="yazfi_'+prefix+'3_allowinet_true" onChange="SubOptionsEnableDisable(this,\'allowinternet\')" class="input" value="true" checked>Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_allowinternet" id="yazfi_'+prefix+'3_allowinet_false" onChange="SubOptionsEnableDisable(this,\'allowinternet\')" class="input" value="false">No</td>';
 	tablehtml+='</tr>';
 	
 	/* REDIRECTALLTOVPN */
 	tablehtml+='<tr>';
-	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(8);">Redirect all to VPN</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_redirectalltovpn" id="yazfi_'+prefix+'1_redir_true" onChange="VPNOptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_redirectalltovpn" id="yazfi_'+prefix+'1_redir_false" onChange="VPNOptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
-	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_redirectalltovpn" id="yazfi_'+prefix+'2_redir_true" onChange="VPNOptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_redirectalltovpn" id="yazfi_'+prefix+'2_redir_false" onChange="VPNOptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
-	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_redirectalltovpn" id="yazfi_'+prefix+'3_redir_true" onChange="VPNOptionsEnableDisable(this)" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_redirectalltovpn" id="yazfi_'+prefix+'3_redir_false" onChange="VPNOptionsEnableDisable(this)" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(8);">Redirect all to VPN</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_redirectalltovpn" id="yazfi_'+prefix+'1_redir_true" onChange="SubOptionsEnableDisable(this,\'vpn\')" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'1_redirectalltovpn" id="yazfi_'+prefix+'1_redir_false" onChange="SubOptionsEnableDisable(this,\'vpn\')" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_redirectalltovpn" id="yazfi_'+prefix+'2_redir_true" onChange="SubOptionsEnableDisable(this,\'vpn\')" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'2_redirectalltovpn" id="yazfi_'+prefix+'2_redir_false" onChange="SubOptionsEnableDisable(this,\'vpn\')" class="input" value="false" checked>No</td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_redirectalltovpn" id="yazfi_'+prefix+'3_redir_true" onChange="SubOptionsEnableDisable(this,\'vpn\')" class="input" value="true">Yes<input autocomplete="off" autocapitalize="off" type="radio" name="yazfi_'+prefix+'3_redirectalltovpn" id="yazfi_'+prefix+'3_redir_false" onChange="SubOptionsEnableDisable(this,\'vpn\')" class="input" value="false" checked>No</td>';
 	tablehtml+='</tr>';
 	
 	/* VPNCLIENTNUMBER */
