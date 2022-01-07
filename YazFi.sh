@@ -1710,8 +1710,8 @@ Routing_VPNDirector(){
 		delete)
 			COUNTER=1
 			until [ $COUNTER -gt 5 ]; do
-				VPN_IP_LIST_NEW=$(echo "$VPN_IP_LIST_NEW" | sed -e "s/$(echo '<0>'"$(Get_Guest_Name "$2")" | sed -e 's/\//\\\//g;s/ /\\ /g').*>OVPN$COUNTER//g")
-				VPN_IP_LIST_NEW=$(echo "$VPN_IP_LIST_NEW" | sed -e "s/$(echo '<1>'"$(Get_Guest_Name "$2")" | sed -e 's/\//\\\//g;s/ /\\ /g').*>OVPN$COUNTER//g")
+				VPN_IP_LIST_NEW=$(echo "$VPN_IP_LIST_NEW" | sed -e "s/$(echo '<0>'"$(Get_Guest_Name "$2")" | sed -e 's/\//\\\//g;s/ /\\ /g')>[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\/24>>OVPN$COUNTER//g")
+				VPN_IP_LIST_NEW=$(echo "$VPN_IP_LIST_NEW" | sed -e "s/$(echo '<1>'"$(Get_Guest_Name "$2")" | sed -e 's/\//\\\//g;s/ /\\ /g')>[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\/24>>OVPN$COUNTER//g")
 				COUNTER=$((COUNTER + 1))
 			done
 		;;
