@@ -2,8 +2,8 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/a2cf9bdec17b4b6f9b6e113f802be694)](https://app.codacy.com/app/jackyaz/YazFi?utm_source=github.com&utm_medium=referral&utm_content=jackyaz/YazFi&utm_campaign=Badge_Grade_Dashboard)
 ![Shellcheck](https://github.com/jackyaz/YazFi/actions/workflows/shellcheck.yml/badge.svg)
 
-## v4.4.1
-### Updated on 2022-01-07
+## v4.4.2
+### Updated on 2022-02-20
 ## About
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
 
