@@ -396,7 +396,7 @@ function get_conf_file(){
 			buttonshtml += '<input name="button" type="button" class="button_gen" onclick="SaveConfig();" value="Apply"/></td></tr>';
 			$j('#table_config').append(buttonshtml);
 			
-			var settingcount = bands*12*3;
+			var settingcount = bands*13*3;
 			for(var i = 0; i < settingcount; i++){
 				var settingname = window['yazfi_settings'][i][0].toLowerCase();
 				var settingvalue = window['yazfi_settings'][i][1];
