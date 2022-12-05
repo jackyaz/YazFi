@@ -59,7 +59,7 @@ function YazHint(hintid){
 	if(hintid == 6) hinttext='IP address for primary DNS resolver';
 	if(hintid == 7) hinttext='IP address for secondary DNS resolver';
 	if(hintid == 8) hinttext='Should Guest Network DNS requests be forced/redirected to DNS1? N.B. This setting is ignored if sending to VPN, and VPN Client\'s DNS configuration is Exclusive';
-    if(hintid == 9) hinttext='Should Guest Network be allowed to access the internet?';
+	if(hintid == 9) hinttext='Should Guest Network be allowed to access the internet?';
 	if(hintid == 10) hinttext='Should Guest Network traffic be sent via VPN?';
 	if(hintid == 11) hinttext='The number of the VPN Client to send traffic through (1-5)';
 	if(hintid == 12) hinttext='Should LAN/Guest Network traffic have unrestricted access to each other? Cannot be enabled if _ONEWAYTOGUEST is enabled';
