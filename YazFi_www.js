@@ -12,12 +12,12 @@ var bands = 0;
 var failedfields = [];
 
 /**-------------------------------------**/
-/** Added by Martinski W. [2022-Dec-04] **/
+/** Added by Martinski W. [2022-Dec-05] **/
 /**-------------------------------------**/
 const numEntriesPerGN=14;
 const theDHCPLeaseTime=
 {
-   label: 'DHCP Lease',
+   uiLabel: 'DHCP Lease',
    varType: 'dhcpLEASE',
    varName: 'dhcplease',
    minVal: 120,    minStr: '2 mins',
@@ -26,6 +26,32 @@ const theDHCPLeaseTime=
    { return (`Value is not between ${this.minVal} and ${this.maxVal} seconds.`); },
    hintMsg: function()
    { return (`DHCP Lease Time in seconds: ${this.minVal} (${this.minStr}) to ${this.maxVal} (${this.maxStr}).`); }
+};
+
+const theDHCPStart=
+{
+   uiLabel: 'DHCP Start',
+   varType: 'dhcpSTART',
+   varName: 'dhcpstart',
+   minVal: 2, maxVal: 253,
+   errorMsg1: 'DHCP Start is greater than or equal to DHCP End',
+   errorMsg2: function()
+   { return (`Value is not between ${this.minVal} and ${this.maxVal}`); },
+   hintMsg: function()
+   { return (`Start of DHCP pool (${this.minVal}-${this.maxVal})`); }
+};
+
+const theDHCPEnd=
+{
+   uiLabel: 'DHCP End',
+   varType: 'dhcpEND',
+   varName: 'dhcpend',
+   minVal: 3, maxVal: 254,
+   errorMsg1: 'DHCP End is less than or equal to DHCP Start',
+   errorMsg2: function()
+   { return (`Value is not between ${this.minVal} and ${this.maxVal}`); },
+   hintMsg: function()
+   { return (`End of DHCP pool (${this.minVal}-${this.maxVal})`); }
 };
 
 var $j = jQuery.noConflict();
@@ -43,7 +69,7 @@ function initial(){
 }
 
 /**----------------------------------------**/
-/** Modified by Martinski W. [2022-Dec-01] **/
+/** Modified by Martinski W. [2022-Dec-05] **/
 /**----------------------------------------**/
 function YazHint(hintid){
 	var tag_name= document.getElementsByTagName('a');
@@ -53,8 +79,8 @@ function YazHint(hintid){
 	hinttext='My text goes here';
 	if(hintid == 1) hinttext='Enable YazFi for this Guest Network';
 	if(hintid == 2) hinttext='IP address/subnet to use for Guest Network';
-	if(hintid == 3) hinttext='Start of DHCP pool (2-253)';
-	if(hintid == 4) hinttext='End of DHCP pool (3-254)';
+	if(hintid == 3) hinttext=theDHCPStart.hintMsg();
+	if(hintid == 4) hinttext=theDHCPEnd.hintMsg();
 	if(hintid == 5) hinttext=theDHCPLeaseTime.hintMsg();
 	if(hintid == 6) hinttext='IP address for primary DNS resolver';
 	if(hintid == 7) hinttext='IP address for secondary DNS resolver';
@@ -69,14 +95,14 @@ function YazHint(hintid){
 }
 
 /**----------------------------------------**/
-/** Modified by Martinski W. [2022-Nov-30] **/
+/** Modified by Martinski W. [2022-Dec-05] **/
 /**----------------------------------------**/
 function OptionsEnableDisable(forminput){
 	var inputname = forminput.name;
 	var inputvalue = forminput.value;
 	var prefix = inputname.substring(0,inputname.lastIndexOf('_'));
-	
-	var fieldnames = ['ipaddr','dhcpstart','dhcpend',theDHCPLeaseTime.varName,'dns1','dns2','vpnclientnumber'];
+
+	var fieldnames = ['ipaddr',theDHCPStart.varName,theDHCPEnd.varName,theDHCPLeaseTime.varName,'dns1','dns2','vpnclientnumber'];
 	var fieldnames2 = ['allowinternet','forcedns','redirectalltovpn','onewaytoguest','twowaytoguest','clientisolation'];
 	
 	if(inputvalue == 'false'){
@@ -243,25 +269,25 @@ function Validate_IP(forminput,iptype){
 }
 
 /**----------------------------------------**/
-/** Modified by Martinski W. [2022-Dec-01] **/
+/** Modified by Martinski W. [2022-Dec-05] **/
 /**----------------------------------------**/
 function Validate_DHCP(forminput,dhcpType){
 	var inputname = forminput.name;
 	var inputvalue = forminput.value*1;
 
-	if(dhcpType == 'dhcpSTART'){
+	if(dhcpType == theDHCPStart.varType){
 		if(inputvalue >= eval('document.form.'+inputname.substring(0,inputname.indexOf('start'))+'end.value')*1){
 			$j(forminput).addClass('invalid');
-			failedfields.push([$j(forminput),'DHCP start is greater than DHCP end']);
-			$j(forminput).on('mouseover',function(){return overlib('DHCP start is greater than DHCP end',0,0);});
+			failedfields.push([$j(forminput),theDHCPStart.errorMsg1]);
+			$j(forminput).on('mouseover',function(){return overlib(theDHCPStart.errorMsg1,0,0);});
 			$j(forminput)[0].onmouseout = nd;
 			return false;
 		}
 		else{
-			if(inputvalue > 254 || inputvalue < 2){
+			if(inputvalue > theDHCPStart.maxVal || inputvalue < theDHCPStart.minVal){
 				$j(forminput).addClass('invalid');
-				failedfields.push([$j(forminput),'Value not between 2 and 254']);
-				$j(forminput).on('mouseover',function(){return overlib('Value not between 2 and 254',0,0);});
+				failedfields.push([$j(forminput),theDHCPStart.errorMsg2()]);
+				$j(forminput).on('mouseover',function(){return overlib(theDHCPStart.errorMsg2(),0,0);});
 				$j(forminput)[0].onmouseout = nd;
 				return false;
 			}
@@ -272,19 +298,19 @@ function Validate_DHCP(forminput,dhcpType){
 			}
 		}
 	}
-	else if(dhcpType == 'dhcpEND'){
+	else if(dhcpType == theDHCPEnd.varType){
 		if(inputvalue <= eval('document.form.'+inputname.substring(0,inputname.indexOf('end'))+'start.value')*1){
 			$j(forminput).addClass('invalid');
-			failedfields.push([$j(forminput),'DHCP end is less than DHCP start']);
-			$j(forminput).on('mouseover',function(){return overlib('DHCP end is less than DHCP start',0,0);});
+			failedfields.push([$j(forminput),theDHCPEnd.errorMsg1]);
+			$j(forminput).on('mouseover',function(){return overlib(theDHCPEnd.errorMsg1,0,0);});
 			$j(forminput)[0].onmouseout = nd;
 			return false;
 		}
 		else{
-			if(inputvalue > 254 || inputvalue < 2){
+			if(inputvalue > theDHCPEnd.maxVal || inputvalue < theDHCPEnd.minVal){
 				$j(forminput).addClass('invalid');
-				failedfields.push([$j(forminput),'Value not between 2 and 254']);
-				$j(forminput).on('mouseover',function(){return overlib('Value not between 2 and 254',0,0);});
+				failedfields.push([$j(forminput),theDHCPEnd.errorMsg2()]);
+				$j(forminput).on('mouseover',function(){return overlib(theDHCPEnd.errorMsg2(),0,0);});
 				$j(forminput)[0].onmouseout = nd;
 				return false;
 			}
@@ -348,7 +374,7 @@ function Validate_OneTwoWay(forminput){
 }
 
 /**----------------------------------------**/
-/** Modified by Martinski W. [2022-Nov-30] **/
+/** Modified by Martinski W. [2022-Dec-05] **/
 /**----------------------------------------**/
 function Validate_All(){
 	var validationfailed = false;
@@ -356,8 +382,8 @@ function Validate_All(){
 	for(var i=0; i < bands; i++){
 		for(var i2=1; i2 <= 3; i2++){
 			if(! Validate_IP(eval('document.form.yazfi_wl'+i+i2+'_ipaddr'),'IP')){validationfailed=true;}
-			if(! Validate_DHCP(eval('document.form.yazfi_wl'+i+i2+'_dhcpstart'),'dhcpSTART')){validationfailed=true;}
-			if(! Validate_DHCP(eval('document.form.yazfi_wl'+i+i2+'_dhcpend'),'dhcpEND')){validationfailed=true;}
+			if(! Validate_DHCP(eval('document.form.yazfi_wl'+i+i2+'_'+theDHCPStart.varName),theDHCPStart.varType)){validationfailed=true;}
+			if(! Validate_DHCP(eval('document.form.yazfi_wl'+i+i2+'_'+theDHCPEnd.varName),theDHCPEnd.varType)){validationfailed=true;}
 			if(! Validate_DHCP(eval('document.form.yazfi_wl'+i+i2+'_'+theDHCPLeaseTime.varName),theDHCPLeaseTime.varType)){validationfailed=true;}
 			if(! Validate_IP(eval('document.form.yazfi_wl'+i+i2+'_dns1'),'DNS')){validationfailed=true;}
 			if(! Validate_IP(eval('document.form.yazfi_wl'+i+i2+'_dns2'),'DNS')){validationfailed=true;}
@@ -672,7 +698,7 @@ function BuildConnectedClientsTable(name){
 }
 
 /**----------------------------------------**/
-/** Modified by Martinski W. [2022-Dec-01] **/
+/** Modified by Martinski W. [2022-Dec-05] **/
 /**----------------------------------------**/
 function BuildConfigTable(prefix,title){
 	var tablehtml = '<tr><td style="padding:0px;">';
@@ -747,19 +773,25 @@ function BuildConfigTable(prefix,title){
 	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'2_ipaddr" value="0.0.0.0" onkeypress="return validator.isIPAddr(this,event)" onblur="Validate_IP(this,\'IP\')" data-lpignore="true" /></td>';
 	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'3_ipaddr" value="0.0.0.0" onkeypress="return validator.isIPAddr(this,event)" onblur="Validate_IP(this,\'IP\')" data-lpignore="true" /></td>';
 	tablehtml+='</tr>';
-	
+
+    /**----------------------------------------**/
+	/** Modified by Martinski W. [2022-Dec-05] **/
+	/**----------------------------------------**/
 	/* DHCP START */
 	tablehtml+='<tr>';
-	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(3);">DHCP Start</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'1_dhcpstart" value="2" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,\'dhcpSTART\')" /></td>';
-	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'2_dhcpstart" value="2" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,\'dhcpSTART\')" /></td>';
-	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'3_dhcpstart" value="2" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,\'dhcpSTART\')" /></td>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(3);">'+theDHCPStart.uiLabel+'</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'1_'+theDHCPStart.varName+'" value="2" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,theDHCPStart.varType)" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'2_'+theDHCPStart.varName+'" value="2" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,theDHCPStart.varType)" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'3_'+theDHCPStart.varName+'" value="2" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,theDHCPStart.varType)" /></td>';
 	tablehtml+='</tr>';
-	
+
+    /**----------------------------------------**/
+	/** Modified by Martinski W. [2022-Dec-05] **/
+	/**----------------------------------------**/
 	/* DHCP END */
 	tablehtml+='<tr>';
-	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(4);">DHCP End</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'1_dhcpend" value="254" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,\'dhcpEND\')" /></td>';
-	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'2_dhcpend" value="254" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,\'dhcpEND\')" /></td>';
-	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'3_dhcpend" value="254" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,\'dhcpEND\')" /></td>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(4);">'+theDHCPEnd.uiLabel+'</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'1_'+theDHCPEnd.varName+'" value="254" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,theDHCPEnd.varType)" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'2_'+theDHCPEnd.varName+'" value="254" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,theDHCPEnd.varType)" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'3_'+theDHCPEnd.varName+'" value="254" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,theDHCPEnd.varType)" /></td>';
 	tablehtml+='</tr>';
 
 	/**-------------------------------------**/
@@ -767,7 +799,7 @@ function BuildConfigTable(prefix,title){
 	/**-------------------------------------**/
 	/* DHCP LEASE */
 	tablehtml+='<tr>';
-	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(5);">'+theDHCPLeaseTime.label+'</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="6" class="input_6_table" name="yazfi_'+prefix+'1_'+theDHCPLeaseTime.varName+'" value="86400" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,theDHCPLeaseTime.varType)" /></td>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(5);">'+theDHCPLeaseTime.uiLabel+'</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="6" class="input_6_table" name="yazfi_'+prefix+'1_'+theDHCPLeaseTime.varName+'" value="86400" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,theDHCPLeaseTime.varType)" /></td>';
 	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="6" class="input_6_table" name="yazfi_'+prefix+'2_'+theDHCPLeaseTime.varName+'" value="86400" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,theDHCPLeaseTime.varType)" /></td>';
 	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="6" class="input_6_table" name="yazfi_'+prefix+'3_'+theDHCPLeaseTime.varName+'" value="86400" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,theDHCPLeaseTime.varType)" /></td>';
 	tablehtml+='</tr>';
