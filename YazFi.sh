@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: Martinski W. [2022-Dec-02].
+# Last Modified: Martinski W. [2022-Dec-05].
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -38,8 +38,8 @@
 ### Start of script variables ###
 readonly SCRIPT_NAME="YazFi"
 readonly SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
-readonly YAZFI_VERSION="v4.4.3_Alpha_1"
-readonly SCRIPT_VERSION="v4.4.3_Alpha_1"
+readonly YAZFI_VERSION="v4.4.3_Alpha_2"
+readonly SCRIPT_VERSION="v4.4.3_Alpha_2"
 SCRIPT_BRANCH="master"
 SCRIPT_REPO="https://jackyaz.io/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
@@ -810,8 +810,8 @@ Validate_DHCP(){
 	elif ! Validate_Number "$1" "$3"; then
 		return 1
 	fi
-	
-	if [ "$2" -gt "$3" ] || { [ "$2" -lt 2 ] || [ "$2" -gt 254 ]; } || { [ "$3" -lt 2 ] || [ "$3" -gt 254 ]; }; then
+
+	if [ "$2" -gt "$3" ] || { [ "$2" -lt 2 ] || [ "$2" -gt 253 ]; } || { [ "$3" -lt 3 ] || [ "$3" -gt 254 ]; }; then
 		Print_Output false "$1 - $2 to $3 - both numbers must be between 2 and 254, $2 must be less than $3" "$ERR"
 		return 1
 	else
