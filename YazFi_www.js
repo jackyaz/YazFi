@@ -774,7 +774,7 @@ function BuildConfigTable(prefix,title){
 	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="15" class="input_20_table" name="yazfi_'+prefix+'3_ipaddr" value="0.0.0.0" onkeypress="return validator.isIPAddr(this,event)" onblur="Validate_IP(this,\'IP\')" data-lpignore="true" /></td>';
 	tablehtml+='</tr>';
 
-    /**----------------------------------------**/
+	/**----------------------------------------**/
 	/** Modified by Martinski W. [2022-Dec-05] **/
 	/**----------------------------------------**/
 	/* DHCP START */
@@ -784,7 +784,7 @@ function BuildConfigTable(prefix,title){
 	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'3_'+theDHCPStart.varName+'" value="2" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,theDHCPStart.varType)" /></td>';
 	tablehtml+='</tr>';
 
-    /**----------------------------------------**/
+	/**----------------------------------------**/
 	/** Modified by Martinski W. [2022-Dec-05] **/
 	/**----------------------------------------**/
 	/* DHCP END */
