@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: Martinski W. [2022-Dec-05].
+# Last Modified: Martinski W. [2022-Dec-07].
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -38,8 +38,8 @@
 ### Start of script variables ###
 readonly SCRIPT_NAME="YazFi"
 readonly SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
-readonly YAZFI_VERSION="v4.4.3_Alpha_2"
-readonly SCRIPT_VERSION="v4.4.3_Alpha_2"
+readonly YAZFI_VERSION="v4.4.3_Alpha_3"
+readonly SCRIPT_VERSION="v4.4.3_Alpha_3"
 SCRIPT_BRANCH="develop"
 SCRIPT_REPO="https://jackyaz.io/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
@@ -904,9 +904,9 @@ Conf_FixBlanks(){
 	fi
 
 	##-------------------------------------##
-	## Added by Martinski W. [2022-Apr-07] ##
+	## Added by Martinski W. [2022-Dec-07] ##
 	##-------------------------------------##
-	RetCode=0
+	. "$SCRIPT_CONF"
 
 	cp -a "$SCRIPT_CONF" "$SCRIPT_CONF.bak"
 	
@@ -938,14 +938,19 @@ Conf_FixBlanks(){
 		fi
 
 		##-------------------------------------##
-		## Added by Martinski W. [2022-Nov-30] ##
+		## Added by Martinski W. [2022-Dec-07] ##
 		##-------------------------------------##
 		DHCPLease_withGUISupport=1
-		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_DHCPLEASE")" ]; then
+		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_DHCPLEASE")" ] || \
+		   [ -z "$(grep "${IFACETMPBLANK}_DHCPLEASE=" "$SCRIPT_CONF")" ]
+		then
 		    DHCP_LEASE_VAL="$(nvram get dhcp_lease)"
-		    if [ -n "$(grep "${IFACETMPBLANK}_DHCPLEASE=" "$SCRIPT_CONF")" ]; then
+		    if [ -n "$(grep "${IFACETMPBLANK}_DHCPLEASE=" "$SCRIPT_CONF")" ]
+		    then
+		        OUTmsg="is blank"
 		        sed -i -e "s/${IFACETMPBLANK}_DHCPLEASE=/${IFACETMPBLANK}_DHCPLEASE=${DHCP_LEASE_VAL}/" "$SCRIPT_CONF"
 		    else
+		        OUTmsg="is not found"
 		        if [ "$DHCPLease_withGUISupport" -eq 0 ]
 		        then
 		            echo "${IFACETMPBLANK}_DHCPLEASE=${DHCP_LEASE_VAL}" >> "$SCRIPT_CONF"
@@ -954,8 +959,7 @@ Conf_FixBlanks(){
 		            sed -i "$((NUMLINE + 1)) i ${IFACETMPBLANK}_DHCPLEASE=${DHCP_LEASE_VAL}" "$SCRIPT_CONF"
 		        fi
 		    fi
-		    Print_Output false "${IFACETMPBLANK}_DHCPLEASE is blank, setting to $DHCP_LEASE_VAL seconds" "$WARN"
-		    RetCode=2
+		    Print_Output false "${IFACETMPBLANK}_DHCPLEASE ${OUTmsg}, setting to $DHCP_LEASE_VAL seconds" "$WARN"
 		fi
 
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_DNS1")" ]; then
@@ -1017,9 +1021,10 @@ Conf_FixBlanks(){
 	done
 
 	##-------------------------------------##
-	## Added by Martinski W. [2022-Apr-07] ##
+	## Added by Martinski W. [2022-Dec-07] ##
 	##-------------------------------------##
-	return $RetCode
+	if ! diff -q "$SCRIPT_CONF" "$SCRIPT_CONF.bak" >/dev/null 2>&1
+	then . "$SCRIPT_CONF" ; fi
 }
 
 Conf_Validate(){
@@ -1027,12 +1032,7 @@ Conf_Validate(){
 	NETWORKS_ENABLED="false"
 	
 	Conf_FixBlanks
-
-	##-------------------------------------##
-	## Added by Martinski W. [2022-Apr-07] ##
-	##-------------------------------------##
-	[ $? -eq 2 ] && . "$SCRIPT_CONF"
-
+	
 	for IFACE in $IFACELIST_FULL; do
 		IFACETMP="$(Get_Iface_Var "$IFACE")"
 		IPADDRTMP=""
