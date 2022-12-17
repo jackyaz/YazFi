@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: Martinski W. [2022-Dec-07].
+# Last Modified: Martinski W. [2022-Dec-16].
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -804,6 +804,9 @@ Validate_Number(){
 	fi
 }
 
+##----------------------------------------##
+## Modified by Martinski W. [2022-Dec-05] ##
+##----------------------------------------##
 Validate_DHCP(){
 	if ! Validate_Number "$1" "$2"; then
 		return 1
@@ -824,14 +827,14 @@ Validate_DHCP(){
 ##-------------------------------------##
 Validate_DHCP_LeaseTime(){
 	if ! Validate_Number "$1" "$2"; then
-	    return 1
+		return 1
 	fi
 
 	if [ "$2" -lt "$MinDHCPLeaseTime" ] || [ "$2" -gt "$MaxDHCPLeaseTime" ]; then
-	    Print_Output false "$1 - $2 - must be between $MinDHCPLeaseTime and $MaxDHCPLeaseTime in seconds." "$ERR"
-	    return 1
+		Print_Output false "$1 - $2 - must be between $MinDHCPLeaseTime and $MaxDHCPLeaseTime in seconds." "$ERR"
+		return 1
 	else
-	    return 0
+		return 0
 	fi
 }
 
@@ -940,26 +943,20 @@ Conf_FixBlanks(){
 		##-------------------------------------##
 		## Added by Martinski W. [2022-Dec-07] ##
 		##-------------------------------------##
-		DHCPLease_withGUISupport=1
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_DHCPLEASE")" ] || \
 		   [ -z "$(grep "${IFACETMPBLANK}_DHCPLEASE=" "$SCRIPT_CONF")" ]
 		then
-		    DHCP_LEASE_VAL="$(nvram get dhcp_lease)"
-		    if [ -n "$(grep "${IFACETMPBLANK}_DHCPLEASE=" "$SCRIPT_CONF")" ]
-		    then
-		        OUTmsg="is blank"
-		        sed -i -e "s/${IFACETMPBLANK}_DHCPLEASE=/${IFACETMPBLANK}_DHCPLEASE=${DHCP_LEASE_VAL}/" "$SCRIPT_CONF"
-		    else
-		        OUTmsg="is not found"
-		        if [ "$DHCPLease_withGUISupport" -eq 0 ]
-		        then
-		            echo "${IFACETMPBLANK}_DHCPLEASE=${DHCP_LEASE_VAL}" >> "$SCRIPT_CONF"
-		        else
-		            NUMLINE="$(grep -n "${IFACETMPBLANK}_DHCPEND=" "$SCRIPT_CONF" | awk -F ':' '{print $1}')"
-		            sed -i "$((NUMLINE + 1)) i ${IFACETMPBLANK}_DHCPLEASE=${DHCP_LEASE_VAL}" "$SCRIPT_CONF"
-		        fi
-		    fi
-		    Print_Output false "${IFACETMPBLANK}_DHCPLEASE ${OUTmsg}, setting to $DHCP_LEASE_VAL seconds" "$WARN"
+			DHCP_LEASE_VAL="$(nvram get dhcp_lease)"
+			if [ -n "$(grep "${IFACETMPBLANK}_DHCPLEASE=" "$SCRIPT_CONF")" ]
+			then
+				OUTmsg="is blank"
+				sed -i -e "s/${IFACETMPBLANK}_DHCPLEASE=/${IFACETMPBLANK}_DHCPLEASE=${DHCP_LEASE_VAL}/" "$SCRIPT_CONF"
+			else
+				OUTmsg="is not found"
+				NUMLINE="$(grep -n "${IFACETMPBLANK}_DHCPEND=" "$SCRIPT_CONF" | awk -F ':' '{print $1}')"
+				sed -i "$((NUMLINE + 1)) i ${IFACETMPBLANK}_DHCPLEASE=${DHCP_LEASE_VAL}" "$SCRIPT_CONF"
+			fi
+			Print_Output false "${IFACETMPBLANK}_DHCPLEASE ${OUTmsg}, setting to $DHCP_LEASE_VAL seconds" "$WARN"
 		fi
 
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_DNS1")" ]; then
@@ -1090,9 +1087,9 @@ Conf_Validate(){
 					##-------------------------------------##
 					if [ -n "$(eval echo '$'"${IFACETMP}_DHCPLEASE")" ]
 					then
-					    if ! Validate_DHCP_LeaseTime "${IFACETMP}_DHCPLEASE" "$(eval echo '$'"${IFACETMP}_DHCPLEASE")"; then
-					        IFACE_PASS="false"
-					    fi
+						if ! Validate_DHCP_LeaseTime "${IFACETMP}_DHCPLEASE" "$(eval echo '$'"${IFACETMP}_DHCPLEASE")"; then
+							IFACE_PASS="false"
+						fi
 					fi
 
 					if ! Validate_TrueFalse "${IFACETMP}_FORCEDNS" "$(eval echo '$'"${IFACETMP}_FORCEDNS")"; then
@@ -1962,8 +1959,8 @@ DHCP_Conf(){
 			DHCP_LEASE_VAL="$(eval echo '$'"$(Get_Iface_Var "$2")_DHCPLEASE")"
 			if ! Validate_DHCP_LeaseTime "$(Get_Iface_Var "$2")_DHCPLEASE" "$DHCP_LEASE_VAL"
 			then
-			    DHCP_LEASE_VAL="$(nvram get dhcp_lease)"
-			    if ! Validate_Number "" "$DHCP_LEASE_VAL" silent ; then DHCP_LEASE_VAL=86400 ; fi
+				DHCP_LEASE_VAL="$(nvram get dhcp_lease)"
+				if ! Validate_Number "" "$DHCP_LEASE_VAL" silent ; then DHCP_LEASE_VAL=86400 ; fi
 			fi
 
 			##----------------------------------------##
@@ -2809,11 +2806,11 @@ Menu_Status(){
 					GUEST_ARPCOUNT="$(echo "$ARP_CACHE" | grep -ic "$GUEST_MACADDR")"
 					if [ $GUEST_ARPCOUNT -lt 2 ]
 					then
-					    GUEST_ARPENTRY="$(echo "$ARP_CACHE" | grep -i "$GUEST_MACADDR")"
-					    GUEST_ARPINFO="$(echo "$GUEST_ARPENTRY" | grep "$IFACE" | eval "$NOT_LANIP")"
+						GUEST_ARPENTRY="$(echo "$ARP_CACHE" | grep -i "$GUEST_MACADDR")"
+						GUEST_ARPINFO="$(echo "$GUEST_ARPENTRY" | grep "$IFACE" | eval "$NOT_LANIP")"
 					else
-					    GUEST_ARPENTRY="$(echo "$ARP_CACHE" | grep -i "$GUEST_MACADDR" | grep "$IFACE")"
-					    GUEST_ARPINFO="$(echo "$GUEST_ARPENTRY" | eval "$NOT_LANIP")"
+						GUEST_ARPENTRY="$(echo "$ARP_CACHE" | grep -i "$GUEST_MACADDR" | grep "$IFACE")"
+						GUEST_ARPINFO="$(echo "$GUEST_ARPENTRY" | eval "$NOT_LANIP")"
 					fi
 
 					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $1}')"
