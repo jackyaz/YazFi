@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: Martinski W. [2022-Dec-16].
+# Last Modified: Martinski W. [2022-Dec-18].
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -940,14 +940,14 @@ Conf_FixBlanks(){
 			Print_Output false "${IFACETMPBLANK}_DHCPEND is blank, setting to 254" "$WARN"
 		fi
 
-		##-------------------------------------##
-		## Added by Martinski W. [2022-Dec-07] ##
-		##-------------------------------------##
+		##----------------------------------------##
+		## Modified by Martinski W. [2022-Dec-18] ##
+		##----------------------------------------##
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_DHCPLEASE")" ] || \
-		   [ -z "$(grep "${IFACETMPBLANK}_DHCPLEASE=" "$SCRIPT_CONF")" ]
+		   ! grep -q "${IFACETMPBLANK}_DHCPLEASE=" "$SCRIPT_CONF"
 		then
 			DHCP_LEASE_VAL="$(nvram get dhcp_lease)"
-			if [ -n "$(grep "${IFACETMPBLANK}_DHCPLEASE=" "$SCRIPT_CONF")" ]
+			if grep -q "${IFACETMPBLANK}_DHCPLEASE=" "$SCRIPT_CONF"
 			then
 				OUTmsg="is blank"
 				sed -i -e "s/${IFACETMPBLANK}_DHCPLEASE=/${IFACETMPBLANK}_DHCPLEASE=${DHCP_LEASE_VAL}/" "$SCRIPT_CONF"
