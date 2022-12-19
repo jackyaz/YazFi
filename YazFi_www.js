@@ -374,7 +374,7 @@ function Validate_OneTwoWay(forminput){
 }
 
 /**----------------------------------------**/
-/** Modified by Martinski W. [2022-Dec-05] **/
+/** Modified by Martinski W. [2022-Dec-18] **/
 /**----------------------------------------**/
 function Validate_All(){
 	var validationfailed = false;
@@ -399,10 +399,10 @@ function Validate_All(){
 			guestnetwork = '2.4GHz Guest Network '+prefix.replace('wl0','');
 		}
 		else if(prefix.startsWith('wl1')){
-			guestnetwork = '5GHz Guest Network '+prefix.replace('wl0','');
+			guestnetwork = '5GHz Guest Network '+prefix.replace('wl1','');
 		}
 		else if(prefix.startsWith('wl2')){
-			guestnetwork = '5GHz-2 Guest Network '+prefix.replace('wl0','');
+			guestnetwork = '5GHz-2 Guest Network '+prefix.replace('wl2','');
 		}
 		failedfieldsstring += guestnetwork+' - '+failedfields[i][0].parent().parent().children().children()[0].innerHTML+' - '+failedfields[i][1]+'\n';
 	}
