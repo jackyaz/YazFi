@@ -12,6 +12,7 @@
 #                                                                  #
 ####################################################################
 ######                    2.4 GHz Networks                    ######
+###### (5GHz Network for Quad-Band routers, e.g. GT-AXE16000) ######
 ####################################################################
 ######                 Guest Network 1 (wl0.1)                 #####
 ####################################################################
@@ -65,6 +66,7 @@ wl03_ONEWAYTOGUEST=false
 wl03_CLIENTISOLATION=false
 ####################################################################
 ######                     5 GHz Networks                     ######
+##### (5GHz-2 Network for Quad-Band routers, e.g. GT-AXE16000) #####
 ####################################################################
 ######                 Guest Network 1 (wl1.1)                 #####
 ####################################################################
@@ -112,13 +114,15 @@ wl13_DNS2=8.8.4.4
 wl13_FORCEDNS=false
 wl13_ALLOWINTERNET=true
 wl13_REDIRECTALLTOVPN=false
-wl13_VPNCLIENTNUMBER=2
+wl13_VPNCLIENTNUMBER=1
 wl13_TWOWAYTOGUEST=false
 wl13_ONEWAYTOGUEST=false
 wl13_CLIENTISOLATION=false
 ####################################################################
 ######                    5 GHz - 2 Networks                  ######
-######     (for those with 2 5GHz radios, e.g. RT-AC5300)     ######
+######     (For those with 2 5GHz radios, e.g. RT-AC5300)     ######
+###### (6GHz Network for Tri-Band routers, e.g. GT-AXE11000,  ######
+######      and for Quad-Band routers, e.g. GT-AXE16000)      ######
 ####################################################################
 ######                 Guest Network 1 (wl2.1)                 #####
 ####################################################################
@@ -170,4 +174,58 @@ wl23_VPNCLIENTNUMBER=1
 wl23_TWOWAYTOGUEST=false
 wl23_ONEWAYTOGUEST=false
 wl23_CLIENTISOLATION=false
+####################################################################
+######                    2.4 GHz Networks                    ######
+######        (For Quad-Band routers, e.g. GT-AXE16000)       ######
+####################################################################
+######                 Guest Network 1 (wl3.1)                 #####
+####################################################################
+wl31_ENABLED=false
+wl31_IPADDR=192.168.11.0
+wl31_DHCPSTART=2
+wl31_DHCPEND=254
+wl31_DHCPLEASE=86400
+wl31_DNS1=8.8.8.8
+wl31_DNS2=8.8.4.4
+wl31_FORCEDNS=false
+wl31_ALLOWINTERNET=true
+wl31_REDIRECTALLTOVPN=false
+wl31_VPNCLIENTNUMBER=1
+wl31_TWOWAYTOGUEST=false
+wl31_ONEWAYTOGUEST=false
+wl31_CLIENTISOLATION=false
+####################################################################
+######                 Guest Network 2 (wl3.2)                 #####
+####################################################################
+wl32_ENABLED=false
+wl32_IPADDR=192.168.12.0
+wl32_DHCPSTART=2
+wl32_DHCPEND=254
+wl32_DHCPLEASE=86400
+wl32_DNS1=8.8.8.8
+wl32_DNS2=8.8.4.4
+wl32_FORCEDNS=false
+wl32_ALLOWINTERNET=true
+wl32_REDIRECTALLTOVPN=false
+wl32_VPNCLIENTNUMBER=1
+wl32_TWOWAYTOGUEST=false
+wl32_ONEWAYTOGUEST=false
+wl32_CLIENTISOLATION=false
+####################################################################
+######                 Guest Network 3 (wl3.3)                 #####
+####################################################################
+wl33_ENABLED=false
+wl33_IPADDR=192.168.13.0
+wl33_DHCPSTART=2
+wl33_DHCPEND=254
+wl33_DHCPLEASE=86400
+wl33_DNS1=8.8.8.8
+wl33_DNS2=8.8.4.4
+wl33_FORCEDNS=false
+wl33_ALLOWINTERNET=true
+wl33_REDIRECTALLTOVPN=false
+wl33_VPNCLIENTNUMBER=1
+wl33_TWOWAYTOGUEST=false
+wl33_ONEWAYTOGUEST=false
+wl33_CLIENTISOLATION=false
 ####################################################################

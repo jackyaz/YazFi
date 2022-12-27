@@ -1,3 +1,6 @@
+/**----------------------------------------**/
+/** Modified by Martinski W. [2022-Dec-23] **/
+/**----------------------------------------**/
 var clientswl01 = []; var sortnamewl01 = 'Hostname'; var sortdirwl01 = 'asc';
 var clientswl02 = []; var sortnamewl02 = 'Hostname'; var sortdirwl02 = 'asc';
 var clientdwl03 = []; var sortnamewl03 = 'Hostname'; var sortdirwl03 = 'asc';
@@ -7,14 +10,17 @@ var clientswl13 = []; var sortnamewl13 = 'Hostname'; var sortdirwl13 = 'asc';
 var clientswl21 = []; var sortnamewl21 = 'Hostname'; var sortdirwl21 = 'asc';
 var clientswl22 = []; var sortnamewl22 = 'Hostname'; var sortdirwl22 = 'asc';
 var clientswl23 = []; var sortnamewl23 = 'Hostname'; var sortdirwl23 = 'asc';
+var clientswl31 = []; var sortnamewl31 = 'Hostname'; var sortdirwl31 = 'asc';
+var clientswl32 = []; var sortnamewl32 = 'Hostname'; var sortdirwl32 = 'asc';
+var clientswl33 = []; var sortnamewl33 = 'Hostname'; var sortdirwl33 = 'asc';
+
 var tout;
-var bands = 0;
+var numOfBands = 0;
 var failedfields = [];
 
-/**-------------------------------------**/
-/** Added by Martinski W. [2022-Dec-05] **/
-/**-------------------------------------**/
-const numEntriesPerGN=14;
+/**------------------------------------**/
+/** Added by Martinski W. [2022-Dec-05 **/
+/**------------------------------------**/
 const theDHCPLeaseTime=
 {
    uiLabel: 'DHCP Lease',
@@ -52,6 +58,132 @@ const theDHCPEnd=
    { return (`Value is not between ${this.minVal} and ${this.maxVal}`); },
    hintMsg: function()
    { return (`End of DHCP pool (${this.minVal}-${this.maxVal})`); }
+};
+
+/**-------------------------------------**/
+/** Added by Martinski W. [2022-Dec-23] **/
+/**-------------------------------------**/
+const listOfGUIFieldNames=
+[ 'enabled', 'ipaddr', theDHCPStart.varName, theDHCPEnd.varName, theDHCPLeaseTime.varName, 'dns1', 'dns2', 'vpnclientnumber', 'allowinternet', 'forcedns', 'redirectalltovpn', 'onewaytoguest', 'twowaytoguest', 'clientisolation' ];
+
+const band_24GHz='24G';
+const band_5GHz_1='5G_1';
+const band_5GHz_2='5G_2';
+const band_6GHz_1='6G_1';
+
+const theGuestNet=
+{
+   numOfGNsPerBand: 3,
+   listOfBandIFtags:
+   [
+     ['wl01', 'wl02', 'wl03'],
+     ['wl11', 'wl12', 'wl13'],
+     ['wl21', 'wl22', 'wl23'],
+     ['wl31', 'wl32', 'wl33']
+   ],
+   wifiBands:
+   [
+      {
+         uiLabel: '2.4GHz',
+         bandType: band_24GHz,
+         ifPrefix: function()
+         {
+            if (productid == 'GT-AXE16000')
+            return ('wl3');
+            else
+            return ('wl0');
+         },
+         supported: function()
+         {
+            if (typeof wl_info == 'undefined' || wl_info == null)
+            return (true);
+            else
+            return (wl_info.band2g_support);
+         }
+      },
+      {
+         uiLabel: '5GHz',
+         bandType: band_5GHz_1,
+         ifPrefix: function()
+         {
+            if (productid == 'GT-AXE16000')
+            return ('wl0');
+            else
+            return ('wl1');
+         },
+         supported: function()
+         {
+            if (typeof wl_info == 'undefined' || wl_info == null)
+            return (true);
+            else
+            return (wl_info.band5g_support);
+         }
+      },
+      {
+         uiLabel: '5GHz-2',
+         bandType: band_5GHz_2,
+         ifPrefix: function()
+         {
+            if (productid == 'GT-AXE16000')
+            return ('wl1');
+            else if (wl_info.band5g_2_support)
+            return ('wl2');
+            else
+            return (null);
+         },
+         supported: function()
+         { return (wl_info.band5g_2_support); }
+      },
+      {
+         uiLabel: '6GHz',
+         bandType: band_6GHz_1,
+         ifPrefix: function()
+         {
+            if (productid == 'GT-AXE16000' || wl_info.band6g_support)
+            return ('wl2');
+            else
+            return (null);
+         },
+         supported: function()
+         { return (wl_info.band6g_support); }
+      }
+   ],
+
+   IFacePrefix: function(theBandType)
+   {
+      let theIFprefix='';
+      for (var cnt=0; cnt < this.wifiBands.length; cnt++)
+      {
+         if (this.wifiBands[cnt].supported() &&
+             theBandType == this.wifiBands[cnt].bandType)
+         { theIFprefix=this.wifiBands[cnt].ifPrefix(); break; }
+      }
+      return (theIFprefix);
+   },
+
+   IFaceUILabel: function(theBandType)
+   {
+      let theUILabel='';
+      for (var cnt=0; cnt < this.wifiBands.length; cnt++)
+      {
+         if (this.wifiBands[cnt].supported() &&
+             theBandType == this.wifiBands[cnt].bandType)
+         { theUILabel=this.wifiBands[cnt].uiLabel; break; }
+      }
+      return (theUILabel);
+   },
+
+   UILabelFromPrefix: function(theIFnamePrefix)
+   {
+      let theUILabel='';
+      for (var cnt=0; cnt < this.wifiBands.length; cnt++)
+      {
+         if (this.wifiBands[cnt].supported() &&
+             theIFnamePrefix == this.wifiBands[cnt].ifPrefix())
+         { theUILabel=this.wifiBands[cnt].uiLabel; break; }
+      }
+      return (theUILabel);
+   }
 };
 
 var $j = jQuery.noConflict();
@@ -191,6 +323,9 @@ function SubOptionsEnableDisable(forminput,optiontype){
 	}
 }
 
+/**----------------------------------------**/
+/** Modified by Martinski W. [2022-Dec-23] **/
+/**----------------------------------------**/
 function Validate_IP(forminput,iptype){
 	var inputvalue = forminput.value;
 	var inputname = forminput.name;
@@ -207,8 +342,8 @@ function Validate_IP(forminput,iptype){
 			if (/(^10\.)|(^172\.1[6-9]\.)|(^172\.2[0-9]\.)|(^172\.3[0-1]\.)|(^192\.168\.)/.test(fixedip)){
 				if(! jy_checkIPConflict('LAN',fixedip,'255.255.255.0',document.form.lan_ipaddr.value,document.form.lan_netmask.value).state){
 					matchfound=false;
-					for(var i = 0; i < bands; i++){
-						for(var i2 = 1; i2 <= 3; i2++){
+					for(var i = 0; i < numOfBands; i++){
+						for(var i2 = 1; i2 <= theGuestNet.numOfGNsPerBand; i2++){
 							if('yazfi_wl'+i.toString()+i2.toString()+'_ipaddr' != inputname){
 								if(eval('document.form.yazfi_wl'+i.toString()+i2.toString()+'_ipaddr.value') == fixedip){
 									matchfound=true;
@@ -374,13 +509,13 @@ function Validate_OneTwoWay(forminput){
 }
 
 /**----------------------------------------**/
-/** Modified by Martinski W. [2022-Dec-18] **/
+/** Modified by Martinski W. [2022-Dec-23] **/
 /**----------------------------------------**/
 function Validate_All(){
 	var validationfailed = false;
 	failedfields = [];
-	for(var i=0; i < bands; i++){
-		for(var i2=1; i2 <= 3; i2++){
+	for(var i=0; i < numOfBands; i++){
+		for(var i2=1; i2 <= theGuestNet.numOfGNsPerBand; i2++){
 			if(! Validate_IP(eval('document.form.yazfi_wl'+i+i2+'_ipaddr'),'IP')){validationfailed=true;}
 			if(! Validate_DHCP(eval('document.form.yazfi_wl'+i+i2+'_'+theDHCPStart.varName),theDHCPStart.varType)){validationfailed=true;}
 			if(! Validate_DHCP(eval('document.form.yazfi_wl'+i+i2+'_'+theDHCPEnd.varName),theDHCPEnd.varType)){validationfailed=true;}
@@ -392,18 +527,14 @@ function Validate_All(){
 	}
 	
 	var failedfieldsstring = '';
-	for(var i=0; i < failedfields.length; i++){
+	for(var i=0; i < failedfields.length; i++)
+	{
 		var guestnework = '';
 		var prefix = failedfields[i][0].attr('name').split('_')[1];
-		if(prefix.startsWith('wl0')){
-			guestnetwork = '2.4GHz Guest Network '+prefix.replace('wl0','');
-		}
-		else if(prefix.startsWith('wl1')){
-			guestnetwork = '5GHz Guest Network '+prefix.replace('wl1','');
-		}
-		else if(prefix.startsWith('wl2')){
-			guestnetwork = '5GHz-2 Guest Network '+prefix.replace('wl2','');
-		}
+		let theIFprefix=prefix.substring(0,3);
+		let theIFnumber=prefix.substring(3,4);
+		guestnetwork = theGuestNet.UILabelFromPrefix(theIFprefix)+' Guest Network '+theIFnumber;
+
 		failedfieldsstring += guestnetwork+' - '+failedfields[i][0].parent().parent().children().children()[0].innerHTML+' - '+failedfields[i][1]+'\n';
 	}
 	
@@ -416,6 +547,9 @@ function Validate_All(){
 	}
 }
 
+/**----------------------------------------**/
+/** Modified by Martinski W. [2022-Dec-23] **/
+/**----------------------------------------**/
 function get_conf_file(){
 	$j.ajax({
 		url: '/ext/YazFi/config.htm',
@@ -427,48 +561,112 @@ function get_conf_file(){
 			var settings = data.split('\n');
 			settings.reverse();
 			settings = settings.filter(Boolean);
-			var settingcount=settings.length;
+			let linesCount=settings.length;
+			let settingsCount=0;
+			let ifaceVarPrefix, ifacePrefix;
+			let showIFprefix, theIFprefixTag;
+			let ifaceUILabel, guestNetUILabel;
 			window['yazfi_settings'] = [];
-			for(var i = 0; i < settingcount; i++){
+
+			for(var i = 0; i < linesCount; i++)
+			{
+				ifaceVarPrefix=settings[i].match(/^wl[0-3][1-3]_/);
 				var commentstart = settings[i].indexOf('#');
-				if (commentstart != -1){
-					continue;
-				}
+				if (commentstart != -1 || ifaceVarPrefix == null) {continue;}
+				settingsCount+=1;
 				var setting=settings[i].split('=');
 				window['yazfi_settings'].unshift(setting);
 			}
-			if(typeof wl_info == 'undefined' || wl_info == null){
-				bands = 2;
-				$j('#table_config').append(BuildConfigTable('wl0','2.4GHz Guest Networks'));
+
+			if(typeof wl_info == 'undefined' || wl_info == null)
+			{
+				numOfBands = 2;
+
+				ifacePrefix=theGuestNet.IFacePrefix (band_24GHz);
+				ifaceUILabel=theGuestNet.IFaceUILabel (band_24GHz);
+				guestNetUILabel=`${ifaceUILabel} Guest Networks`;
+
+				$j('#table_config').append(BuildConfigTable(ifacePrefix, guestNetUILabel));
 				$j('#table_config').append('<tr><td style="padding:0px;height:10px;"></td></tr>');
-				$j('#table_config').append(BuildConfigTable('wl1','5GHz Guest Networks'));
+
+				ifacePrefix=theGuestNet.IFacePrefix (band_5GHz_1);
+				ifaceUILabel=theGuestNet.IFaceUILabel (band_5GHz_1);
+				guestNetUILabel=`${ifaceUILabel} Guest Networks`;
+
+				$j('#table_config').append(BuildConfigTable(ifacePrefix, guestNetUILabel));
 			}
-			else{
-				if(wl_info.band2g_support){
-					$j('#table_config').append(BuildConfigTable('wl0','2.4GHz Guest Networks'));
-					bands = bands+1;
+			else
+			{
+				showIFprefix=wl_info.band6g_support;
+				if(wl_info.band2g_support)
+				{
+					theIFprefixTag='';
+					ifacePrefix=theGuestNet.IFacePrefix (band_24GHz);
+					ifaceUILabel=theGuestNet.IFaceUILabel (band_24GHz);
+					if (showIFprefix) theIFprefixTag=` [${ifacePrefix}]`;
+					guestNetUILabel=`${ifaceUILabel}${theIFprefixTag} Guest Networks`;
+
+					$j('#table_config').append(BuildConfigTable(ifacePrefix, guestNetUILabel));
+					numOfBands = numOfBands+1;
 				}
-				if(wl_info.band5g_support){
+				if(wl_info.band5g_support)
+				{
+					theIFprefixTag='';
+					ifacePrefix=theGuestNet.IFacePrefix (band_5GHz_1);
+					ifaceUILabel=theGuestNet.IFaceUILabel (band_5GHz_1);
+					if (showIFprefix) theIFprefixTag=` [${ifacePrefix}]`;
+					guestNetUILabel=`${ifaceUILabel}${theIFprefixTag} Guest Networks`;
+
 					$j('#table_config').append('<tr><td style="padding:0px;height:10px;"></td></tr>');
-					$j('#table_config').append(BuildConfigTable('wl1','5GHz Guest Networks'));
-					bands = bands+1;
+					$j('#table_config').append(BuildConfigTable(ifacePrefix, guestNetUILabel));
+					numOfBands = numOfBands+1;
 				}
-				if(wl_info.band5g_2_support){
+				if(wl_info.band5g_2_support)
+				{
+					theIFprefixTag='';
+					ifacePrefix=theGuestNet.IFacePrefix (band_5GHz_2);
+					ifaceUILabel=theGuestNet.IFaceUILabel (band_5GHz_2);
+					if (showIFprefix) theIFprefixTag=` [${ifacePrefix}]`;
+					guestNetUILabel=`${ifaceUILabel}${theIFprefixTag} Guest Networks`;
+
 					$j('#table_config').append('<tr><td style="padding:0px;height:10px;"></td></tr>');
-					$j('#table_config').append(BuildConfigTable('wl2','5GHz-2 Guest Networks'));
-					bands = bands+1;
+					$j('#table_config').append(BuildConfigTable(ifacePrefix, guestNetUILabel));
+					numOfBands = numOfBands+1;
+				}
+				if(wl_info.band6g_support)
+				{
+					theIFprefixTag='';
+					ifacePrefix=theGuestNet.IFacePrefix (band_6GHz_1);
+					ifaceUILabel=theGuestNet.IFaceUILabel (band_6GHz_1);
+					if (showIFprefix) theIFprefixTag=` [${ifacePrefix}]`;
+					guestNetUILabel=`${ifaceUILabel}${theIFprefixTag} Guest Networks`;
+
+					$j('#table_config').append('<tr><td style="padding:0px;height:10px;"></td></tr>');
+					$j('#table_config').append(BuildConfigTable(ifacePrefix, guestNetUILabel));
+					numOfBands = numOfBands+1;
 				}
 			}
-			
+
 			$j('#table_config').append('<tr class="apply_gen" valign="top"><td style="background-color:rgb(77,89,93);border-top:0px;border-bottom:0px;height:5px;"></td></tr>');
 			var buttonshtml = '<tr class="apply_gen" valign="top" height="35px"><td style="background-color:rgb(77,89,93);border-top:0px;">';
 			buttonshtml += '<input name="button" type="button" class="button_gen" onclick="SaveConfig();" value="Apply"/></td></tr>';
 			$j('#table_config').append(buttonshtml);
-			
-			var settingcount = bands*numEntriesPerGN*3;
-			for(var i = 0; i < settingcount; i++){
+
+			for(var i = 0; i < settingsCount; i++)
+			{
 				var settingname = window['yazfi_settings'][i][0].toLowerCase();
 				var settingvalue = window['yazfi_settings'][i][1];
+				let varNameTags=settingname.split('_');
+				let supportedBand=false;
+				let supportedField=listOfGUIFieldNames.includes(varNameTags[1]);
+
+				for(var cnt = 0; cnt < numOfBands; cnt++)
+				{
+				   if (theGuestNet.listOfBandIFtags[cnt].includes(varNameTags[0]))
+				   { supportedBand=true; break; }
+				}
+				if (!supportedBand || !supportedField) {continue;}
+
 				eval('document.form.yazfi_'+settingname).value = settingvalue;
 				if(settingname.indexOf('forcedns') != -1) SubOptionsEnableDisable($j('#yazfi_'+settingname.replace('_forcedns','')+'_fdns_'+settingvalue)[0],'dns');
 				if(settingname.indexOf('redirectalltovpn') != -1) SubOptionsEnableDisable($j('#yazfi_'+settingname.replace('_redirectalltovpn','')+'_redir_'+settingvalue)[0],'vpn');
@@ -483,8 +681,8 @@ function get_conf_file(){
 				}
 			}
 			
-			for(var i = 0; i < bands; i++){
-				for(var i2 = 1; i2 <= 3; i2++){
+			for(var i = 0; i < numOfBands; i++){
+				for(var i2 = 1; i2 <= theGuestNet.numOfGNsPerBand; i2++){
 					if(eval('document.form.wl'+i+i2+'_bss_enabled').value == 0){
 						OptionsEnableDisable($j('#yazfi_wl'+i+i2+'_en_false')[0]);
 						$j('input[name=yazfi_wl'+i+i2+'_enabled]').prop('disabled',true);
@@ -495,6 +693,9 @@ function get_conf_file(){
 	});
 }
 
+/**----------------------------------------**/
+/** Modified by Martinski W. [2022-Dec-23] **/
+/**----------------------------------------**/
 function get_connected_clients_file(){
 	d3.csv('/ext/YazFi/connectedclients.htm').then(function(data){
 		if(data.length > 0){
@@ -509,8 +710,8 @@ function get_connected_clients_file(){
 			
 			$j('#table_connectedclients').empty();
 			
-			for(var i = 0; i < bands; i++){
-				for(var i2 = 1; i2 <= 3; i2++){
+			for(var i = 0; i < numOfBands; i++){
+				for(var i2 = 1; i2 <= theGuestNet.numOfGNsPerBand; i2++){
 					YazFiInterface = 'wl'+i.toString()+i2.toString();
 					window['clients'+YazFiInterface] = data.filter(function(item){
 						return item.INTERFACE.replace('.','') == YazFiInterface;
