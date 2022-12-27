@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: Martinski W. [2022-Dec-18].
+# Last Modified: Martinski W. [2022-Dec-26].
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -64,8 +64,12 @@ readonly CLEARFORMAT="\\e[0m"
 ### Start of router environment variables ###
 readonly LAN="$(nvram get lan_ipaddr)"
 [ -z "$(nvram get odmpid)" ] && ROUTER_MODEL=$(nvram get productid) || ROUTER_MODEL=$(nvram get odmpid)
-readonly IFACELIST_FULL="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
-IFACELIST="$(echo "$(nvram get wl0_vifnames) $(nvram get wl1_vifnames) $(nvram get wl2_vifnames)" | awk '{$1=$1;print}')"
+
+##----------------------------------------##
+## Modified by Martinski W. [2022-Dec-23] ##
+##----------------------------------------##
+readonly IFACELIST_FULL="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3 wl3.1 wl3.2 wl3.3"
+IFACELIST="$(echo "$(nvram get wl0_vifnames) $(nvram get wl1_vifnames) $(nvram get wl2_vifnames) $(nvram get wl3_vifnames)" | awk '{$1=$1;print}')"
 ### End of router environment variables ###
 
 ### Start of path variables ###
@@ -104,6 +108,31 @@ VPN_IP_LIST_NEW_5=""
 readonly MinDHCPLeaseTime=120
 readonly MaxDHCPLeaseTime=604800
 
+##-------------------------------------##
+## Added by Martinski W. [2022-Dec-23] ##
+##-------------------------------------##
+readonly SUPPORTstr="$(nvram get rc_support)"
+
+if echo "$SUPPORTstr" | grep -qw '2.4G'
+then Band_24G_Support=true
+else Band_24G_Support=false
+fi
+
+if echo "$SUPPORTstr" | grep -qw '5G'
+then Band_5G_1_Support=true
+else Band_5G_1_Support=false
+fi
+
+if echo "$SUPPORTstr" | grep -qw '5G-2'
+then Band_5G_2_support=true
+else Band_5G_2_support=false
+fi
+
+if echo "$SUPPORTstr" | grep -qw 'wifi6e'
+then Band_6G_1_Support=true
+else Band_6G_1_Support=false
+fi
+
 # $1 = print to syslog, $2 = message to print, $3 = log level
 Print_Output(){
 	if [ "$1" = "true" ]; then
@@ -135,24 +164,69 @@ Get_Iface_Var(){
 	echo "$1" | sed -e 's/\.//g'
 }
 
-Get_Guest_Name(){
-	if echo "$1" | grep -q "wl0"; then
-		echo "YazFi 2.4GHz $(echo "$1" | cut -f2 -d".")"
-	elif echo "$1" | grep -q "wl1"; then
-		echo "YazFi 5GHz $(echo "$1" | cut -f2 -d".")"
-	else
-		echo "YazFi 5GHz2 $(echo "$1" | cut -f2 -d".")"
-	fi
+##-------------------------------------##
+## Added by Martinski W. [2022-Dec-23] ##
+##-------------------------------------##
+GetIFaceUILabel()
+{
+	if [ $# -eq 0 ] || [ -z "$1" ] ; then echo "" ; fi
+
+	local theUILabel="*UNKNOWN*"
+	case "$1" in
+		wl0)
+		    if [ "$ROUTER_MODEL" = "GT-AXE16000" ] && "$Band_5G_1_Support"
+		    then theUILabel="5GHz"
+		    elif "$Band_24G_Support" ; then theUILabel="2.4GHz"
+		    fi
+		    ;;
+		wl1)
+		    if [ "$ROUTER_MODEL" = "GT-AXE16000" ] && "$Band_5G_2_support"
+		    then theUILabel="5GHz2"
+		    elif "$Band_5G_1_Support" ; then theUILabel="5GHz"
+		    fi
+		    ;;
+		wl2)
+		    if [ "$ROUTER_MODEL" = "GT-AXE16000" ] || "$Band_6G_1_Support"
+		    then theUILabel="6GHz"
+		    elif "$Band_5G_2_support" ; then theUILabel="5GHz2"
+		    fi
+		    ;;
+		wl3)
+		    if [ "$ROUTER_MODEL" = "GT-AXE16000" ] && "$Band_24G_Support"
+		    then theUILabel="2.4GHz"
+		    fi
+		    ;;
+	esac
+	echo "$theUILabel"
 }
 
-Get_Guest_Name_Old(){
-	if echo "$1" | grep -q "wl0"; then
-		echo "2.4GHz Guest $(echo "$1" | cut -f2 -d".")"
-	elif echo "$1" | grep -q "wl1"; then
-		echo "5GHz1 Guest $(echo "$1" | cut -f2 -d".")"
-	else
-		echo "5GHz2 Guest $(echo "$1" | cut -f2 -d".")"
-	fi
+##----------------------------------------##
+## Modified by Martinski W. [2022-Dec-23] ##
+##----------------------------------------##
+Get_Guest_Name()
+{
+	if [ $# -eq 0 ] || [ -z "$1" ] ; then echo "" ; fi
+	local theIFprefix="$(echo "$1" | cut -d '.' -f1)"
+	local theIFnumber="$(echo "$1" | cut -d '.' -f2)"
+	local theIFlabel="$(GetIFaceUILabel "$theIFprefix")"
+
+	echo "YazFi $theIFlabel $theIFnumber"
+}
+
+##----------------------------------------##
+## Modified by Martinski W. [2022-Dec-23] ##
+##----------------------------------------##
+Get_Guest_Name_Old()
+{
+	if [ $# -eq 0 ] || [ -z "$1" ] ; then echo "" ; fi
+	local theIFprefix="$(echo "$1" | cut -d '.' -f1)"
+	local theIFnumber="$(echo "$1" | cut -d '.' -f2)"
+	local theIFlabel="$(GetIFaceUILabel "$theIFprefix")"
+
+	if [ "$theIFlabel" = "5GHz" ]
+	then theIFlabel="5GHz1" ; fi
+
+	echo "$theIFlabel Guest $theIFnumber"
 }
 
 Set_WiFi_Passphrase(){
@@ -594,8 +668,11 @@ Update_Check(){
 	echo "$doupdate,$localver,$serverver"
 }
 
+##----------------------------------------##
+## Modified by Martinski W. [2022-Dec-26] ##
+##----------------------------------------##
 Update_Version(){
-	if [ -z "$1" ]; then
+	if [ $# -eq 0 ] || [ -z "$1" ]; then
 		updatecheckresult="$(Update_Check)"
 		isupdate="$(echo "$updatecheckresult" | cut -f1 -d',')"
 		localver="$(echo "$updatecheckresult" | cut -f2 -d',')"
@@ -621,7 +698,12 @@ Update_Version(){
 					
 					Update_File README.md
 					Update_File LICENSE
-					
+
+					##-------------------------------------##
+					## Added by Martinski W. [2022-Dec-26] ##
+					##-------------------------------------##
+					Update_File "$SCRIPT_CONF"
+
 					Download_File "$SCRIPT_REPO/update/$SCRIPT_NAME.sh" "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
 					chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
 					Set_Version_Custom_Settings local "$serverver"
@@ -655,6 +737,12 @@ Update_Version(){
 		fi
 		Update_File README.md
 		Update_File LICENSE
+
+		##-------------------------------------##
+		## Added by Martinski W. [2022-Dec-26] ##
+		##-------------------------------------##
+		Update_File "$SCRIPT_CONF"
+
 		Download_File "$SCRIPT_REPO/update/$SCRIPT_NAME.sh" "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
 		chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
 		Set_Version_Custom_Settings local "$serverver"
@@ -671,6 +759,9 @@ Update_Version(){
 	fi
 }
 
+##----------------------------------------##
+## Modified by Martinski W. [2022-Dec-26] ##
+##----------------------------------------##
 Update_File(){
 	if [ "$1" = "YazFi_www.asp" ]; then
 		tmpfile="/tmp/$1"
@@ -711,6 +802,19 @@ Update_File(){
 			Download_File "$SCRIPT_REPO/files/$1" "$SCRIPT_DIR/$1"
 		fi
 		rm -f "$tmpfile"
+	elif [ "$1" = "$SCRIPT_CONF" ]
+	then
+		if ! grep -q -E "^wl31_|^wl32_|^wl33_" "$SCRIPT_CONF"
+		then
+			if Conf_ADD_Download "$SCRIPT_CONF"
+			then
+				cat "${SCRIPT_CONF}.ADD.txt" >> "$SCRIPT_CONF"
+				cp -fp "$SCRIPT_CONF" "${SCRIPT_CONF}.bak"
+				rm -f "${SCRIPT_CONF}.ADD.txt"
+			else
+				Print_Output true "Could not update configuration file: $SCRIPT_CONF" "$ERR"
+			fi
+		fi
 	else
 		return 1
 	fi
@@ -941,7 +1045,7 @@ Conf_FixBlanks(){
 		fi
 
 		##----------------------------------------##
-		## Modified by Martinski W. [2022-Dec-18] ##
+		## Modified by Martinski W. [2022-Dec-23] ##
 		##----------------------------------------##
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_DHCPLEASE")" ] || \
 		   ! grep -q "${IFACETMPBLANK}_DHCPLEASE=" "$SCRIPT_CONF"
@@ -949,14 +1053,18 @@ Conf_FixBlanks(){
 			DHCP_LEASE_VAL="$(nvram get dhcp_lease)"
 			if grep -q "${IFACETMPBLANK}_DHCPLEASE=" "$SCRIPT_CONF"
 			then
-				OUTmsg="is blank"
+				OUTmsg="is blank, setting to $DHCP_LEASE_VAL seconds"
 				sed -i -e "s/${IFACETMPBLANK}_DHCPLEASE=/${IFACETMPBLANK}_DHCPLEASE=${DHCP_LEASE_VAL}/" "$SCRIPT_CONF"
 			else
-				OUTmsg="is not found"
+				OUTmsg="is not found."
 				NUMLINE="$(grep -n "${IFACETMPBLANK}_DHCPEND=" "$SCRIPT_CONF" | awk -F ':' '{print $1}')"
-				sed -i "$((NUMLINE + 1)) i ${IFACETMPBLANK}_DHCPLEASE=${DHCP_LEASE_VAL}" "$SCRIPT_CONF"
+				if [ -n "$NUMLINE" ]
+				then
+					OUTmsg="is not found, setting to $DHCP_LEASE_VAL seconds"
+					sed -i "$((NUMLINE + 1)) i ${IFACETMPBLANK}_DHCPLEASE=${DHCP_LEASE_VAL}" "$SCRIPT_CONF"
+				fi
 			fi
-			Print_Output false "${IFACETMPBLANK}_DHCPLEASE ${OUTmsg}, setting to $DHCP_LEASE_VAL seconds" "$WARN"
+			Print_Output false "${IFACETMPBLANK}_DHCPLEASE ${OUTmsg}" "$WARN"
 		fi
 
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_DNS1")" ]; then
@@ -1310,6 +1418,18 @@ Conf_Download(){
 	dos2unix "$1"
 	sleep 1
 	Clear_Lock
+}
+
+##-------------------------------------##
+## Added by Martinski W. [2022-Dec-26] ##
+##-------------------------------------##
+Conf_ADD_Download()
+{
+	config_ADD="${1}.ADD.txt"
+	/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/files/${SCRIPT_NAME}.config.ADD.txt" -o "$config_ADD"
+	chmod 0644 "$config_ADD"
+	dos2unix "$config_ADD"
+	[ -f "$config_ADD" ] && return 0 || return 1
 }
 
 Conf_Exists(){
