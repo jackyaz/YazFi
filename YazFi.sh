@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: Martinski W. [2022-Dec-26].
+# Last Modified: Martinski W. [2022-Dec-27].
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -171,7 +171,7 @@ GetIFaceUILabel()
 {
 	if [ $# -eq 0 ] || [ -z "$1" ] ; then echo "" ; fi
 
-	local theUILabel="*UNKNOWN*"
+	theUILabel="*UNKNOWN*"
 	case "$1" in
 		wl0)
 		    if [ "$ROUTER_MODEL" = "GT-AXE16000" ] && "$Band_5G_1_Support"
@@ -206,9 +206,9 @@ GetIFaceUILabel()
 Get_Guest_Name()
 {
 	if [ $# -eq 0 ] || [ -z "$1" ] ; then echo "" ; fi
-	local theIFprefix="$(echo "$1" | cut -d '.' -f1)"
-	local theIFnumber="$(echo "$1" | cut -d '.' -f2)"
-	local theIFlabel="$(GetIFaceUILabel "$theIFprefix")"
+	theIFprefix="$(echo "$1" | cut -d '.' -f1)"
+	theIFnumber="$(echo "$1" | cut -d '.' -f2)"
+	theIFlabel="$(GetIFaceUILabel "$theIFprefix")"
 
 	echo "YazFi $theIFlabel $theIFnumber"
 }
@@ -219,9 +219,9 @@ Get_Guest_Name()
 Get_Guest_Name_Old()
 {
 	if [ $# -eq 0 ] || [ -z "$1" ] ; then echo "" ; fi
-	local theIFprefix="$(echo "$1" | cut -d '.' -f1)"
-	local theIFnumber="$(echo "$1" | cut -d '.' -f2)"
-	local theIFlabel="$(GetIFaceUILabel "$theIFprefix")"
+	theIFprefix="$(echo "$1" | cut -d '.' -f1)"
+	theIFnumber="$(echo "$1" | cut -d '.' -f2)"
+	theIFlabel="$(GetIFaceUILabel "$theIFprefix")"
 
 	if [ "$theIFlabel" = "5GHz" ]
 	then theIFlabel="5GHz1" ; fi
