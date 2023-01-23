@@ -1,5 +1,5 @@
 /**----------------------------------------**/
-/** Modified by Martinski W. [2022-Dec-23] **/
+/** Modified by Martinski W. [2023-Jan-22] **/
 /**----------------------------------------**/
 var clientswl01 = []; var sortnamewl01 = 'Hostname'; var sortdirwl01 = 'asc';
 var clientswl02 = []; var sortnamewl02 = 'Hostname'; var sortdirwl02 = 'asc';
@@ -18,18 +18,77 @@ var tout;
 var numOfBands = 0;
 var failedfields = [];
 
-/**------------------------------------**/
-/** Added by Martinski W. [2022-Dec-05 **/
-/**------------------------------------**/
+/**----------------------------------------------**/
+/** Added/modified by Martinski W. [2023-Jan-22] **/
+/**----------------------------------------------**/
+/** The DHCP Lease Time values can be given in:  **/
+/** seconds, minutes, hours, days, or weeks.     **/
+/**----------------------------------------------**/
 const theDHCPLeaseTime=
 {
    uiLabel: 'DHCP Lease',
    varType: 'dhcpLEASE',
    varName: 'dhcplease',
-   minVal: 120,    minStr: '2 mins',
-   maxVal: 604800, maxStr: '7 days',
+   minVal: 120,     minStr: '2 minutes',
+   maxVal: 1209600, maxStr: '14 days',
+   ValidateLeaseValue: function(theValue)
+   {
+      let timeUnit, timeFactor, timeNumber, timeValue;
+
+      const valueFormat1 = /^[0-9]{1,7}$/;
+      const valueFormat2 = /^[0-9]{1,7}[smhdw]{1}$/;
+
+      if (valueFormat1.test(theValue))
+      {
+         timeUnit = 's';
+         timeNumber = theValue;
+      }
+      else if (valueFormat2.test(theValue))
+      {
+         let valLen = theValue.length;
+         timeUnit = theValue.substring ((valLen - 1), valLen);
+         timeNumber = theValue.substring (0, (valLen - 1));
+      }
+      else { return false; }
+
+      switch (timeUnit)
+      {
+         case 's': timeFactor=1; break;
+         case 'm': timeFactor=60; break;
+         case 'h': timeFactor=3600; break;
+         case 'd': timeFactor=86400; break;
+         case 'w': timeFactor=604800; break;
+      }
+
+      if (!valueFormat1.test(timeNumber)) { return false; }
+      timeValue=(timeNumber * timeFactor);
+
+      if (timeValue < this.minVal || timeValue > this.maxVal)
+      { return false; }
+      else
+      { return true; }
+   },
+   ValidateLeaseInput: function(obj, event)
+   {
+      const valueFormat = /^[0-9]{1,7}$/;
+      const keyPressed = (event.keyCode ? event.keyCode : event.which);
+      if (validator.isFunctionButton(event)) { return true; }
+      
+      if (keyPressed > 47 && keyPressed < 58 && 
+          (obj.value.length == 0 || obj.value.charAt(0) != '0' || keyPressed != 48))
+      { return true; }
+      else if (obj.value.length > 0 && obj.value.charAt(0) != '0' && valueFormat.test(obj.value) &&
+               (keyPressed == 115 || keyPressed == 109 || keyPressed == 104 || keyPressed == 100 || keyPressed == 119))
+      { return true; }
+      else if (event.metaKey &&
+               (keyPressed == 65 || keyPressed == 67 || keyPressed == 86 || keyPressed == 88 ||
+                keyPressed == 97 || keyPressed == 99 || keyPressed == 118 || keyPressed == 120))
+      { return true; }
+      else
+      { return false; }
+   },
    errorMsg: function()
-   { return (`Value is not between ${this.minVal} and ${this.maxVal} seconds.`); },
+   { return (`Value is not between ${this.minVal} and ${this.maxVal} seconds (${this.minStr} to ${this.maxStr}).`); },
    hintMsg: function()
    { return (`DHCP Lease Time in seconds: ${this.minVal} (${this.minStr}) to ${this.maxVal} (${this.maxStr}).`); }
 };
@@ -403,9 +462,9 @@ function Validate_IP(forminput,iptype){
 	}
 }
 
-/**----------------------------------------**/
-/** Modified by Martinski W. [2022-Dec-05] **/
-/**----------------------------------------**/
+/**----------------------------------------------**/
+/** Added/modified by Martinski W. [2023-Jan-22] **/
+/**----------------------------------------------**/
 function Validate_DHCP(forminput,dhcpType){
 	var inputname = forminput.name;
 	var inputvalue = forminput.value*1;
@@ -457,7 +516,7 @@ function Validate_DHCP(forminput,dhcpType){
 		}
 	}
 	else if(dhcpType == theDHCPLeaseTime.varType){
-		if(inputvalue < theDHCPLeaseTime.minVal || inputvalue > theDHCPLeaseTime.maxVal){
+		if (!theDHCPLeaseTime.ValidateLeaseValue (forminput.value)){
 			$j(forminput).addClass('invalid');
 			failedfields.push([$j(forminput),theDHCPLeaseTime.errorMsg()]);
 			$j(forminput).on('mouseover',function(){return overlib(theDHCPLeaseTime.errorMsg(),0,0);});
@@ -995,14 +1054,14 @@ function BuildConfigTable(prefix,title){
 	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="3" class="input_6_table" name="yazfi_'+prefix+'3_'+theDHCPEnd.varName+'" value="254" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,theDHCPEnd.varType)" /></td>';
 	tablehtml+='</tr>';
 
-	/**-------------------------------------**/
-	/** Added by Martinski W. [2022-Dec-02] **/
-	/**-------------------------------------**/
+	/**----------------------------------------------**/
+	/** Added/modified by Martinski W. [2023-Jan-22] **/
+	/**----------------------------------------------**/
 	/* DHCP LEASE */
 	tablehtml+='<tr>';
-	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(5);">'+theDHCPLeaseTime.uiLabel+'</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="6" class="input_6_table" name="yazfi_'+prefix+'1_'+theDHCPLeaseTime.varName+'" value="86400" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,theDHCPLeaseTime.varType)" /></td>';
-	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="6" class="input_6_table" name="yazfi_'+prefix+'2_'+theDHCPLeaseTime.varName+'" value="86400" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,theDHCPLeaseTime.varType)" /></td>';
-	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="6" class="input_6_table" name="yazfi_'+prefix+'3_'+theDHCPLeaseTime.varName+'" value="86400" onkeypress="return validator.isNumber(this,event)" onblur="Validate_DHCP(this,theDHCPLeaseTime.varType)" /></td>';
+	tablehtml+='<td class="settingname"><a class="hintstyle" href="javascript:void(0);" onclick="YazHint(5);">'+theDHCPLeaseTime.uiLabel+'</a></td><td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="8" class="input_12_table" name="yazfi_'+prefix+'1_'+theDHCPLeaseTime.varName+'" value="86400" onkeypress="return theDHCPLeaseTime.ValidateLeaseInput(this,event)" onblur="Validate_DHCP(this,theDHCPLeaseTime.varType)" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="8" class="input_12_table" name="yazfi_'+prefix+'2_'+theDHCPLeaseTime.varName+'" value="86400" onkeypress="return theDHCPLeaseTime.ValidateLeaseInput(this,event)" onblur="Validate_DHCP(this,theDHCPLeaseTime.varType)" /></td>';
+	tablehtml+='<td class="settingvalue"><input autocomplete="off" autocapitalize="off" type="text" maxlength="8" class="input_12_table" name="yazfi_'+prefix+'3_'+theDHCPLeaseTime.varName+'" value="86400" onkeypress="return theDHCPLeaseTime.ValidateLeaseInput(this,event)" onblur="Validate_DHCP(this,theDHCPLeaseTime.varType)" /></td>';
 	tablehtml+='</tr>';
 
 	/* DNS1 */
