@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: Martinski W. [2022-Dec-27].
+# Last Modified: Martinski W. [2023-Jan-22].
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -104,9 +104,9 @@ VPN_IP_LIST_NEW_5=""
 ## Added by Martinski W. [2022-Dec-01] ##
 ##-------------------------------------##
 ## DHCP Lease Time: Min & Max Values in Seconds ##
-## From 2 mins=120 to 7 days=604800, inclusive ##
+## From 2 mins=120 to 14 days=1209600, inclusive ##
 readonly MinDHCPLeaseTime=120
-readonly MaxDHCPLeaseTime=604800
+readonly MaxDHCPLeaseTime=1209600
 
 ##-------------------------------------##
 ## Added by Martinski W. [2022-Dec-23] ##
@@ -926,16 +926,43 @@ Validate_DHCP(){
 	fi
 }
 
-##-------------------------------------##
-## Added by Martinski W. [2022-Dec-01] ##
-##-------------------------------------##
-Validate_DHCP_LeaseTime(){
-	if ! Validate_Number "$1" "$2"; then
+##----------------------------------------------##
+## Added/modified by Martinski W. [2023-Jan-22] ##
+##----------------------------------------------##
+# The DHCP Lease Time values can be given in:
+# seconds, minutes, hours, days, or weeks.
+#------------------------------------------------#
+Validate_DHCP_LeaseTime()
+{
+	timeUnit="X"  timeFactor=1  timeNumber="$2"
+
+	if [ -n "$(echo "$2" | grep "^[0-9]\{1,7\}$")" ]
+	then
+		timeUnit="s"
+		timeNumber="$2"
+	elif \
+	   [ -n "$(echo "$2" | grep "^[0-9]\{1,7\}[smhdw]\{1\}$")" ]
+	then
+		timeUnit="${2:$((${#2}-1)):1}"
+		timeNumber="$(echo "$2" | sed 's/.$//')"
+	fi
+
+	case "$timeUnit" in
+		s) timeFactor=1 ;;
+		m) timeFactor=60 ;;
+		h) timeFactor=3600 ;;
+		d) timeFactor=86400 ;;
+		w) timeFactor=604800 ;;
+	esac
+
+	if ! Validate_Number "$1" "$timeNumber"; then
 		return 1
 	fi
 
-	if [ "$2" -lt "$MinDHCPLeaseTime" ] || [ "$2" -gt "$MaxDHCPLeaseTime" ]; then
-		Print_Output false "$1 - $2 - must be between $MinDHCPLeaseTime and $MaxDHCPLeaseTime in seconds." "$ERR"
+	timeValue="$((timeNumber * timeFactor))"
+
+	if [ "$timeValue" -lt "$MinDHCPLeaseTime" ] || [ "$timeValue" -gt "$MaxDHCPLeaseTime" ]; then
+		Print_Output false "$1 - $timeValue - must be between $MinDHCPLeaseTime and $MaxDHCPLeaseTime in seconds." "$ERR"
 		return 1
 	else
 		return 0
@@ -2082,11 +2109,13 @@ DHCP_Conf(){
 				DHCP_LEASE_VAL="$(nvram get dhcp_lease)"
 				if ! Validate_Number "" "$DHCP_LEASE_VAL" silent ; then DHCP_LEASE_VAL=86400 ; fi
 			fi
+			if [ -z "${DHCP_LEASE_VAL//[0-9]}" ]
+			then DHCP_LEASE_VAL="${DHCP_LEASE_VAL}s" ; fi
 
 			##----------------------------------------##
 			## Modified by Martinski W. [2022-Apr-07] ##
 			##----------------------------------------##
-			CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")_DHCPEND"),255.255.255.0,${DHCP_LEASE_VAL}s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")_DNS2")$CONFADDSTRING"
+			CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")_DHCPEND"),255.255.255.0,${DHCP_LEASE_VAL}||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")_DNS2")$CONFADDSTRING"
 
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			END="### End of script-generated configuration for interface $2 ###"
