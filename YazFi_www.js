@@ -1,5 +1,5 @@
 /**----------------------------------------**/
-/** Modified by Martinski W. [2023-Jan-23] **/
+/** Modified by Martinski W. [2023-Jan-24] **/
 /**----------------------------------------**/
 var clientswl01 = []; var sortnamewl01 = 'Hostname'; var sortdirwl01 = 'asc';
 var clientswl02 = []; var sortnamewl02 = 'Hostname'; var sortdirwl02 = 'asc';
@@ -19,10 +19,11 @@ var numOfBands = 0;
 var failedfields = [];
 
 /**----------------------------------------------**/
-/** Added/modified by Martinski W. [2023-Jan-23] **/
+/** Added/modified by Martinski W. [2023-Jan-24] **/
 /**----------------------------------------------**/
 /** The DHCP Lease Time values can be given in:  **/
 /** seconds, minutes, hours, days, or weeks.     **/
+/** Single '0' or 'I' indicates "infinite" value.**/
 /**----------------------------------------------**/
 const theDHCPLeaseTime=
 {
@@ -31,12 +32,16 @@ const theDHCPLeaseTime=
    varName: 'dhcplease',
    minVal: 120,     minStr: '2 minutes',
    maxVal: 7776000, maxStr: '90 days',
+   infiniteTag: 'I',
    ValidateLeaseValue: function(theValue)
    {
       let timeUnits, timeFactor, timeNumber, timeValue;
 
       const valueFormat1 = /^[0-9]{1,7}$/;
       const valueFormat2 = /^[0-9]{1,7}[smhdw]{1}$/;
+
+      if (theValue == '0' || theValue == this.infiniteTag)
+      { return true ; }  //'I' or '0' for "infinite"//
 
       if (valueFormat1.test(theValue))
       {
@@ -74,15 +79,17 @@ const theDHCPLeaseTime=
       const keyPressed = (event.keyCode ? event.keyCode : event.which);
       if (validator.isFunctionButton(event)) { return true; }
 
-      if (keyPressed > 47 && keyPressed < 58 && 
+      if (obj.value == this.infiniteTag) { return false; }
+      if (keyPressed == 73 && obj.value.length == 0) { return true; }
+      if (keyPressed > 47 && keyPressed < 58 &&
           (obj.value.length == 0 || obj.value.charAt(0) != '0' || keyPressed != 48))
       { return true; }
-      else if (obj.value.length > 0 && obj.value.charAt(0) != '0' && valueFormat.test(obj.value) &&
-               (keyPressed == 115 || keyPressed == 109 || keyPressed == 104 || keyPressed == 100 || keyPressed == 119))
+      if (obj.value.length > 0 && obj.value.charAt(0) != '0' && valueFormat.test(obj.value) &&
+          (keyPressed == 115 || keyPressed == 109 || keyPressed == 104 || keyPressed == 100 || keyPressed == 119))
       { return true; }
-      else if (event.metaKey &&
-               (keyPressed == 65 || keyPressed == 67 || keyPressed == 86 || keyPressed == 88 ||
-                keyPressed == 97 || keyPressed == 99 || keyPressed == 118 || keyPressed == 120))
+      if (event.metaKey &&
+          (keyPressed == 65 || keyPressed == 67 || keyPressed == 86 || keyPressed == 88 ||
+           keyPressed == 97 || keyPressed == 99 || keyPressed == 118 || keyPressed == 120))
       { return true; }
       else
       { return false; }
@@ -90,7 +97,7 @@ const theDHCPLeaseTime=
    errorMsg: function()
    { return (`Value is not between ${this.minVal} and ${this.maxVal} seconds (${this.minStr} to ${this.maxStr}).`); },
    hintMsg: function()
-   { return (`DHCP Lease Time in seconds: ${this.minVal} (${this.minStr}) to ${this.maxVal} (${this.maxStr}).`); }
+   { return (`DHCP Lease Time in seconds: ${this.minVal} (${this.minStr}) to ${this.maxVal} (${this.maxStr}). A single '0' or 'I' indicates an "infinite" lease time.`); }
 };
 
 const theDHCPStart=
