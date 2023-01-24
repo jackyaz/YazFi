@@ -1,5 +1,5 @@
 /**----------------------------------------**/
-/** Modified by Martinski W. [2023-Jan-22] **/
+/** Modified by Martinski W. [2023-Jan-23] **/
 /**----------------------------------------**/
 var clientswl01 = []; var sortnamewl01 = 'Hostname'; var sortdirwl01 = 'asc';
 var clientswl02 = []; var sortnamewl02 = 'Hostname'; var sortdirwl02 = 'asc';
@@ -19,7 +19,7 @@ var numOfBands = 0;
 var failedfields = [];
 
 /**----------------------------------------------**/
-/** Added/modified by Martinski W. [2023-Jan-22] **/
+/** Added/modified by Martinski W. [2023-Jan-23] **/
 /**----------------------------------------------**/
 /** The DHCP Lease Time values can be given in:  **/
 /** seconds, minutes, hours, days, or weeks.     **/
@@ -30,28 +30,28 @@ const theDHCPLeaseTime=
    varType: 'dhcpLEASE',
    varName: 'dhcplease',
    minVal: 120,     minStr: '2 minutes',
-   maxVal: 1209600, maxStr: '14 days',
+   maxVal: 7776000, maxStr: '90 days',
    ValidateLeaseValue: function(theValue)
    {
-      let timeUnit, timeFactor, timeNumber, timeValue;
+      let timeUnits, timeFactor, timeNumber, timeValue;
 
       const valueFormat1 = /^[0-9]{1,7}$/;
       const valueFormat2 = /^[0-9]{1,7}[smhdw]{1}$/;
 
       if (valueFormat1.test(theValue))
       {
-         timeUnit = 's';
+         timeUnits = 's';
          timeNumber = theValue;
       }
       else if (valueFormat2.test(theValue))
       {
          let valLen = theValue.length;
-         timeUnit = theValue.substring ((valLen - 1), valLen);
+         timeUnits = theValue.substring ((valLen - 1), valLen);
          timeNumber = theValue.substring (0, (valLen - 1));
       }
       else { return false; }
 
-      switch (timeUnit)
+      switch (timeUnits)
       {
          case 's': timeFactor=1; break;
          case 'm': timeFactor=60; break;
@@ -73,7 +73,7 @@ const theDHCPLeaseTime=
       const valueFormat = /^[0-9]{1,7}$/;
       const keyPressed = (event.keyCode ? event.keyCode : event.which);
       if (validator.isFunctionButton(event)) { return true; }
-      
+
       if (keyPressed > 47 && keyPressed < 58 && 
           (obj.value.length == 0 || obj.value.charAt(0) != '0' || keyPressed != 48))
       { return true; }
