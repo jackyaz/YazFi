@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: Martinski W. [2023-Jan-22].
+# Last Modified: Martinski W. [2023-Jan-24].
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -100,13 +100,17 @@ VPN_IP_LIST_NEW_4=""
 VPN_IP_LIST_NEW_5=""
 ### End of VPN clientlist variables ###
 
-##-------------------------------------##
-## Added by Martinski W. [2022-Dec-01] ##
-##-------------------------------------##
-## DHCP Lease Time: Min & Max Values in Seconds ##
-## From 2 mins=120 to 14 days=1209600, inclusive ##
+##----------------------------------------------##
+## Added/modified by Martinski W. [2023-Jan-24] ##
+##----------------------------------------------##
+# DHCP Lease Time: Min & Max Values in seconds.
+# 2 minutes=120 to 90 days=7776000 (inclusive).
+# Single '0' or 'I' indicates "infinite" value.
+#------------------------------------------------#
 readonly MinDHCPLeaseTime=120
-readonly MaxDHCPLeaseTime=1209600
+readonly MaxDHCPLeaseTime=7776000
+readonly InfiniteLeaseTimeStr="I"
+readonly InfiniteLeaseTimeVal="infinite"
 
 ##-------------------------------------##
 ## Added by Martinski W. [2022-Dec-23] ##
@@ -927,27 +931,30 @@ Validate_DHCP(){
 }
 
 ##----------------------------------------------##
-## Added/modified by Martinski W. [2023-Jan-22] ##
+## Added/modified by Martinski W. [2023-Jan-24] ##
 ##----------------------------------------------##
 # The DHCP Lease Time values can be given in:
 # seconds, minutes, hours, days, or weeks.
+# Single '0' or 'I' indicates "infinite" value.
 #------------------------------------------------#
 Validate_DHCP_LeaseTime()
 {
-	timeUnit="X"  timeFactor=1  timeNumber="$2"
+	timeUnits="X"  timeFactor=1  timeNumber="$2"
 
-	if [ -n "$(echo "$2" | grep "^[0-9]\{1,7\}$")" ]
+	if [ "$2" = "0" ] || [ "$2" = "$InfiniteLeaseTimeStr" ]
+	then return 0 ; fi
+
+	if echo "$2" | grep -q "^[0-9]\{1,7\}$"
 	then
-		timeUnit="s"
+		timeUnits="s"
 		timeNumber="$2"
-	elif \
-	   [ -n "$(echo "$2" | grep "^[0-9]\{1,7\}[smhdw]\{1\}$")" ]
+	elif echo "$2" | grep -q "^[0-9]\{1,7\}[smhdw]\{1\}$"
 	then
-		timeUnit="${2:$((${#2}-1)):1}"
-		timeNumber="$(echo "$2" | sed 's/.$//')"
+		timeUnits="$(echo "$2" | awk '{print substr($0,length($0),1)}')"
+		timeNumber="$(echo "$2" | awk '{print substr($0,0,length($0)-1)}')"
 	fi
 
-	case "$timeUnit" in
+	case "$timeUnits" in
 		s) timeFactor=1 ;;
 		m) timeFactor=60 ;;
 		h) timeFactor=3600 ;;
@@ -2100,16 +2107,18 @@ DHCP_Conf(){
 				CONFADDSTRING="$CONFADDSTRING||||dhcp-option=$2,42,$(nvram get lan_ipaddr)"
 			fi
 
-			##-------------------------------------##
-			## Added by Martinski W. [2022-Dec-01] ##
-			##-------------------------------------##
+			##----------------------------------------------##
+			## Added/modified by Martinski W. [2023-Jan-24] ##
+			##----------------------------------------------##
 			DHCP_LEASE_VAL="$(eval echo '$'"$(Get_Iface_Var "$2")_DHCPLEASE")"
 			if ! Validate_DHCP_LeaseTime "$(Get_Iface_Var "$2")_DHCPLEASE" "$DHCP_LEASE_VAL"
 			then
 				DHCP_LEASE_VAL="$(nvram get dhcp_lease)"
 				if ! Validate_Number "" "$DHCP_LEASE_VAL" silent ; then DHCP_LEASE_VAL=86400 ; fi
 			fi
-			if [ -z "${DHCP_LEASE_VAL//[0-9]}" ]
+			if [ "$DHCP_LEASE_VAL" = "0" ] || [ "$DHCP_LEASE_VAL" = "$InfiniteLeaseTimeStr" ]
+			then DHCP_LEASE_VAL="$InfiniteLeaseTimeVal"
+			elif echo "$DHCP_LEASE_VAL" | grep -q "^[0-9]\{1,7\}$"
 			then DHCP_LEASE_VAL="${DHCP_LEASE_VAL}s" ; fi
 
 			##----------------------------------------##
