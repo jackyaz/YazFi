@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: Martinski W. [2023-Jan-28].
+# Last Modified: Martinski W. [2023-Jan-30].
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -931,7 +931,7 @@ Validate_DHCP(){
 }
 
 ##----------------------------------------------##
-## Added/modified by Martinski W. [2023-Jan-28] ##
+## Added/modified by Martinski W. [2023-Jan-30] ##
 ##----------------------------------------------##
 # The DHCP Lease Time values can be given in:
 # seconds, minutes, hours, days, or weeks.
@@ -943,6 +943,12 @@ Validate_DHCP_LeaseTime()
 
 	if [ "$2" = "0" ] || [ "$2" = "$InfiniteLeaseTimeTag" ]
 	then return 0 ; fi
+
+	if echo "$2" | grep -q "^0.*"
+	then
+		Print_Output false "$1 - $2 is not a valid setting." "$ERR"
+		return 1
+	fi
 
 	if echo "$2" | grep -q "^[0-9]\{1,7\}$"
 	then
@@ -962,9 +968,8 @@ Validate_DHCP_LeaseTime()
 		w) timeFactor=604800 ;;
 	esac
 
-	if ! Validate_Number "$1" "$timeNumber"; then
-		return 1
-	fi
+	if ! Validate_Number "$1" "$timeNumber"
+	then return 1 ; fi
 
 	timeValue="$((timeNumber * timeFactor))"
 
