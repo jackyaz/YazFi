@@ -79,7 +79,7 @@ Start of DHCP pool (2-253)
 End of DHCP pool (3-254)
 
 #### wl01_DHCPLEASE
-DHCP Lease Time: 120 to 7776000 seconds (2 minutes to 90 days). Values can be entered in seconds (e.g. 86400s), or minutes (e.g. 1440m), or hours (e.g. 24h), or days (e.g. 2d), or weeks (e.g. 2w). A single '0' or 'I' indicates an "infinite" lease time value.
+DHCP Lease Time: 120 to 7776000 seconds (2 minutes to 90 days). Values can be entered in seconds (e.g. 86400s), minutes (e.g. 1440m), hours (e.g. 24h), days (e.g. 2d), or weeks (e.g. 2w). A single digit ZERO '0' or an upper-case letter 'I' indicates that an "infinite" lease time value will be applied.
 
 #### wl01_DNS1
 IP address for primary DNS resolver
