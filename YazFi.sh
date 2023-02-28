@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: Martinski W. [2023-Jan-30].
+# Last Modified: Martinski W. [2023-Feb-26].
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -1475,6 +1475,12 @@ Conf_Exists(){
 	if [ -f "$SCRIPT_CONF" ]; then
 		dos2unix "$SCRIPT_CONF"
 		chmod 0644 "$SCRIPT_CONF"
+
+		##-------------------------------------##
+		## Added by Martinski W. [2023-Feb-26] ##
+		##-------------------------------------##
+		Update_File "$SCRIPT_CONF"
+
 		if [ ! -f "$SCRIPT_CONF.bak" ]; then
 			cp -a "$SCRIPT_CONF" "$SCRIPT_CONF.bak"
 		fi
