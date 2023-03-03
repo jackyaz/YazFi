@@ -16,6 +16,8 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
+# Last Modified: Martinski W. [2023-Feb-26].
+#--------------------------------------------------
 
 ######       Shellcheck directives     ######
 # shellcheck disable=SC1003
@@ -36,8 +38,8 @@
 ### Start of script variables ###
 readonly SCRIPT_NAME="YazFi"
 readonly SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
-readonly YAZFI_VERSION="v4.4.2"
-readonly SCRIPT_VERSION="v4.4.2"
+readonly YAZFI_VERSION="v4.4.3"
+readonly SCRIPT_VERSION="v4.4.3"
 SCRIPT_BRANCH="master"
 SCRIPT_REPO="https://jackyaz.io/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
@@ -62,8 +64,12 @@ readonly CLEARFORMAT="\\e[0m"
 ### Start of router environment variables ###
 readonly LAN="$(nvram get lan_ipaddr)"
 [ -z "$(nvram get odmpid)" ] && ROUTER_MODEL=$(nvram get productid) || ROUTER_MODEL=$(nvram get odmpid)
-readonly IFACELIST_FULL="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3"
-IFACELIST="$(echo "$(nvram get wl0_vifnames) $(nvram get wl1_vifnames) $(nvram get wl2_vifnames)" | awk '{$1=$1;print}')"
+
+##----------------------------------------##
+## Modified by Martinski W. [2022-Dec-23] ##
+##----------------------------------------##
+readonly IFACELIST_FULL="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3 wl3.1 wl3.2 wl3.3"
+IFACELIST="$(echo "$(nvram get wl0_vifnames) $(nvram get wl1_vifnames) $(nvram get wl2_vifnames) $(nvram get wl3_vifnames)" | awk '{$1=$1;print}')"
 ### End of router environment variables ###
 
 ### Start of path variables ###
@@ -93,6 +99,43 @@ VPN_IP_LIST_NEW_3=""
 VPN_IP_LIST_NEW_4=""
 VPN_IP_LIST_NEW_5=""
 ### End of VPN clientlist variables ###
+
+##----------------------------------------------##
+## Added/modified by Martinski W. [2023-Jan-28] ##
+##----------------------------------------------##
+# DHCP Lease Time: Min & Max Values in seconds.
+# 2 minutes=120 to 90 days=7776000 (inclusive).
+# Single '0' or 'I' indicates "infinite" value.
+#------------------------------------------------#
+readonly MinDHCPLeaseTime=120
+readonly MaxDHCPLeaseTime=7776000
+readonly InfiniteLeaseTimeTag="I"
+readonly InfiniteLeaseTimeVal="infinite"
+
+##-------------------------------------##
+## Added by Martinski W. [2022-Dec-23] ##
+##-------------------------------------##
+readonly SUPPORTstr="$(nvram get rc_support)"
+
+if echo "$SUPPORTstr" | grep -qw '2.4G'
+then Band_24G_Support=true
+else Band_24G_Support=false
+fi
+
+if echo "$SUPPORTstr" | grep -qw '5G'
+then Band_5G_1_Support=true
+else Band_5G_1_Support=false
+fi
+
+if echo "$SUPPORTstr" | grep -qw '5G-2'
+then Band_5G_2_support=true
+else Band_5G_2_support=false
+fi
+
+if echo "$SUPPORTstr" | grep -qw 'wifi6e'
+then Band_6G_1_Support=true
+else Band_6G_1_Support=false
+fi
 
 # $1 = print to syslog, $2 = message to print, $3 = log level
 Print_Output(){
@@ -125,24 +168,69 @@ Get_Iface_Var(){
 	echo "$1" | sed -e 's/\.//g'
 }
 
-Get_Guest_Name(){
-	if echo "$1" | grep -q "wl0"; then
-		echo "YazFi 2.4GHz $(echo "$1" | cut -f2 -d".")"
-	elif echo "$1" | grep -q "wl1"; then
-		echo "YazFi 5GHz $(echo "$1" | cut -f2 -d".")"
-	else
-		echo "YazFi 5GHz2 $(echo "$1" | cut -f2 -d".")"
-	fi
+##-------------------------------------##
+## Added by Martinski W. [2022-Dec-23] ##
+##-------------------------------------##
+GetIFaceUILabel()
+{
+	if [ $# -eq 0 ] || [ -z "$1" ] ; then echo "" ; fi
+
+	theUILabel="*UNKNOWN*"
+	case "$1" in
+		wl0)
+		    if [ "$ROUTER_MODEL" = "GT-AXE16000" ] && "$Band_5G_1_Support"
+		    then theUILabel="5GHz"
+		    elif "$Band_24G_Support" ; then theUILabel="2.4GHz"
+		    fi
+		    ;;
+		wl1)
+		    if [ "$ROUTER_MODEL" = "GT-AXE16000" ] && "$Band_5G_2_support"
+		    then theUILabel="5GHz2"
+		    elif "$Band_5G_1_Support" ; then theUILabel="5GHz"
+		    fi
+		    ;;
+		wl2)
+		    if [ "$ROUTER_MODEL" = "GT-AXE16000" ] || "$Band_6G_1_Support"
+		    then theUILabel="6GHz"
+		    elif "$Band_5G_2_support" ; then theUILabel="5GHz2"
+		    fi
+		    ;;
+		wl3)
+		    if [ "$ROUTER_MODEL" = "GT-AXE16000" ] && "$Band_24G_Support"
+		    then theUILabel="2.4GHz"
+		    fi
+		    ;;
+	esac
+	echo "$theUILabel"
 }
 
-Get_Guest_Name_Old(){
-	if echo "$1" | grep -q "wl0"; then
-		echo "2.4GHz Guest $(echo "$1" | cut -f2 -d".")"
-	elif echo "$1" | grep -q "wl1"; then
-		echo "5GHz1 Guest $(echo "$1" | cut -f2 -d".")"
-	else
-		echo "5GHz2 Guest $(echo "$1" | cut -f2 -d".")"
-	fi
+##----------------------------------------##
+## Modified by Martinski W. [2022-Dec-23] ##
+##----------------------------------------##
+Get_Guest_Name()
+{
+	if [ $# -eq 0 ] || [ -z "$1" ] ; then echo "" ; fi
+	theIFprefix="$(echo "$1" | cut -d '.' -f1)"
+	theIFnumber="$(echo "$1" | cut -d '.' -f2)"
+	theIFlabel="$(GetIFaceUILabel "$theIFprefix")"
+
+	echo "YazFi $theIFlabel $theIFnumber"
+}
+
+##----------------------------------------##
+## Modified by Martinski W. [2022-Dec-23] ##
+##----------------------------------------##
+Get_Guest_Name_Old()
+{
+	if [ $# -eq 0 ] || [ -z "$1" ] ; then echo "" ; fi
+	theIFprefix="$(echo "$1" | cut -d '.' -f1)"
+	theIFnumber="$(echo "$1" | cut -d '.' -f2)"
+	theIFlabel="$(GetIFaceUILabel "$theIFprefix")"
+
+	if [ "$theIFlabel" = "5GHz" ]
+	then theIFlabel="5GHz1" ; fi
+
+	echo "$theIFlabel Guest $theIFnumber"
 }
 
 Set_WiFi_Passphrase(){
@@ -509,7 +597,7 @@ Check_Lock(){
 			return 0
 		else
 			Print_Output true "Lock file found (age: $ageoflock seconds) - stopping to prevent duplicate runs" "$ERR"
-			if [ -z "$1" ]; then
+			if [ $# -eq 0 ] || [ -z "$1" ]; then
 				exit 1
 			else
 				return 1
@@ -584,8 +672,11 @@ Update_Check(){
 	echo "$doupdate,$localver,$serverver"
 }
 
+##----------------------------------------##
+## Modified by Martinski W. [2022-Dec-26] ##
+##----------------------------------------##
 Update_Version(){
-	if [ -z "$1" ]; then
+	if [ $# -eq 0 ] || [ -z "$1" ]; then
 		updatecheckresult="$(Update_Check)"
 		isupdate="$(echo "$updatecheckresult" | cut -f1 -d',')"
 		localver="$(echo "$updatecheckresult" | cut -f2 -d',')"
@@ -611,7 +702,12 @@ Update_Version(){
 					
 					Update_File README.md
 					Update_File LICENSE
-					
+
+					##-------------------------------------##
+					## Added by Martinski W. [2022-Dec-26] ##
+					##-------------------------------------##
+					Update_File "$SCRIPT_CONF"
+
 					Download_File "$SCRIPT_REPO/update/$SCRIPT_NAME.sh" "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
 					chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
 					Set_Version_Custom_Settings local "$serverver"
@@ -645,6 +741,12 @@ Update_Version(){
 		fi
 		Update_File README.md
 		Update_File LICENSE
+
+		##-------------------------------------##
+		## Added by Martinski W. [2022-Dec-26] ##
+		##-------------------------------------##
+		Update_File "$SCRIPT_CONF"
+
 		Download_File "$SCRIPT_REPO/update/$SCRIPT_NAME.sh" "/jffs/scripts/$SCRIPT_NAME" && Print_Output true "$SCRIPT_NAME successfully updated - restarting firewall to apply update"
 		chmod 0755 "/jffs/scripts/$SCRIPT_NAME"
 		Set_Version_Custom_Settings local "$serverver"
@@ -661,6 +763,9 @@ Update_Version(){
 	fi
 }
 
+##----------------------------------------##
+## Modified by Martinski W. [2022-Dec-26] ##
+##----------------------------------------##
 Update_File(){
 	if [ "$1" = "YazFi_www.asp" ]; then
 		tmpfile="/tmp/$1"
@@ -701,6 +806,19 @@ Update_File(){
 			Download_File "$SCRIPT_REPO/files/$1" "$SCRIPT_DIR/$1"
 		fi
 		rm -f "$tmpfile"
+	elif [ "$1" = "$SCRIPT_CONF" ]
+	then
+		if ! grep -q -E "^wl31_|^wl32_|^wl33_" "$SCRIPT_CONF"
+		then
+			if Conf_ADD_Download "$SCRIPT_CONF"
+			then
+				cat "${SCRIPT_CONF}.ADD.txt" >> "$SCRIPT_CONF"
+				cp -fp "$SCRIPT_CONF" "${SCRIPT_CONF}.bak"
+				rm -f "${SCRIPT_CONF}.ADD.txt"
+			else
+				Print_Output true "Could not update configuration file: $SCRIPT_CONF" "$ERR"
+			fi
+		fi
 	else
 		return 1
 	fi
@@ -794,15 +912,69 @@ Validate_Number(){
 	fi
 }
 
+##----------------------------------------##
+## Modified by Martinski W. [2022-Dec-05] ##
+##----------------------------------------##
 Validate_DHCP(){
 	if ! Validate_Number "$1" "$2"; then
 		return 1
 	elif ! Validate_Number "$1" "$3"; then
 		return 1
 	fi
-	
-	if [ "$2" -gt "$3" ] || { [ "$2" -lt 2 ] || [ "$2" -gt 254 ]; } || { [ "$3" -lt 2 ] || [ "$3" -gt 254 ]; }; then
+
+	if [ "$2" -gt "$3" ] || { [ "$2" -lt 2 ] || [ "$2" -gt 253 ]; } || { [ "$3" -lt 3 ] || [ "$3" -gt 254 ]; }; then
 		Print_Output false "$1 - $2 to $3 - both numbers must be between 2 and 254, $2 must be less than $3" "$ERR"
+		return 1
+	else
+		return 0
+	fi
+}
+
+##----------------------------------------------##
+## Added/modified by Martinski W. [2023-Jan-30] ##
+##----------------------------------------------##
+# The DHCP Lease Time values can be given in:
+# seconds, minutes, hours, days, or weeks.
+# Single '0' or 'I' indicates "infinite" value.
+#------------------------------------------------#
+Validate_DHCP_LeaseTime()
+{
+	timeUnits="X"  timeFactor=1  timeNumber="$2"
+
+	if [ "$2" = "0" ] || [ "$2" = "$InfiniteLeaseTimeTag" ]
+	then return 0 ; fi
+
+	if echo "$2" | grep -q "^0.*"
+	then
+		Print_Output false "$1 - $2 is not a valid setting." "$ERR"
+		return 1
+	fi
+
+	if echo "$2" | grep -q "^[0-9]\{1,7\}$"
+	then
+		timeUnits="s"
+		timeNumber="$2"
+	elif echo "$2" | grep -q "^[0-9]\{1,6\}[smhdw]\{1\}$"
+	then
+		timeUnits="$(echo "$2" | awk '{print substr($0,length($0),1)}')"
+		timeNumber="$(echo "$2" | awk '{print substr($0,0,length($0)-1)}')"
+	fi
+
+	case "$timeUnits" in
+		s) timeFactor=1 ;;
+		m) timeFactor=60 ;;
+		h) timeFactor=3600 ;;
+		d) timeFactor=86400 ;;
+		w) timeFactor=604800 ;;
+	esac
+
+	if ! Validate_Number "$1" "$timeNumber"
+	then return 1 ; fi
+
+	timeValue="$((timeNumber * timeFactor))"
+
+	if [ "$timeValue" -lt "$MinDHCPLeaseTime" ] || [ "$timeValue" -gt "$MaxDHCPLeaseTime" ]; then
+		Print_Output false "$1 - $timeValue - must be between $MinDHCPLeaseTime and $MaxDHCPLeaseTime in seconds." "$ERR"
 		return 1
 	else
 		return 0
@@ -876,7 +1048,12 @@ Conf_FixBlanks(){
 		Clear_Lock
 		return 1
 	fi
-	
+
+	##-------------------------------------##
+	## Added by Martinski W. [2022-Dec-07] ##
+	##-------------------------------------##
+	. "$SCRIPT_CONF"
+
 	cp -a "$SCRIPT_CONF" "$SCRIPT_CONF.bak"
 	
 	for IFACEBLANK in $IFACELIST_FULL; do
@@ -905,7 +1082,30 @@ Conf_FixBlanks(){
 			sed -i -e "s/${IFACETMPBLANK}_DHCPEND=/${IFACETMPBLANK}_DHCPEND=254/" "$SCRIPT_CONF"
 			Print_Output false "${IFACETMPBLANK}_DHCPEND is blank, setting to 254" "$WARN"
 		fi
-		
+
+		##----------------------------------------##
+		## Modified by Martinski W. [2022-Dec-23] ##
+		##----------------------------------------##
+		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_DHCPLEASE")" ] || \
+		   ! grep -q "${IFACETMPBLANK}_DHCPLEASE=" "$SCRIPT_CONF"
+		then
+			DHCP_LEASE_VAL="$(nvram get dhcp_lease)"
+			if grep -q "${IFACETMPBLANK}_DHCPLEASE=" "$SCRIPT_CONF"
+			then
+				OUTmsg="is blank, setting to $DHCP_LEASE_VAL seconds"
+				sed -i -e "s/${IFACETMPBLANK}_DHCPLEASE=/${IFACETMPBLANK}_DHCPLEASE=${DHCP_LEASE_VAL}/" "$SCRIPT_CONF"
+			else
+				OUTmsg="is not found."
+				NUMLINE="$(grep -n "${IFACETMPBLANK}_DHCPEND=" "$SCRIPT_CONF" | awk -F ':' '{print $1}')"
+				if [ -n "$NUMLINE" ]
+				then
+					OUTmsg="is not found, setting to $DHCP_LEASE_VAL seconds"
+					sed -i "$((NUMLINE + 1)) i ${IFACETMPBLANK}_DHCPLEASE=${DHCP_LEASE_VAL}" "$SCRIPT_CONF"
+				fi
+			fi
+			Print_Output false "${IFACETMPBLANK}_DHCPLEASE ${OUTmsg}" "$WARN"
+		fi
+
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_DNS1")" ]; then
 			if [ -n "$(eval echo '$'"${IFACETMPBLANK}_IPADDR")" ]; then
 				sed -i -e "s/${IFACETMPBLANK}_DNS1=/${IFACETMPBLANK}_DNS1=$(eval echo '$'"${IFACETMPBLANK}_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$SCRIPT_CONF"
@@ -963,6 +1163,12 @@ Conf_FixBlanks(){
 			Print_Output false "${IFACETMPBLANK}_CLIENTISOLATION is blank, setting to false" "$WARN"
 		fi
 	done
+
+	##-------------------------------------##
+	## Added by Martinski W. [2022-Dec-07] ##
+	##-------------------------------------##
+	if ! diff -q "$SCRIPT_CONF" "$SCRIPT_CONF.bak" >/dev/null 2>&1
+	then . "$SCRIPT_CONF" ; fi
 }
 
 Conf_Validate(){
@@ -1022,7 +1228,17 @@ Conf_Validate(){
 						IFACE_PASS="false"
 						fi
 					fi
-					
+
+					##-------------------------------------##
+					## Added by Martinski W. [2022-Dec-01] ##
+					##-------------------------------------##
+					if [ -n "$(eval echo '$'"${IFACETMP}_DHCPLEASE")" ]
+					then
+						if ! Validate_DHCP_LeaseTime "${IFACETMP}_DHCPLEASE" "$(eval echo '$'"${IFACETMP}_DHCPLEASE")"; then
+							IFACE_PASS="false"
+						fi
+					fi
+
 					if ! Validate_TrueFalse "${IFACETMP}_FORCEDNS" "$(eval echo '$'"${IFACETMP}_FORCEDNS")"; then
 						IFACE_PASS="false"
 					else
@@ -1243,10 +1459,28 @@ Conf_Download(){
 	Clear_Lock
 }
 
+##-------------------------------------##
+## Added by Martinski W. [2022-Dec-26] ##
+##-------------------------------------##
+Conf_ADD_Download()
+{
+	config_ADD="${1}.ADD.txt"
+	/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/files/${SCRIPT_NAME}.config.ADD.txt" -o "$config_ADD"
+	chmod 0644 "$config_ADD"
+	dos2unix "$config_ADD"
+	[ -f "$config_ADD" ] && return 0 || return 1
+}
+
 Conf_Exists(){
 	if [ -f "$SCRIPT_CONF" ]; then
 		dos2unix "$SCRIPT_CONF"
 		chmod 0644 "$SCRIPT_CONF"
+
+		##-------------------------------------##
+		## Added by Martinski W. [2023-Feb-26] ##
+		##-------------------------------------##
+		Update_File "$SCRIPT_CONF"
+
 		if [ ! -f "$SCRIPT_CONF.bak" ]; then
 			cp -a "$SCRIPT_CONF" "$SCRIPT_CONF.bak"
 		fi
@@ -1883,9 +2117,26 @@ DHCP_Conf(){
 			if [ "$ENABLED_NTPD" -eq 1 ]; then
 				CONFADDSTRING="$CONFADDSTRING||||dhcp-option=$2,42,$(nvram get lan_ipaddr)"
 			fi
-			
-			CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")_DHCPEND"),255.255.255.0,86400s||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")_DNS2")$CONFADDSTRING"
-			
+
+			##----------------------------------------------##
+			## Added/modified by Martinski W. [2023-Jan-24] ##
+			##----------------------------------------------##
+			DHCP_LEASE_VAL="$(eval echo '$'"$(Get_Iface_Var "$2")_DHCPLEASE")"
+			if ! Validate_DHCP_LeaseTime "$(Get_Iface_Var "$2")_DHCPLEASE" "$DHCP_LEASE_VAL"
+			then
+				DHCP_LEASE_VAL="$(nvram get dhcp_lease)"
+				if ! Validate_Number "" "$DHCP_LEASE_VAL" silent ; then DHCP_LEASE_VAL=86400 ; fi
+			fi
+			if [ "$DHCP_LEASE_VAL" = "0" ] || [ "$DHCP_LEASE_VAL" = "$InfiniteLeaseTimeTag" ]
+			then DHCP_LEASE_VAL="$InfiniteLeaseTimeVal"
+			elif echo "$DHCP_LEASE_VAL" | grep -q "^[0-9]\{1,7\}$"
+			then DHCP_LEASE_VAL="${DHCP_LEASE_VAL}s" ; fi
+
+			##----------------------------------------##
+			## Modified by Martinski W. [2022-Apr-07] ##
+			##----------------------------------------##
+			CONFSTRING="interface=$2||||dhcp-range=$2,$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")_DHCPSTART"),$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(eval echo '$'"$(Get_Iface_Var "$2")_DHCPEND"),255.255.255.0,${DHCP_LEASE_VAL}||||dhcp-option=$2,3,$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")||||dhcp-option=$2,6,$(eval echo '$'"$(Get_Iface_Var "$2")_DNS1"),$(eval echo '$'"$(Get_Iface_Var "$2")_DNS2")$CONFADDSTRING"
+
 			BEGIN="### Start of script-generated configuration for interface $2 ###"
 			END="### End of script-generated configuration for interface $2 ###"
 			if grep -q "### Start of script-generated configuration for interface $2 ###" "$TMPCONF"; then
@@ -2698,9 +2949,13 @@ Menu_Status(){
 	[ -z "$1" ] && ScriptHeader
 	[ -z "$1" ] && printf "${BOLD}$PASS%sQuerying router for connected WiFi clients...${CLEARFORMAT}\\n\\n" ""
 	printf "INTERFACE,HOSTNAME,IP,MAC,CONNECTED,RX,TX,RSSI,PHY\\n" >> "$TMPSTATUSOUTPUTFILE"
-	
-	ARPDUMP="$(arp -an)"
-	
+
+	##----------------------------------------##
+	## Modified by Martinski W. [2022-Mar-26] ##
+	##----------------------------------------##
+	ARP_CACHE="$(cat /proc/net/arp)"
+	NOT_LANIP="grep -v \"$(nvram get lan_ipaddr | cut -d'.' -f1-3)\""
+
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ] && Validate_Exists_IFACE "$IFACE" silent && Validate_Enabled_IFACE "$IFACE" silent; then
 			[ -z "$1" ] && printf "%75s\\n\\n" "" | tr " " "-"
@@ -2713,14 +2968,32 @@ Menu_Status(){
 				IFS=$'\n'
 				for GUEST_MAC in $IFACE_MACS; do
 					GUEST_MACADDR="$(echo "$GUEST_MAC" | awk '{print $2}')"
-					GUEST_ARPINFO="$(echo "$ARPDUMP" | grep "$IFACE" | grep -i "$GUEST_MACADDR" | grep -v "$(nvram get lan_ipaddr | cut -d'.' -f1-3)")"
-					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed 's/(//g;s/)//g')"
-					GUEST_HOST=""
-					
-					if [ -z "$GUEST_IPADDR" ]; then
-						GUEST_IPADDR=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $3}')
+
+					##----------------------------------------##
+					## Modified by Martinski W. [2022-Mar-26] ##
+					##----------------------------------------##
+					GUEST_ARPCOUNT="$(echo "$ARP_CACHE" | grep -ic "$GUEST_MACADDR")"
+					if [ $GUEST_ARPCOUNT -lt 2 ]
+					then
+						GUEST_ARPENTRY="$(echo "$ARP_CACHE" | grep -i "$GUEST_MACADDR")"
+						GUEST_ARPINFO="$(echo "$GUEST_ARPENTRY" | grep "$IFACE" | eval "$NOT_LANIP")"
+					else
+						GUEST_ARPENTRY="$(echo "$ARP_CACHE" | grep -i "$GUEST_MACADDR" | grep "$IFACE")"
+						GUEST_ARPINFO="$(echo "$GUEST_ARPENTRY" | eval "$NOT_LANIP")"
 					fi
-					
+
+					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $1}')"
+					GUEST_ARPFLAG="$(echo "$GUEST_ARPENTRY" | awk '{print $3}')"
+
+					# Skip guest client when ARP entry is marked as "incomplete" #
+					if [ "$GUEST_ARPFLAG" = "0x0" ] ; then continue ; fi
+
+					GUEST_HOST=""
+
+					if [ -z "$GUEST_IPADDR" ]; then
+						GUEST_IPADDR="$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | eval "$NOT_LANIP" | awk '{print $3}')"
+					fi
+
 					if [ -n "$GUEST_IPADDR" ]; then
 						GUEST_HOST="$(arp "$GUEST_IPADDR" | grep "$IFACE" | awk '{print $1}' | cut -f1 -d ".")"
 						if [ "$GUEST_HOST" = "?" ]; then
@@ -2951,7 +3224,7 @@ if [ ! -f /opt/bin/qrencode ] && [ -f /opt/bin/opkg ]; then
 	opkg install qrencode
 fi
 
-if [ -z "$1" ]; then
+if [ $# -eq 0 ] || [ -z "$1" ]; then
 	Create_Dirs
 	Create_Symlinks
 	Auto_Startup create 2>/dev/null

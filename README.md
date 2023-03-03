@@ -2,8 +2,8 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/a2cf9bdec17b4b6f9b6e113f802be694)](https://app.codacy.com/app/jackyaz/YazFi?utm_source=github.com&utm_medium=referral&utm_content=jackyaz/YazFi&utm_campaign=Badge_Grade_Dashboard)
 ![Shellcheck](https://github.com/jackyaz/YazFi/actions/workflows/shellcheck.yml/badge.svg)
 
-## v4.4.2
-### Updated on 2022-02-20
+## v4.4.3
+### Updated on 2023-01-24
 ## About
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
 
@@ -77,6 +77,9 @@ Start of DHCP pool (2-253)
 
 #### wl01_DHCPEND
 End of DHCP pool (3-254)
+
+#### wl01_DHCPLEASE
+DHCP Lease Time: 120 to 7776000 seconds (2 minutes to 90 days). Values can be entered in seconds (e.g. 86400s), minutes (e.g. 1440m), hours (e.g. 24h), days (e.g. 2d), or weeks (e.g. 2w). A single digit ZERO '0' or an upper-case letter 'I' indicates that an "infinite" lease time value will be applied.
 
 #### wl01_DNS1
 IP address for primary DNS resolver

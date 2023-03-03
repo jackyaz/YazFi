@@ -12,6 +12,7 @@
 #                                                                  #
 ####################################################################
 ######                    2.4 GHz Networks                    ######
+###### (5GHz Network for Quad-Band routers, e.g. GT-AXE16000) ######
 ####################################################################
 ######                 Guest Network 1 (wl0.1)                 #####
 ####################################################################
@@ -19,6 +20,7 @@ wl01_ENABLED=false
 wl01_IPADDR=192.168.2.0
 wl01_DHCPSTART=2
 wl01_DHCPEND=254
+wl01_DHCPLEASE=86400
 wl01_DNS1=192.168.2.1
 wl01_DNS2=192.168.2.1
 wl01_FORCEDNS=false
@@ -35,6 +37,7 @@ wl02_ENABLED=false
 wl02_IPADDR=192.168.3.0
 wl02_DHCPSTART=2
 wl02_DHCPEND=254
+wl02_DHCPLEASE=86400
 wl02_DNS1=8.8.8.8
 wl02_DNS2=8.8.4.4
 wl02_FORCEDNS=false
@@ -51,6 +54,7 @@ wl03_ENABLED=false
 wl03_IPADDR=192.168.4.0
 wl03_DHCPSTART=2
 wl03_DHCPEND=254
+wl03_DHCPLEASE=86400
 wl03_DNS1=8.8.8.8
 wl03_DNS2=8.8.4.4
 wl03_FORCEDNS=false
@@ -62,6 +66,7 @@ wl03_ONEWAYTOGUEST=false
 wl03_CLIENTISOLATION=false
 ####################################################################
 ######                     5 GHz Networks                     ######
+##### (5GHz-2 Network for Quad-Band routers, e.g. GT-AXE16000) #####
 ####################################################################
 ######                 Guest Network 1 (wl1.1)                 #####
 ####################################################################
@@ -69,6 +74,7 @@ wl11_ENABLED=false
 wl11_IPADDR=192.168.5.0
 wl11_DHCPSTART=2
 wl11_DHCPEND=254
+wl11_DHCPLEASE=86400
 wl11_DNS1=8.8.8.8
 wl11_DNS2=8.8.4.4
 wl11_FORCEDNS=false
@@ -85,6 +91,7 @@ wl12_ENABLED=false
 wl12_IPADDR=192.168.6.0
 wl12_DHCPSTART=2
 wl12_DHCPEND=254
+wl12_DHCPLEASE=86400
 wl12_DNS1=8.8.8.8
 wl12_DNS2=8.8.4.4
 wl12_FORCEDNS=false
@@ -101,18 +108,21 @@ wl13_ENABLED=false
 wl13_IPADDR=192.168.7.0
 wl13_DHCPSTART=2
 wl13_DHCPEND=254
+wl13_DHCPLEASE=86400
 wl13_DNS1=8.8.8.8
 wl13_DNS2=8.8.4.4
 wl13_FORCEDNS=false
 wl13_ALLOWINTERNET=true
 wl13_REDIRECTALLTOVPN=false
-wl13_VPNCLIENTNUMBER=2
+wl13_VPNCLIENTNUMBER=1
 wl13_TWOWAYTOGUEST=false
 wl13_ONEWAYTOGUEST=false
 wl13_CLIENTISOLATION=false
 ####################################################################
 ######                    5 GHz - 2 Networks                  ######
-######     (for those with 2 5GHz radios, e.g. RT-AC5300)     ######
+######     (For those with 2 5GHz radios, e.g. RT-AC5300)     ######
+###### (6GHz Network for Tri-Band routers, e.g. GT-AXE11000,  ######
+######      and for Quad-Band routers, e.g. GT-AXE16000)      ######
 ####################################################################
 ######                 Guest Network 1 (wl2.1)                 #####
 ####################################################################
@@ -120,6 +130,7 @@ wl21_ENABLED=false
 wl21_IPADDR=192.168.8.0
 wl21_DHCPSTART=2
 wl21_DHCPEND=254
+wl21_DHCPLEASE=86400
 wl21_DNS1=8.8.8.8
 wl21_DNS2=8.8.4.4
 wl21_FORCEDNS=false
@@ -136,6 +147,7 @@ wl22_ENABLED=false
 wl22_IPADDR=192.168.9.0
 wl22_DHCPSTART=2
 wl22_DHCPEND=254
+wl22_DHCPLEASE=86400
 wl22_DNS1=8.8.8.8
 wl22_DNS2=8.8.4.4
 wl22_FORCEDNS=false
@@ -152,6 +164,7 @@ wl23_ENABLED=false
 wl23_IPADDR=192.168.10.0
 wl23_DHCPSTART=2
 wl23_DHCPEND=254
+wl23_DHCPLEASE=86400
 wl23_DNS1=8.8.8.8
 wl23_DNS2=8.8.4.4
 wl23_FORCEDNS=false
@@ -161,4 +174,58 @@ wl23_VPNCLIENTNUMBER=1
 wl23_TWOWAYTOGUEST=false
 wl23_ONEWAYTOGUEST=false
 wl23_CLIENTISOLATION=false
+####################################################################
+######                    2.4 GHz Networks                    ######
+######        (For Quad-Band routers, e.g. GT-AXE16000)       ######
+####################################################################
+######                 Guest Network 1 (wl3.1)                 #####
+####################################################################
+wl31_ENABLED=false
+wl31_IPADDR=192.168.11.0
+wl31_DHCPSTART=2
+wl31_DHCPEND=254
+wl31_DHCPLEASE=86400
+wl31_DNS1=8.8.8.8
+wl31_DNS2=8.8.4.4
+wl31_FORCEDNS=false
+wl31_ALLOWINTERNET=true
+wl31_REDIRECTALLTOVPN=false
+wl31_VPNCLIENTNUMBER=1
+wl31_TWOWAYTOGUEST=false
+wl31_ONEWAYTOGUEST=false
+wl31_CLIENTISOLATION=false
+####################################################################
+######                 Guest Network 2 (wl3.2)                 #####
+####################################################################
+wl32_ENABLED=false
+wl32_IPADDR=192.168.12.0
+wl32_DHCPSTART=2
+wl32_DHCPEND=254
+wl32_DHCPLEASE=86400
+wl32_DNS1=8.8.8.8
+wl32_DNS2=8.8.4.4
+wl32_FORCEDNS=false
+wl32_ALLOWINTERNET=true
+wl32_REDIRECTALLTOVPN=false
+wl32_VPNCLIENTNUMBER=1
+wl32_TWOWAYTOGUEST=false
+wl32_ONEWAYTOGUEST=false
+wl32_CLIENTISOLATION=false
+####################################################################
+######                 Guest Network 3 (wl3.3)                 #####
+####################################################################
+wl33_ENABLED=false
+wl33_IPADDR=192.168.13.0
+wl33_DHCPSTART=2
+wl33_DHCPEND=254
+wl33_DHCPLEASE=86400
+wl33_DNS1=8.8.8.8
+wl33_DNS2=8.8.4.4
+wl33_FORCEDNS=false
+wl33_ALLOWINTERNET=true
+wl33_REDIRECTALLTOVPN=false
+wl33_VPNCLIENTNUMBER=1
+wl33_TWOWAYTOGUEST=false
+wl33_ONEWAYTOGUEST=false
+wl33_CLIENTISOLATION=false
 ####################################################################
