@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: Martinski W. [2023-Feb-26].
+# Last Modified: Martinski W. [2023-Mar-24].
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -38,9 +38,9 @@
 ### Start of script variables ###
 readonly SCRIPT_NAME="YazFi"
 readonly SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
-readonly YAZFI_VERSION="v4.4.3"
-readonly SCRIPT_VERSION="v4.4.3"
-SCRIPT_BRANCH="master"
+readonly YAZFI_VERSION="v4.4.4"
+readonly SCRIPT_VERSION="v4.4.4"
+SCRIPT_BRANCH="develop"
 SCRIPT_REPO="https://jackyaz.io/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
 readonly USER_SCRIPT_DIR="$SCRIPT_DIR/userscripts.d"
