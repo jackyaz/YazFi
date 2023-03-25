@@ -1,5 +1,5 @@
 /**----------------------------------------**/
-/** Modified by Martinski W. [2023-Jan-29] **/
+/** Modified by Martinski W. [2023-Mar-24] **/
 /**----------------------------------------**/
 var clientswl01 = []; var sortnamewl01 = 'Hostname'; var sortdirwl01 = 'asc';
 var clientswl02 = []; var sortnamewl02 = 'Hostname'; var sortdirwl02 = 'asc';
@@ -610,20 +610,23 @@ function Validate_OneTwoWay(forminput){
 }
 
 /**----------------------------------------**/
-/** Modified by Martinski W. [2022-Dec-23] **/
+/** Modified by Martinski W. [2022-Mar-24] **/
 /**----------------------------------------**/
 function Validate_All(){
-	var validationfailed = false;
+	var validationfailed = false, thePrefix='';
 	failedfields = [];
 	for(var i=0; i < numOfBands; i++){
-		for(var i2=1; i2 <= theGuestNet.numOfGNsPerBand; i2++){
-			if(! Validate_IP(eval('document.form.yazfi_wl'+i+i2+'_ipaddr'),'IP')){validationfailed=true;}
-			if(! Validate_DHCP(eval('document.form.yazfi_wl'+i+i2+'_'+theDHCPStart.varName),theDHCPStart.varType)){validationfailed=true;}
-			if(! Validate_DHCP(eval('document.form.yazfi_wl'+i+i2+'_'+theDHCPEnd.varName),theDHCPEnd.varType)){validationfailed=true;}
-			if(! Validate_DHCP(eval('document.form.yazfi_wl'+i+i2+'_'+theDHCPLeaseTime.varName),theDHCPLeaseTime.varType)){validationfailed=true;}
-			if(! Validate_IP(eval('document.form.yazfi_wl'+i+i2+'_dns1'),'DNS')){validationfailed=true;}
-			if(! Validate_IP(eval('document.form.yazfi_wl'+i+i2+'_dns2'),'DNS')){validationfailed=true;}
-			if(! Validate_VPNClientNo(eval('document.form.yazfi_wl'+i+i2+'_vpnclientnumber'))){validationfailed=true;}
+		for(var i2=1; i2 <= theGuestNet.numOfGNsPerBand; i2++)
+		{
+			thePrefix='yazfi_wl'+i+i2;
+			if (eval('document.form.'+thePrefix+'_enabled').value == 'false') {continue;}
+			if(! Validate_IP(eval('document.form.'+thePrefix+'_ipaddr'),'IP')){validationfailed=true;}
+			if(! Validate_DHCP(eval('document.form.'+thePrefix+'_'+theDHCPStart.varName),theDHCPStart.varType)){validationfailed=true;}
+			if(! Validate_DHCP(eval('document.form.'+thePrefix+'_'+theDHCPEnd.varName),theDHCPEnd.varType)){validationfailed=true;}
+			if(! Validate_DHCP(eval('document.form.'+thePrefix+'_'+theDHCPLeaseTime.varName),theDHCPLeaseTime.varType)){validationfailed=true;}
+			if(! Validate_IP(eval('document.form.'+thePrefix+'_dns1'),'DNS')){validationfailed=true;}
+			if(! Validate_IP(eval('document.form.'+thePrefix+'_dns2'),'DNS')){validationfailed=true;}
+			if(! Validate_VPNClientNo(eval('document.form.'+thePrefix+'_vpnclientnumber'))){validationfailed=true;}
 		}
 	}
 	
