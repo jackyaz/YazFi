@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: Martinski W. [2023-Mar-24].
+# Last Modified: 2023-Sep-11
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -2953,10 +2953,10 @@ Menu_Status(){
 	printf "INTERFACE,HOSTNAME,IP,MAC,CONNECTED,RX,TX,RSSI,PHY\\n" >> "$TMPSTATUSOUTPUTFILE"
 
 	##----------------------------------------##
-	## Modified by Martinski W. [2022-Mar-26] ##
+	## Modified by Martinski W. [2023-Sep-11] ##
 	##----------------------------------------##
 	ARP_CACHE="$(cat /proc/net/arp)"
-	NOT_LANIP="grep -v \"$(nvram get lan_ipaddr | cut -d'.' -f1-3)\""
+	NOT_LANIP="grep -vF \"$(nvram get lan_ipaddr | cut -d'.' -f1-3).\""
 
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ] && Validate_Exists_IFACE "$IFACE" silent && Validate_Enabled_IFACE "$IFACE" silent; then
@@ -2972,7 +2972,7 @@ Menu_Status(){
 					GUEST_MACADDR="$(echo "$GUEST_MAC" | awk '{print $2}')"
 
 					##----------------------------------------##
-					## Modified by Martinski W. [2022-Mar-26] ##
+					## Modified by Martinski W. [2023-Sep-11] ##
 					##----------------------------------------##
 					GUEST_ARPCOUNT="$(echo "$ARP_CACHE" | grep -ic "$GUEST_MACADDR")"
 					if [ $GUEST_ARPCOUNT -lt 2 ]
@@ -2991,14 +2991,19 @@ Menu_Status(){
 					if [ "$GUEST_ARPFLAG" = "0x0" ] ; then continue ; fi
 
 					GUEST_HOST=""
+					FOUND_IPADDR="$GUEST_IPADDR"
 
-					if [ -z "$GUEST_IPADDR" ]; then
+					if [ -z "$GUEST_IPADDR" ]
+					then
+						FOUND_IPADDR="$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $3}')"
 						GUEST_IPADDR="$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | eval "$NOT_LANIP" | awk '{print $3}')"
 					fi
 
-					if [ -n "$GUEST_IPADDR" ]; then
+					if [ -n "$GUEST_IPADDR" ]
+					then
 						GUEST_HOST="$(arp "$GUEST_IPADDR" | grep "$IFACE" | awk '{print $1}' | cut -f1 -d ".")"
-						if [ "$GUEST_HOST" = "?" ]; then
+						if [ -z "$GUEST_HOST" ] || [ "$GUEST_HOST" = "?" ]
+						then
 							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
 						fi
 						
@@ -3011,13 +3016,20 @@ Menu_Status(){
 								GUEST_HOST="$(/opt/bin/dig +short +answer -x "$GUEST_IPADDR" '@'"$(nvram get lan_ipaddr)" | cut -f1 -d'.')"
 							fi
 						fi
+					elif [ -n "$FOUND_IPADDR" ]
+					then
+						GUEST_IPADDR="Not in Guest Net"
+						GUEST_HOST="$(arp "$FOUND_IPADDR" | grep "$IFACE" | awk '{print $1}' | cut -f1 -d ".")"
+						if [ -z "$GUEST_HOST" ] || [ "$GUEST_HOST" = "?" ]
+						then
+							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
+						fi
 					else
 						GUEST_IPADDR="Unknown"
 					fi
 					
-					if [ -z "$GUEST_HOST" ]; then
-						GUEST_HOST="Unknown"
-					fi
+					if [ -z "$GUEST_HOST" ] || [ "$GUEST_HOST" = "*" ]
+					then GUEST_HOST="Unknown" ; fi
 					
 					GUEST_HOST=$(echo "$GUEST_HOST" | tr -d '\n')
 					GUEST_IPADDR=$(echo "$GUEST_IPADDR" | tr -d '\n')
