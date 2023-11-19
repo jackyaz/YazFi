@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: 2023-Sep-11
+# Last Modified: 2023-Nov-18
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -33,6 +33,7 @@
 # shellcheck disable=SC2140
 # shellcheck disable=SC2155
 # shellcheck disable=SC3003
+# shellcheck disable=SC3043
 #############################################
 
 ### Start of script variables ###
@@ -65,11 +66,25 @@ readonly CLEARFORMAT="\\e[0m"
 readonly LAN="$(nvram get lan_ipaddr)"
 [ -z "$(nvram get odmpid)" ] && ROUTER_MODEL=$(nvram get productid) || ROUTER_MODEL=$(nvram get odmpid)
 
+##-------------------------------------##
+## Added by Martinski W. [2022-Nov-18] ##
+##-------------------------------------##
+_GetWiFiVirtualInterfaceNames_()
+{
+   local IFListStr=""
+   for IFname in $(nvram get wl0_vifnames) $(nvram get wl1_vifnames) $(nvram get wl2_vifnames) $(nvram get wl3_vifnames)
+   do
+       IFname="$(echo "$IFname" | grep -E "^wl[0-3][.][1-3]$")"
+       [ -n "$IFname" ] && { [ -n "$IFListStr" ] && IFListStr="$IFListStr $IFname" || IFListStr="$IFname" ; }
+   done
+   echo "$IFListStr"
+}
+
 ##----------------------------------------##
-## Modified by Martinski W. [2022-Dec-23] ##
+## Modified by Martinski W. [2022-Nov-18] ##
 ##----------------------------------------##
 readonly IFACELIST_FULL="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3 wl3.1 wl3.2 wl3.3"
-IFACELIST="$(echo "$(nvram get wl0_vifnames) $(nvram get wl1_vifnames) $(nvram get wl2_vifnames) $(nvram get wl3_vifnames)" | awk '{$1=$1;print}')"
+IFACELIST="$(_GetWiFiVirtualInterfaceNames_)"
 ### End of router environment variables ###
 
 ### Start of path variables ###
@@ -2935,6 +2950,9 @@ Menu_QRCode(){
 	fi
 }
 
+##----------------------------------------##
+## Modified by Martinski W. [2023-Nov-18] ##
+##----------------------------------------##
 Menu_Status(){
 	renice 15 $$
 	### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
@@ -2947,9 +2965,13 @@ Menu_Status(){
 		opkg update
 		opkg install bind-dig
 	fi
-	
-	[ -z "$1" ] && ScriptHeader
-	[ -z "$1" ] && printf "${BOLD}$PASS%sQuerying router for connected WiFi clients...${CLEARFORMAT}\\n\\n" ""
+
+	local NoARGs=false
+	if [ $# -eq 0 ] || [ -z "$1" ] ; then NoARGs=true ; fi
+
+	"$NoARGs" && ScriptHeader
+	"$NoARGs" && printf "${BOLD}$PASS%sQuerying router for connected WiFi clients...${CLEARFORMAT}\\n\\n" ""
+
 	printf "INTERFACE,HOSTNAME,IP,MAC,CONNECTED,RX,TX,RSSI,PHY\\n" >> "$TMPSTATUSOUTPUTFILE"
 
 	##----------------------------------------##
@@ -2960,13 +2982,13 @@ Menu_Status(){
 
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ] && Validate_Exists_IFACE "$IFACE" silent && Validate_Enabled_IFACE "$IFACE" silent; then
-			[ -z "$1" ] && printf "%75s\\n\\n" "" | tr " " "-"
-			[ -z "$1" ] && printf "${BOLD}INTERFACE: %-5s${CLEARFORMAT}\\n" "$IFACE"
-			[ -z "$1" ] && printf "${BOLD}SSID: %-20s${CLEARFORMAT}\\n\\n" "$(nvram get "${IFACE}_ssid")"
+			"$NoARGs" && printf "%75s\\n\\n" "" | tr " " "-"
+			"$NoARGs" && printf "${BOLD}INTERFACE: %-5s${CLEARFORMAT}\\n" "$IFACE"
+			"$NoARGs" && printf "${BOLD}SSID: %-20s${CLEARFORMAT}\\n\\n" "$(nvram get "${IFACE}_ssid")"
 			
 			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
 			if [ "$IFACE_MACS" != "" ]; then
-				[ -z "$1" ] && printf "${BOLD}%-30s%-20s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\\n" "HOSTNAME" "IP" "MAC" "CONNECTED" "RX/TX" "RSSI" "PHY"
+				"$NoARGs" && printf "${BOLD}%-30s%-20s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\\n" "HOSTNAME" "IP" "MAC" "CONNECTED" "RX/TX" "RSSI" "PHY"
 				IFS=$'\n'
 				for GUEST_MAC in $IFACE_MACS; do
 					GUEST_MACADDR="$(echo "$GUEST_MAC" | awk '{print $2}')"
@@ -3052,20 +3074,20 @@ Menu_Status(){
 						GUEST_PHY="Unknown"
 					fi
 					
-					[ -z "$1" ] && printf "%-30s%-20s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED_PRINT" "$GUEST_RX/$GUEST_TX Mbps" "$GUEST_RSSI dBm" "$GUEST_PHY"
+					"$NoARGs" && printf "%-30s%-20s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED_PRINT" "$GUEST_RX/$GUEST_TX Mbps" "$GUEST_RSSI dBm" "$GUEST_PHY"
 					printf "%s,%s,%s,%s,%s,%s,%s,%s,%s\\n" "$IFACE" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED" "$GUEST_RX" "$GUEST_TX" "$GUEST_RSSI" "$GUEST_PHY" >> "$TMPSTATUSOUTPUTFILE"
 				done
 				unset IFS
 			else
-				[ -z "$1" ] && printf "${BOLD}${WARN}No clients connected${CLEARFORMAT}\\n\\n"
+				"$NoARGs" && printf "${BOLD}${WARN}No clients connected${CLEARFORMAT}\\n\\n"
 				printf "%s,,NOCLIENTS,,,,,,\\n" "$IFACE" >> "$TMPSTATUSOUTPUTFILE"
 			fi
 		fi
 	done
 	
 	mv "$TMPSTATUSOUTPUTFILE" "$STATUSOUTPUTFILE" 2>/dev/null
-	[ -z "$1" ] && printf "%75s\\n\\n" "" | tr " " "-"
-	[ -z "$1" ] && printf "${BOLD}$PASS%sQuery complete, please see above for results${CLEARFORMAT}\\n\\n" ""
+	"$NoARGs" && printf "%75s\\n\\n" "" | tr " " "-"
+	"$NoARGs" && printf "${BOLD}$PASS%sQuery complete, please see above for results${CLEARFORMAT}\\n\\n" ""
 	#######################################################################################################
 	renice 0 $$
 }
