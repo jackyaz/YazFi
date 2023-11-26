@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: Martinski W. [2023-Feb-26].
+# Last Modified: 2023-Nov-18
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -33,13 +33,14 @@
 # shellcheck disable=SC2140
 # shellcheck disable=SC2155
 # shellcheck disable=SC3003
+# shellcheck disable=SC3043
 #############################################
 
 ### Start of script variables ###
 readonly SCRIPT_NAME="YazFi"
 readonly SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
-readonly YAZFI_VERSION="v4.4.3"
-readonly SCRIPT_VERSION="v4.4.3"
+readonly YAZFI_VERSION="v4.4.4"
+readonly SCRIPT_VERSION="v4.4.4"
 SCRIPT_BRANCH="master"
 SCRIPT_REPO="https://jackyaz.io/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
@@ -65,11 +66,25 @@ readonly CLEARFORMAT="\\e[0m"
 readonly LAN="$(nvram get lan_ipaddr)"
 [ -z "$(nvram get odmpid)" ] && ROUTER_MODEL=$(nvram get productid) || ROUTER_MODEL=$(nvram get odmpid)
 
+##-------------------------------------##
+## Added by Martinski W. [2022-Nov-18] ##
+##-------------------------------------##
+_GetWiFiVirtualInterfaceNames_()
+{
+   local IFListStr=""
+   for IFname in $(nvram get wl0_vifnames) $(nvram get wl1_vifnames) $(nvram get wl2_vifnames) $(nvram get wl3_vifnames)
+   do
+       IFname="$(echo "$IFname" | grep -E "^wl[0-3][.][1-3]$")"
+       [ -n "$IFname" ] && { [ -n "$IFListStr" ] && IFListStr="$IFListStr $IFname" || IFListStr="$IFname" ; }
+   done
+   echo "$IFListStr"
+}
+
 ##----------------------------------------##
-## Modified by Martinski W. [2022-Dec-23] ##
+## Modified by Martinski W. [2022-Nov-18] ##
 ##----------------------------------------##
 readonly IFACELIST_FULL="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3 wl3.1 wl3.2 wl3.3"
-IFACELIST="$(echo "$(nvram get wl0_vifnames) $(nvram get wl1_vifnames) $(nvram get wl2_vifnames) $(nvram get wl3_vifnames)" | awk '{$1=$1;print}')"
+IFACELIST="$(_GetWiFiVirtualInterfaceNames_)"
 ### End of router environment variables ###
 
 ### Start of path variables ###
@@ -156,7 +171,7 @@ Generate_Random_String(){
 	else
 		printf "${BOLD}Invalid number provided, using default of 16 characters${CLEARFORMAT}\\n"
 	fi
-	
+
 	< /dev/urandom tr -cd 'A-Za-z0-9' | head -c "$PASSLENGTH"
 }
 
@@ -258,17 +273,17 @@ Iface_Manage(){
 
 Iface_BounceClients(){
 	Print_Output true "Forcing $SCRIPT_NAME Guest WiFi clients to reauthenticate" "$PASS"
-	
+
 	for IFACE in $IFACELIST; do
 		wl -i "$IFACE" radio off >/dev/null 2>&1
 	done
-	
+
 	sleep 10
-	
+
 	for IFACE in $IFACELIST; do
 		wl -i "$IFACE" radio on >/dev/null 2>&1
 	done
-	
+
 	ARPDUMP="$(arp -an)"
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ]; then
@@ -287,7 +302,7 @@ Iface_BounceClients(){
 			fi
 		fi
 	done
-	
+
 	ip -s -s neigh flush all >/dev/null 2>&1
 	killall -q networkmap
 	sleep 5
@@ -302,15 +317,15 @@ Auto_DNSMASQ(){
 			if [ -f /jffs/scripts/dnsmasq.postconf ]; then
 				STARTUPLINECOUNT=$(grep -c "# $SCRIPT_NAME" /jffs/scripts/dnsmasq.postconf)
 				STARTUPLINECOUNTEX=$(grep -cx "cat $DNSCONF >> /etc/dnsmasq.conf # $SCRIPT_NAME" /jffs/scripts/dnsmasq.postconf)
-				
+
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/dnsmasq.postconf
 				fi
-				
+
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					echo "cat $DNSCONF >> /etc/dnsmasq.conf # $SCRIPT_NAME" >> /jffs/scripts/dnsmasq.postconf
 				fi
-				
+
 				if [ "$(grep -c "NextDNS" /jffs/scripts/dnsmasq.postconf)" -gt 0 ]; then
 					sed -i '/exit 0/d' /jffs/scripts/dnsmasq.postconf
 				fi
@@ -324,7 +339,7 @@ Auto_DNSMASQ(){
 		delete)
 			if [ -f /jffs/scripts/dnsmasq.postconf ]; then
 				STARTUPLINECOUNT=$(grep -c "# $SCRIPT_NAME" /jffs/scripts/dnsmasq.postconf)
-				
+
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/dnsmasq.postconf
 				fi
@@ -339,11 +354,11 @@ Auto_ServiceEvent(){
 			if [ -f /jffs/scripts/service-event ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME Guest Networks" /jffs/scripts/service-event)
 				STARTUPLINECOUNTEX=$(grep -cx 'if echo "$2" | /bin/grep -q "'"$SCRIPT_NAME"'" || { \[ "$1" = "restart" \] && \[ "$2" = "wireless" \]; }; then { /jffs/scripts/'"$SCRIPT_NAME"' service_event "$@" & }; fi # '"$SCRIPT_NAME Guest Networks" /jffs/scripts/service-event)
-				
+
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/service-event
 				fi
-				
+
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					echo 'if echo "$2" | /bin/grep -q "'"$SCRIPT_NAME"'" || { [ "$1" = "restart" ] && [ "$2" = "wireless" ]; }; then { /jffs/scripts/'"$SCRIPT_NAME"' service_event "$@" & }; fi # '"$SCRIPT_NAME Guest Networks" >> /jffs/scripts/service-event
 				fi
@@ -357,7 +372,7 @@ Auto_ServiceEvent(){
 		delete)
 			if [ -f /jffs/scripts/service-event ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/service-event)
-				
+
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/service-event
 				fi
@@ -372,11 +387,11 @@ Auto_Startup(){
 			if [ -f /jffs/scripts/firewall-start ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/firewall-start)
 				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME runnow & # $SCRIPT_NAME Guest Networks" /jffs/scripts/firewall-start)
-				
+
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
 				fi
-				
+
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					echo "/jffs/scripts/$SCRIPT_NAME runnow & # $SCRIPT_NAME Guest Networks" >> /jffs/scripts/firewall-start
 				fi
@@ -390,7 +405,7 @@ Auto_Startup(){
 		delete)
 			if [ -f /jffs/scripts/firewall-start ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/firewall-start)
-				
+
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
 				fi
@@ -404,7 +419,7 @@ Auto_ServiceEventEnd(){
 		create)
 			if [ -f /jffs/scripts/firewall-start ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/firewall-start)
-				
+
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
 				fi
@@ -412,11 +427,11 @@ Auto_ServiceEventEnd(){
 			if [ -f /jffs/scripts/service-event-end ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME Guest Networks" /jffs/scripts/service-event-end)
 				STARTUPLINECOUNTEX=$(grep -cx 'if { \[ "$1" = "start" \] || \[ "$1" = "restart" \]; } && \[ "$2" = "firewall" \]; then { /jffs/scripts/'"$SCRIPT_NAME"' runnow & }; fi # '"$SCRIPT_NAME Guest Networks" /jffs/scripts/service-event-end)
-				
+
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/service-event-end
 				fi
-				
+
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					echo 'if { [ "$1" = "start" ] || [ "$1" = "restart" ]; } && [ "$2" = "firewall" ]; then { /jffs/scripts/'"$SCRIPT_NAME"' runnow & }; fi # '"$SCRIPT_NAME Guest Networks" >> /jffs/scripts/service-event-end
 				fi
@@ -430,14 +445,14 @@ Auto_ServiceEventEnd(){
 		delete)
 			if [ -f /jffs/scripts/firewall-start ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/firewall-start)
-				
+
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/firewall-start
 				fi
 			fi
 			if [ -f /jffs/scripts/service-event ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME"' Guest Networks' /jffs/scripts/service-event)
-				
+
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$SCRIPT_NAME"' Guest Networks/d' /jffs/scripts/service-event
 				fi
@@ -452,11 +467,11 @@ Auto_ServiceStart(){
 			if [ -f /jffs/scripts/services-start ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/services-start)
 				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME startup & # $SCRIPT_NAME" /jffs/scripts/services-start)
-				
+
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/services-start
 				fi
-				
+
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					echo "/jffs/scripts/$SCRIPT_NAME startup & # $SCRIPT_NAME" >> /jffs/scripts/services-start
 				fi
@@ -470,7 +485,7 @@ Auto_ServiceStart(){
 		delete)
 			if [ -f /jffs/scripts/services-start ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/services-start)
-				
+
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/services-start
 				fi
@@ -485,11 +500,11 @@ Auto_OpenVPNEvent(){
 			if [ -f /jffs/scripts/openvpn-event ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/openvpn-event)
 				STARTUPLINECOUNTEX=$(grep -cx "/jffs/scripts/$SCRIPT_NAME openvpn "'$1 $script_type & # '"$SCRIPT_NAME" /jffs/scripts/openvpn-event)
-				
+
 				if [ "$STARTUPLINECOUNT" -gt 1 ] || { [ "$STARTUPLINECOUNTEX" -eq 0 ] && [ "$STARTUPLINECOUNT" -gt 0 ]; }; then
 					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/openvpn-event
 				fi
-				
+
 				if [ "$STARTUPLINECOUNTEX" -eq 0 ]; then
 					sed -i '2 i /jffs/scripts/'"$SCRIPT_NAME"' openvpn $1 $script_type & # '"$SCRIPT_NAME" /jffs/scripts/openvpn-event
 				fi
@@ -503,7 +518,7 @@ Auto_OpenVPNEvent(){
 		delete)
 			if [ -f /jffs/scripts/openvpn-event ]; then
 				STARTUPLINECOUNT=$(grep -c '# '"$SCRIPT_NAME" /jffs/scripts/openvpn-event)
-				
+
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/openvpn-event
 				fi
@@ -516,14 +531,14 @@ Auto_Cron(){
 	case $1 in
 		create)
 			STARTUPLINECOUNT=$(cru l | grep -c "$SCRIPT_NAME")
-			
+
 			if [ "$STARTUPLINECOUNT" -eq 0 ]; then
 				cru a "$SCRIPT_NAME" "*/10 * * * * /jffs/scripts/$SCRIPT_NAME check"
 			fi
 		;;
 		delete)
 			STARTUPLINECOUNT=$(cru l | grep -c "$SCRIPT_NAME")
-			
+
 			if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 				cru d "$SCRIPT_NAME"
 			fi
@@ -536,7 +551,7 @@ Avahi_Conf(){
 		create)
 			if [ -f /jffs/scripts/avahi-daemon.postconf ]; then
 				STARTUPLINECOUNT=$(grep -c "$SCRIPT_NAME" /jffs/scripts/avahi-daemon.postconf)
-				
+
 				if [ "$STARTUPLINECOUNT" -eq 0 ]; then
 					{
 					echo 'echo "" >> "$1"'
@@ -561,7 +576,7 @@ Avahi_Conf(){
 		delete)
 			if [ -f /jffs/scripts/avahi-daemon.postconf ]; then
 				STARTUPLINECOUNT=$(grep -c "$SCRIPT_NAME" /jffs/scripts/avahi-daemon.postconf)
-				
+
 				if [ "$STARTUPLINECOUNT" -gt 0 ]; then
 					sed -i -e '/# '"$SCRIPT_NAME"'/d' /jffs/scripts/avahi-daemon.postconf
 					service restart_mdns >/dev/null 2>&1
@@ -681,13 +696,13 @@ Update_Version(){
 		isupdate="$(echo "$updatecheckresult" | cut -f1 -d',')"
 		localver="$(echo "$updatecheckresult" | cut -f2 -d',')"
 		serverver="$(echo "$updatecheckresult" | cut -f3 -d',')"
-		
+
 		if [ "$isupdate" = "version" ]; then
 			Print_Output true "New version of $SCRIPT_NAME available - $serverver" "$PASS"
 		elif [ "$isupdate" = "md5" ]; then
 			Print_Output true "MD5 hash of $SCRIPT_NAME does not match - hotfix available - $serverver" "$PASS"
 		fi
-		
+
 		if [ "$isupdate" != "false" ]; then
 			printf "\\n${BOLD}Do you want to continue with the update? (y/n)${CLEARFORMAT}  "
 			read -r confirm
@@ -699,7 +714,7 @@ Update_Version(){
 					else
 						Print_Output true "WebUI is only supported on firmware versions with addon support" "$WARN"
 					fi
-					
+
 					Update_File README.md
 					Update_File LICENSE
 
@@ -729,7 +744,7 @@ Update_Version(){
 			Clear_Lock
 		fi
 	fi
-	
+
 	if [ "$1" = "force" ]; then
 		serverver=$(/usr/sbin/curl -fsL --retry 3 "$SCRIPT_REPO/version/$SCRIPT_NAME.sh" | grep "SCRIPT_VERSION=" | grep -m1 -oE 'v[0-9]{1,2}([.][0-9]{1,2})([.][0-9]{1,2})')
 		Print_Output true "Downloading latest version ($serverver) of $SCRIPT_NAME" "$PASS"
@@ -864,7 +879,7 @@ Validate_Exists_IFACE(){
 			validiface="true"
 		fi
 	done
-	
+
 	if [ "$validiface" = "true" ]; then
 		return 0
 	else
@@ -883,7 +898,7 @@ Validate_IP(){
 				return 1
 			fi
 		done
-		
+
 		if [ "$3" != "DNS" ]; then
 			if IP_Local "$2"; then
 				return 0
@@ -985,7 +1000,7 @@ Validate_VPNClientNo(){
 	if ! Validate_Number "$1" "$2"; then
 		return 1
 	fi
-	
+
 	if [ "$2" -lt 1 ] || [ "$2" -gt 5 ]; then
 		Print_Output false "$1 - $2 - must be between 1 and 5" "$ERR"
 		return 1
@@ -1055,29 +1070,29 @@ Conf_FixBlanks(){
 	. "$SCRIPT_CONF"
 
 	cp -a "$SCRIPT_CONF" "$SCRIPT_CONF.bak"
-	
+
 	for IFACEBLANK in $IFACELIST_FULL; do
 		IFACETMPBLANK="$(Get_Iface_Var "$IFACEBLANK")"
 		IPADDRTMPBLANK=""
-		
+
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_IPADDR")" ]; then
 			IPADDRTMPBLANK="192.168.0"
-			
+
 			COUNTER=0
 			until [ "$(grep -o "$IPADDRTMPBLANK" $SCRIPT_CONF | wc -l)" -eq 0 ] && [ "$(ifconfig -a | grep -o "$IPADDRTMPBLANK" | wc -l )" -eq 0 ]; do
 				IPADDRTMPBLANK="192.168.$COUNTER"
 				COUNTER=$((COUNTER + 1))
 			done
-			
+
 			sed -i -e "s/${IFACETMPBLANK}_IPADDR=/${IFACETMPBLANK}_IPADDR=${IPADDRTMPBLANK}.0/" "$SCRIPT_CONF"
 			Print_Output false "${IFACETMPBLANK}_IPADDR is blank, setting to next available subnet" "$WARN"
 		fi
-		
+
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_DHCPSTART")" ]; then
 			sed -i -e "s/${IFACETMPBLANK}_DHCPSTART=/${IFACETMPBLANK}_DHCPSTART=2/" "$SCRIPT_CONF"
 			Print_Output false "${IFACETMPBLANK}_DHCPSTART is blank, setting to 2" "$WARN"
 		fi
-		
+
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_DHCPEND")" ]; then
 			sed -i -e "s/${IFACETMPBLANK}_DHCPEND=/${IFACETMPBLANK}_DHCPEND=254/" "$SCRIPT_CONF"
 			Print_Output false "${IFACETMPBLANK}_DHCPEND is blank, setting to 254" "$WARN"
@@ -1115,7 +1130,7 @@ Conf_FixBlanks(){
 				Print_Output false "${IFACETMPBLANK}_DNS1 is blank, setting to $IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
 			fi
 		fi
-		
+
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_DNS2")" ]; then
 			if [ -n "$(eval echo '$'"${IFACETMPBLANK}_IPADDR")" ]; then
 				sed -i -e "s/${IFACETMPBLANK}_DNS2=/${IFACETMPBLANK}_DNS2=$(eval echo '$'"${IFACETMPBLANK}_IPADDR" | cut -f1-3 -d".").$(nvram get lan_ipaddr | cut -f4 -d".")/" "$SCRIPT_CONF"
@@ -1125,39 +1140,39 @@ Conf_FixBlanks(){
 				Print_Output false "${IFACETMPBLANK}_DNS2 is blank, setting to $IPADDRTMPBLANK.$(nvram get lan_ipaddr | cut -f4 -d".")" "$WARN"
 			fi
 		fi
-		
+
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_FORCEDNS")" ]; then
 			sed -i -e "s/${IFACETMPBLANK}_FORCEDNS=/${IFACETMPBLANK}_FORCEDNS=false/" "$SCRIPT_CONF"
 			Print_Output false "${IFACETMPBLANK}_FORCEDNS is blank, setting to false" "$WARN"
 		fi
-		
+
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_ALLOWINTERNET")" ]; then
 			ALLOWINTERNETTMP="true"
 			sed -i -e "s/${IFACETMPBLANK}_ALLOWINTERNET=/${IFACETMPBLANK}_ALLOWINTERNET=true/" "$SCRIPT_CONF"
 			Print_Output false "${IFACETMPBLANK}_ALLOWINTERNET is blank, setting to true" "$WARN"
 		fi
-		
+
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_REDIRECTALLTOVPN")" ]; then
 			REDIRECTTMP="false"
 			sed -i -e "s/${IFACETMPBLANK}_REDIRECTALLTOVPN=/${IFACETMPBLANK}_REDIRECTALLTOVPN=false/" "$SCRIPT_CONF"
 			Print_Output false "${IFACETMPBLANK}_REDIRECTALLTOVPN is blank, setting to false" "$WARN"
 		fi
-		
+
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_VPNCLIENTNUMBER")" ]; then
 			sed -i -e "s/${IFACETMPBLANK}_VPNCLIENTNUMBER=/${IFACETMPBLANK}_VPNCLIENTNUMBER=1/" "$SCRIPT_CONF"
 			Print_Output false "${IFACETMPBLANK}_VPNCLIENTNUMBER is blank, setting to 1" "$WARN"
 		fi
-		
+
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_TWOWAYTOGUEST")" ]; then
 			sed -i -e "s/${IFACETMPBLANK}_TWOWAYTOGUEST=/${IFACETMPBLANK}_TWOWAYTOGUEST=false/" "$SCRIPT_CONF"
 			Print_Output false "${IFACETMPBLANK}_TWOWAYTOGUEST is blank, setting to false" "$WARN"
 		fi
-		
+
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_ONEWAYTOGUEST")" ]; then
 			sed -i -e "s/${IFACETMPBLANK}_ONEWAYTOGUEST=/${IFACETMPBLANK}_ONEWAYTOGUEST=false/" "$SCRIPT_CONF"
 			Print_Output false "${IFACETMPBLANK}_ONEWAYTOGUEST is blank, setting to false" "$WARN"
 		fi
-		
+
 		if [ -z "$(eval echo '$'"${IFACETMPBLANK}_CLIENTISOLATION")" ]; then
 			sed -i -e "s/${IFACETMPBLANK}_CLIENTISOLATION=/${IFACETMPBLANK}_CLIENTISOLATION=false/" "$SCRIPT_CONF"
 			Print_Output false "${IFACETMPBLANK}_CLIENTISOLATION is blank, setting to false" "$WARN"
@@ -1174,16 +1189,16 @@ Conf_FixBlanks(){
 Conf_Validate(){
 	CONF_VALIDATED="true"
 	NETWORKS_ENABLED="false"
-	
+
 	Conf_FixBlanks
-	
+
 	for IFACE in $IFACELIST_FULL; do
 		IFACETMP="$(Get_Iface_Var "$IFACE")"
 		IPADDRTMP=""
 		ENABLEDTMP=""
 		REDIRECTTMP=""
 		IFACE_PASS="true"
-		
+
 		if [ -z "$(eval echo '$'"${IFACETMP}_ENABLED")" ]; then
 			ENABLEDTMP="false"
 			sed -i -e "s/${IFACETMP}_ENABLED=/${IFACETMP}_ENABLED=false/" "$SCRIPT_CONF"
@@ -1194,35 +1209,35 @@ Conf_Validate(){
 		else
 			ENABLEDTMP="$(eval echo '$'"${IFACETMP}_ENABLED")"
 		fi
-		
+
 		if ! Validate_Exists_IFACE "$IFACE" silent && [ "$ENABLEDTMP" = "true" ]; then
 			IFACE_PASS="false"
 			Print_Output false "$IFACE - Interface not supported on this router" "$ERR"
 		else
 			if [ "$ENABLEDTMP" = "true" ]; then
 				NETWORKS_ENABLED="true"
-				
+
 				if ! Validate_Enabled_IFACE "$IFACE"; then
 					IFACE_PASS="false"
 				fi
-				
+
 				if [ "$(eval echo '$'"${IFACETMP}_ENABLED")" = "true" ]; then
 					if ! Validate_IP "${IFACETMP}_IPADDR" "$(eval echo '$'"${IFACETMP}_IPADDR")"; then
 						IFACE_PASS="false"
 					else
 						IPADDRTMP="$(eval echo '$'"${IFACETMP}_IPADDR" | cut -f1-3 -d".")"
-						
+
 						if [ "$(eval echo '$'"${IFACETMP}_IPADDR" | cut -f4 -d".")" -ne 0 ]; then
 							sed -i -e "s/${IFACETMP}_IPADDR=$(eval echo '$'"${IFACETMP}_IPADDR")/${IFACETMP}_IPADDR=$IPADDRTMP.0/" "$SCRIPT_CONF"
 							Print_Output false "${IFACETMP}_IPADDR setting last octet to 0" "$WARN"
 						fi
-						
+
 						if [ "$(ifconfig -a | grep -o "inet addr:$IPADDRTMP.$(nvram get lan_ipaddr | cut -f4 -d'.')"  | sed 's/inet addr://' | wc -l )" -gt 1 ]; then
 							Print_Output false "${IFACETMP}_IPADDR ($(eval echo '$'"${IFACETMP}_IPADDR")) has been used for another interface already" "$ERR"
 							IFACE_PASS="false"
 						fi
 					fi
-					
+
 					if [ -n "$(eval echo '$'"${IFACETMP}_DHCPSTART")" ] && [ -n "$(eval echo '$'"${IFACETMP}_DHCPEND")" ]; then
 						if ! Validate_DHCP "${IFACETMP}_DHCPSTART|and|${IFACETMP}_DHCPEND" "$(eval echo '$'"${IFACETMP}_DHCPSTART")" "$(eval echo '$'"${IFACETMP}_DHCPEND")"; then
 						IFACE_PASS="false"
@@ -1247,39 +1262,39 @@ Conf_Validate(){
 							sed -i -e "s/${IFACETMP}_DNS2=.*/${IFACETMP}_DNS2=$(eval echo '$'"${IFACETMP}_DNS1")/" "$SCRIPT_CONF"
 						fi
 					fi
-					
+
 					if ! Validate_IP "${IFACETMP}_DNS1" "$(eval echo '$'"${IFACETMP}_DNS1")" "DNS"; then
 						IFACE_PASS="false"
 					fi
-					
+
 					if ! Validate_IP "${IFACETMP}_DNS2" "$(eval echo '$'"${IFACETMP}_DNS2")" "DNS"; then
 						IFACE_PASS="false"
 					fi
-					
+
 					if ! Validate_TrueFalse "${IFACETMP}_ALLOWINTERNET" "$(eval echo '$'"${IFACETMP}_ALLOWINTERNET")"; then
 						ALLOWINTERNETTMP="true"
 						IFACE_PASS="false"
 					else
 						ALLOWINTERNETTMP="$(eval echo '$'"${IFACETMP}_ALLOWINTERNET")"
 					fi
-					
+
 					if [ "$ALLOWINTERNETTMP" = "false" ] && ! IP_Local "$(eval echo '$'"${IFACETMP}_DNS1")"; then
 						Print_Output false "$IFACE has internet access disabled and a non-local IP has been set for DNS1" "$ERR"
 						IFACE_PASS="false"
 					fi
-					
+
 					if [ "$ALLOWINTERNETTMP" = "false" ] && ! IP_Local "$(eval echo '$'"${IFACETMP}_DNS2")"; then
 						Print_Output false "$IFACE has internet access disabled and a non-local IP has been set for DNS2" "$ERR"
 						IFACE_PASS="false"
 					fi
-					
+
 					if ! Validate_TrueFalse "${IFACETMP}_REDIRECTALLTOVPN" "$(eval echo '$'"${IFACETMP}_REDIRECTALLTOVPN")"; then
 						REDIRECTTMP="false"
 						IFACE_PASS="false"
 					else
 						REDIRECTTMP="$(eval echo '$'"${IFACETMP}_REDIRECTALLTOVPN")"
 					fi
-					
+
 					if [ "$REDIRECTTMP" = "true" ] && [ "$ALLOWINTERNETTMP" = "true" ]; then
 						if ! Validate_VPNClientNo "${IFACETMP}_VPNCLIENTNUMBER" "$(eval echo '$'"${IFACETMP}_VPNCLIENTNUMBER")"; then
 							IFACE_PASS="false"
@@ -1291,47 +1306,47 @@ Conf_Validate(){
 							fi
 						fi
 					fi
-					
+
 					if ! Validate_TrueFalse "${IFACETMP}_TWOWAYTOGUEST" "$(eval echo '$'"${IFACETMP}_TWOWAYTOGUEST")"; then
 						IFACE_PASS="false"
 					fi
-					
+
 					if ! Validate_TrueFalse "${IFACETMP}_ONEWAYTOGUEST" "$(eval echo '$'"${IFACETMP}_ONEWAYTOGUEST")"; then
 						IFACE_PASS="false"
 					fi
-					
+
 					if [ "$(eval echo '$'"${IFACETMP}_ONEWAYTOGUEST")" = "true" ] && [ "$(eval echo '$'"${IFACETMP}_TWOWAYTOGUEST")" = "true" ]; then
 						Print_Output false "$(eval echo '$'"${IFACETMP}_ONEWAYTOGUEST") & $(eval echo '$'"${IFACETMP}_TWOWAYTOGUEST") cannot both be true" "$ERR"
 						IFACE_PASS="false"
 					fi
-					
+
 					if ! Validate_TrueFalse "${IFACETMP}_CLIENTISOLATION" "$(eval echo '$'"${IFACETMP}_CLIENTISOLATION")"; then
 						IFACE_PASS="false"
 					fi
-					
+
 					if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.1)" ]; then
 						if [ "$ROUTER_MODEL" = "RT-AX88U" ] || [ "$ROUTER_MODEL" = "RT-AX3000" ]; then
 							sed -i -e "s/${IFACETMP}_CLIENTISOLATION=true/${IFACETMP}_CLIENTISOLATION=false/" "$SCRIPT_CONF"
 						fi
 					fi
-					
+
 					if [ "$IFACE_PASS" = "true" ]; then
 						Print_Output false "$IFACE passed validation" "$PASS"
 					fi
 				fi
 			fi
 		fi
-		
+
 		if [ "$IFACE_PASS" = "false" ]; then
 			IFACELIST="$(echo "$IFACELIST" | sed 's/'"$IFACE"'//;s/  / /')"
 			Print_Output false "$IFACE failed validation, removing from list" "$CRIT"
 		fi
 	done
-	
+
 	if [ "$NETWORKS_ENABLED" = "false" ]; then
 		Print_Output true "No $SCRIPT_NAME guests are enabled in the configuration file!" "$CRIT"
 	fi
-	
+
 	return 0
 }
 
@@ -1339,19 +1354,19 @@ Create_Dirs(){
 	if [ ! -d "$SCRIPT_DIR" ]; then
 		mkdir -p "$SCRIPT_DIR"
 	fi
-	
+
 	if [ ! -d "$USER_SCRIPT_DIR" ]; then
 		mkdir -p "$USER_SCRIPT_DIR"
 	fi
-	
+
 	if [ ! -d "$SCRIPT_WEBPAGE_DIR" ]; then
 		mkdir -p "$SCRIPT_WEBPAGE_DIR"
 	fi
-		
+
 	if [ ! -d "$SCRIPT_WEB_DIR" ]; then
 		mkdir -p "$SCRIPT_WEB_DIR"
 	fi
-	
+
 	if [ ! -d "$SHARED_DIR" ]; then
 		mkdir -p "$SHARED_DIR"
 	fi
@@ -1359,10 +1374,10 @@ Create_Dirs(){
 
 Create_Symlinks(){
 	rm -f "$SCRIPT_WEB_DIR/"* 2>/dev/null
-	
+
 	ln -s "$SCRIPT_DIR/config"  "$SCRIPT_WEB_DIR/config.htm" 2>/dev/null
 	ln -s "$SCRIPT_DIR/.connectedclients" "$SCRIPT_WEB_DIR/connectedclients.htm" 2>/dev/null
-	
+
 	if [ ! -d "$SHARED_WEB_DIR" ]; then
 		ln -s "$SHARED_DIR" "$SHARED_WEB_DIR" 2>/dev/null
 	fi
@@ -1432,20 +1447,20 @@ Mount_WebUI(){
 	fi
 	cp -f "$SCRIPT_DIR/YazFi_www.asp" "$SCRIPT_WEBPAGE_DIR/$MyPage"
 	echo "$SCRIPT_NAME" > "$SCRIPT_WEBPAGE_DIR/$(echo $MyPage | cut -f1 -d'.').title"
-	
+
 	if [ "$(uname -o)" = "ASUSWRT-Merlin" ]; then
 		if [ ! -f "/tmp/menuTree.js" ]; then
 			cp -f "/www/require/modules/menuTree.js" "/tmp/"
 		fi
-		
+
 		sed -i "\\~$MyPage~d" /tmp/menuTree.js
-		
+
 		sed -i "/url: \"Guest_network.asp\", tabName:/a {url: \"$MyPage\", tabName: \"$SCRIPT_NAME\"}," /tmp/menuTree.js
-		
+
 		umount /www/require/modules/menuTree.js 2>/dev/null
 		mount -o bind /tmp/menuTree.js /www/require/modules/menuTree.js
 	fi
-	
+
 	flock -u "$FD"
 	Print_Output true "Mounted $SCRIPT_NAME WebUI page as $MyPage" "$PASS"
 }
@@ -1507,7 +1522,7 @@ Conf_Exists(){
 
 Firewall_Chains(){
 	FWRDSTART="$(iptables -nvL FORWARD --line | grep -E "all.*state RELATED,ESTABLISHED" | tail -1 | awk '{print $1}')"
-	
+
 	case $1 in
 		create)
 			for CHAIN in $CHAINS; do
@@ -1522,7 +1537,7 @@ Firewall_Chains(){
 						;;
 						"$LGRJT")
 							iptables -I "$LGRJT" -j REJECT
-							
+
 							if [ -f "$SCRIPT_DIR/.rejectlogging" ]; then
 								iptables -I $LGRJT -j LOG --log-prefix "REJECT " --log-tcp-sequence --log-tcp-options --log-ip-options
 							fi
@@ -1564,7 +1579,7 @@ Firewall_Chains(){
 							iptables -D FORWARD -p tcp -m tcp --dport 853 -j "$CHAIN"
 						;;
 					esac
-					
+
 					iptables -F "$CHAIN"
 					iptables -X "$CHAIN"
 				fi
@@ -1577,7 +1592,7 @@ Firewall_Chains(){
 							iptables -t nat -D PREROUTING -p tcp -m tcp --dport 53 -j "$CHAIN"
 						;;
 					esac
-					
+
 					iptables -F "$CHAIN"
 					iptables -X "$CHAIN"
 				fi
@@ -1590,13 +1605,13 @@ Firewall_Rules(){
 	ACTIONS=""
 	IFACE="$2"
 	IFACE_WAN=""
-	
+
 	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
 		IFACE_WAN="ppp0"
 	else
 		IFACE_WAN="$(nvram get wan0_ifname)"
 	fi
-	
+
 	case $1 in
 		create)
 			ACTIONS="-D -I"
@@ -1605,19 +1620,19 @@ Firewall_Rules(){
 			ACTIONS="-D"
 		;;
 	esac
-	
+
 	for ACTION in $ACTIONS; do
-		
+
 		ebtables -t broute "$ACTION" BROUTING -p ipv4 -i "$IFACE" -j DROP
 		ebtables -t broute "$ACTION" BROUTING -p ipv6 -i "$IFACE" -j DROP
 		ebtables -t broute "$ACTION" BROUTING -p arp -i "$IFACE" -j DROP
-		
+
 		ebtables -t broute -D BROUTING -p IPv4 -i "$IFACE" --ip-dst "$LAN"/24 --ip-proto tcp -j DROP
 		ebtables -t broute -D BROUTING -p IPv4 -i "$IFACE" --ip-dst "$LAN" --ip-proto icmp -j ACCEPT
 		ebtables -t broute -D BROUTING -p IPv4 -i "$IFACE" --ip-dst "$LAN"/24 --ip-proto icmp -j DROP
-		
+
 		iptables "$ACTION" "$FWRD" -i "$IFACE" -j ACCEPT
-		
+
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")" = "false" ]; then
 			iptables "$ACTION" "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT"
 			iptables "$ACTION" "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -j "$LGRJT"
@@ -1625,47 +1640,49 @@ Firewall_Rules(){
 			iptables -D "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT"
 			iptables -D "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -j "$LGRJT"
 		fi
-		
+
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")" = "true" ]; then
 			iptables "$ACTION" "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j ACCEPT
+			iptables "$ACTION" "$FWRD" -i wl+ -o "$IFACE" -j "$LGRJT"
 			iptables "$ACTION" "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -m state --state RELATED,ESTABLISHED -j ACCEPT
 		else
 			iptables -D "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j ACCEPT
+			iptables -D "$FWRD" -i wl+ -o "$IFACE" -j "$LGRJT"
 			iptables -D "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -m state --state RELATED,ESTABLISHED -j ACCEPT
 		fi
-		
+
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")" = "false" ] && [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")" = "true" ]; then
 			iptables -D "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT"
 		fi
-		
+
 		iptables "$ACTION" "$INPT" -i "$IFACE" -j "$LGRJT"
 		iptables "$ACTION" "$INPT" -i "$IFACE" -p icmp -j ACCEPT
 		iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 67,123 -j ACCEPT
-		
+
 		ENABLED_WINS="$(nvram get smbd_wins)"
 		ENABLED_SAMBA="$(nvram get enable_samba)"
 		if ! Validate_Number "" "$ENABLED_SAMBA" silent; then ENABLED_SAMBA=0; fi
 		if ! Validate_Number "" "$ENABLED_WINS" silent; then ENABLED_WINS=0; fi
-		
+
 		if [ "$ENABLED_WINS" -eq 1 ] && [ "$ENABLED_SAMBA" -eq 1 ]; then
 			iptables "$ACTION" "$INPT" -i "$IFACE" -p udp -m multiport --dports 137,138 -j ACCEPT
 		else
 			iptables -D "$INPT" -i "$IFACE" -p udp -m multiport --dports 137,138 -j ACCEPT
 		fi
-		
+
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")" = "true" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")" = "true" ]; then
 			iptables "$ACTION" "$INPT" -i "$IFACE" -d 224.0.0.0/4 -j ACCEPT
 		fi
-		
+
 		modprobe xt_comment
 		iptables -t nat -D POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -o "$IFACE" -m comment --comment "$(Get_Guest_Name_Old "$IFACE")" -j MASQUERADE
 		iptables -t nat "$ACTION" POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")".0/24 -o "$IFACE" -m comment --comment "$(Get_Guest_Name "$IFACE")" -j MASQUERADE
-		
+
 		ENABLED_NTPD=0
 		if [ -f /jffs/scripts/nat-start ]; then
 			if [ "$(grep -c '# ntpMerlin' /jffs/scripts/nat-start)" -gt 0 ]; then ENABLED_NTPD=1; fi
 		fi
-		
+
 		if [ "$ENABLED_NTPD" -eq 1 ]; then
 			iptables -t nat "$ACTION" PREROUTING -i "$IFACE" -p udp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
 			iptables -t nat "$ACTION" PREROUTING -i "$IFACE" -p tcp --dport 123 -j DNAT --to "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"."$(echo "$LAN" | cut -f4 -d'.')"
@@ -1687,13 +1704,13 @@ Firewall_Rules(){
 Firewall_BlockInternet(){
 	ACTIONS=""
 	IFACE="$2"
-	
+
 	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
 		IFACE_WAN="ppp0"
 	else
 		IFACE_WAN="$(nvram get wan0_ifname)"
 	fi
-	
+
 	case $1 in
 		create)
 			ACTIONS="-D -I"
@@ -1702,7 +1719,7 @@ Firewall_BlockInternet(){
 			ACTIONS="-D"
 		;;
 	esac
-	
+
 	modprobe xt_comment
 	for ACTION in $ACTIONS; do
 		iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_WAN" -m comment --comment "$(Get_Guest_Name "$IFACE") block internet" -j "$LGRJT"
@@ -1715,7 +1732,7 @@ Firewall_BlockInternet(){
 Firewall_DNS(){
 	ACTIONS=""
 	IFACE="$2"
-	
+
 	case $1 in
 		create)
 			ACTIONS="-D -I"
@@ -1724,19 +1741,19 @@ Firewall_DNS(){
 			ACTIONS="-D"
 		;;
 	esac
-	
+
 	for ACTION in $ACTIONS; do
 		if IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")" || IP_Local "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS2")"; then
 			RULES=$(iptables -nvL "$INPT" --line-number | grep "$IFACE" | grep "pt:53" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -D "$INPT" "$RULENO"
 			done
-			
+
 			RULES=$(iptables -nvL "$FWRD" --line-number | grep "$IFACE" | grep "pt:53" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -D "$FWRD" "$RULENO"
 			done
-			
+
 			if IP_Router "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")" "$IFACE" || IP_Router "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS2")" "$IFACE"; then
 				if ifconfig "br0:pixelserv-tls" | grep -q "inet addr:" >/dev/null 2>&1; then
 					IP_PXLSRV=$(ifconfig br0:pixelserv-tls | grep "inet addr:" | cut -d: -f2 | awk '{print $1}')
@@ -1747,7 +1764,7 @@ Firewall_DNS(){
 						iptables -D "$INPT" "$RULENO"
 					done
 				fi
-				
+
 				for PROTO in tcp udp; do
 					iptables "$ACTION" "$INPT" -i "$IFACE" -p "$PROTO" --dport 53 -j ACCEPT
 				done
@@ -1778,25 +1795,25 @@ Firewall_DNS(){
 			for RULENO in $RULES; do
 				iptables -D "$INPT" "$RULENO"
 			done
-			
+
 			RULES=$(iptables -nvL "$FWRD" --line-number | grep "$IFACE" | grep "pt:53" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -D "$FWRD" "$RULENO"
 			done
 		fi
-		
+
 		### DNSFilter rules - credit to @RMerlin for the original implementation in Asuswrt ###
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_FORCEDNS")" = "true" ]; then
 			RULES=$(iptables -t nat -nvL "$DNSFLTR" --line-number | grep "$IFACE" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -t nat -D "$DNSFLTR" "$RULENO"
 			done
-			
+
 			RULES=$(iptables -nvL $DNSFLTR_DOT --line-number | grep "$IFACE" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -t nat -D "$DNSFLTR_DOT" "$RULENO"
 			done
-			
+
 			iptables -t nat "$ACTION" "$DNSFLTR" -i "$IFACE" -j DNAT --to-destination "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")"
 			iptables "$ACTION" "$DNSFLTR_DOT" -i "$IFACE" ! -d "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_DNS1")" -j "$LGRJT"
 		else
@@ -1804,7 +1821,7 @@ Firewall_DNS(){
 			for RULENO in $RULES; do
 				iptables -t nat -D "$DNSFLTR" "$RULENO"
 			done
-			
+
 			RULES=$(iptables -nvL $DNSFLTR_DOT --line-number | grep "$IFACE" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -t nat -D "$DNSFLTR_DOT" "$RULENO"
@@ -1832,13 +1849,13 @@ Firewall_NVRAM(){
 
 Firewall_NAT(){
 	IFACE_WAN=""
-	
+
 	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
 		IFACE_WAN="ppp0"
 	else
 		IFACE_WAN="$(nvram get wan0_ifname)"
 	fi
-	
+
 	case $1 in
 		create)
 			for ACTION in -D -I; do
@@ -1856,17 +1873,17 @@ Firewall_NAT(){
 			for RULENO in $RULES; do
 				iptables -t nat -D POSTROUTING "$RULENO"
 			done
-			
+
 			RULES=$(iptables -t nat -nvL POSTROUTING --line-number | grep "$(Get_Guest_Name "$2") VPN" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -t nat -D POSTROUTING "$RULENO"
 			done
-			
+
 			RULES=$(iptables -nvL "$FWRD" --line-number | grep "$2" | grep "tun1" | awk '{print $1}' | sort -nr)
 			for RULENO in $RULES; do
 				iptables -D "$FWRD" "$RULENO"
 			done
-			
+
 			iptables -D "$FWRD" -i "$2" -o "$IFACE_WAN" -j "$LGRJT"
 			iptables -D "$FWRD" -i "$IFACE_WAN" -o "$2" -j "$LGRJT"
 		;;
@@ -1906,7 +1923,7 @@ Routing_RPDB(){
 			done
 		;;
 	esac
-	
+
 	ip route flush cache
 }
 
@@ -1919,15 +1936,15 @@ Routing_VPNDirector(){
 		create)
 			VPN_IFACE_NVRAM=""
 			VPN_IFACE_NVRAM="<1>$(Get_Guest_Name "$2")>$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").0/24>>OVPN$3"
-			
+
 			if ! echo "$VPN_IP_LIST_ORIG" | grep -q "$VPN_IFACE_NVRAM"; then
 				Routing_VPNDirector delete "$2"
 				VPN_IP_LIST_NEW="${VPN_IP_LIST_NEW}${VPN_IFACE_NVRAM}"
 			fi
-			
+
 			VPN_IFACE_NVRAM_SAFE="$(echo "<0>$(Get_Guest_Name "$2")>$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").0/24>>OVPN$3" | sed -e 's/\//\\\//g;s/\./\\./g;s/ /\\ /g')"
 			VPN_IP_LIST_NEW=$(echo "$VPN_IP_LIST_NEW" | sed -e "s/$VPN_IFACE_NVRAM_SAFE//g")
-			
+
 			COUNTER=1
 			until [ $COUNTER -gt 5 ]; do
 				if [ $COUNTER -eq "$3" ]; then
@@ -1951,17 +1968,17 @@ Routing_VPNDirector(){
 		;;
 		deleteall)
 			Routing_VPNDirector initialise 2>/dev/null
-			
+
 			for IFACE in $IFACELIST; do
 				Routing_VPNDirector delete "$IFACE" 2>/dev/null
 			done
-			
+
 			Routing_VPNDirector save 2>/dev/null
 		;;
 		save)
 			if [ "$VPN_IP_LIST_ORIG" != "$VPN_IP_LIST_NEW" ]; then
 				printf "%s" "$VPN_IP_LIST_NEW" > /jffs/openvpn/vpndirector_rulelist
-				
+
 				COUNTER=1
 				until [ $COUNTER -gt 5 ]; do
 					if ifconfig "tun1$COUNTER" >/dev/null 2>&1; then
@@ -1972,7 +1989,7 @@ Routing_VPNDirector(){
 					fi
 					COUNTER=$((COUNTER + 1))
 				done
-				
+
 				service restart_vpnrouting0 >/dev/null 2>&1
 			fi
 		;;
@@ -1998,12 +2015,12 @@ Routing_NVRAM(){
 				VPN_IFACE_NVRAM="<$VPN_NVRAM>$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").0/24>>VPN"
 			fi
 			VPN_IFACE_NVRAM_SAFE="$(echo "$VPN_IFACE_NVRAM" | sed -e 's/\//\\\//g;s/\./\\./g;s/ /\\ /g')"
-			
+
 			if ! eval echo '$'"VPN_IP_LIST_ORIG_$3" | grep -q "$VPN_IFACE_NVRAM"; then
 				Routing_NVRAM delete "$2"
 				eval "VPN_IP_LIST_NEW_$3=$(echo "$(eval echo '$'"VPN_IP_LIST_NEW_$3")$VPN_IFACE_NVRAM" | Escape_Sed)"
 			fi
-			
+
 			COUNTER=1
 			until [ $COUNTER -gt 5 ]; do
 				if [ $COUNTER -eq "$3" ]; then
@@ -2013,7 +2030,7 @@ Routing_NVRAM(){
 				eval "VPN_IP_LIST_NEW_$COUNTER=$(eval echo '$'"VPN_IP_LIST_NEW_$COUNTER" | sed -e "s/$VPN_IFACE_NVRAM_SAFE//g" | Escape_Sed)"
 				COUNTER=$((COUNTER + 1))
 			done
-			
+
 			VPN_NVRAM="$(Get_Guest_Name_Old "$2")"
 			VPN_IFACE_NVRAM=""
 			if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 384.18)" ]; then
@@ -2022,7 +2039,7 @@ Routing_NVRAM(){
 				VPN_IFACE_NVRAM="<$VPN_NVRAM>$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".").0/24>>VPN"
 			fi
 			VPN_IFACE_NVRAM_SAFE="$(echo "$VPN_IFACE_NVRAM" | sed -e 's/\//\\\//g;s/\./\\./g;s/ /\\ /g')"
-			
+
 			COUNTER=1
 			until [ $COUNTER -gt 5 ]; do
 				eval "VPN_IP_LIST_NEW_$COUNTER=$(eval echo '$'"VPN_IP_LIST_NEW_$COUNTER" | sed -e "s/$VPN_IFACE_NVRAM_SAFE//g" | Escape_Sed)"
@@ -2041,11 +2058,11 @@ Routing_NVRAM(){
 		;;
 		deleteall)
 			Routing_NVRAM initialise 2>/dev/null
-			
+
 			for IFACE in $IFACELIST; do
 				Routing_NVRAM delete "$IFACE" 2>/dev/null
 			done
-			
+
 			Routing_NVRAM save 2>/dev/null
 		;;
 		save)
@@ -2053,7 +2070,7 @@ Routing_NVRAM(){
 			until [ $COUNTER -gt 5 ]; do
 				if [ "$(eval echo '$'"VPN_IP_LIST_ORIG_$COUNTER")" != "$(eval echo '$'"VPN_IP_LIST_NEW_$COUNTER")" ]; then
 					Print_Output true "VPN Client $COUNTER client list has changed, restarting VPN Client $COUNTER"
-					
+
 					if [ "$(/bin/uname -m)" = "aarch64" ]; then
 						fullstring="$(eval echo '$'"VPN_IP_LIST_NEW_"$COUNTER)"
 						nvram set vpn_client"$COUNTER"_clientlist="$(echo "$fullstring" | cut -c0-255)"
@@ -2065,7 +2082,7 @@ Routing_NVRAM(){
 					else
 						nvram set vpn_client"$COUNTER"_clientlist="$(eval echo '$'"VPN_IP_LIST_NEW_$COUNTER")"
 					fi
-					
+
 					if [ "$(nvram get vpn_client"$COUNTER"_rgw)" -ne 2 ]; then
 						nvram set vpn_client"$COUNTER"_rgw=2
 					fi
@@ -2099,21 +2116,21 @@ DHCP_Conf(){
 		create)
 			CONFSTRING=""
 			CONFADDSTRING=""
-			
+
 			ENABLED_WINS="$(nvram get smbd_wins)"
 			ENABLED_SAMBA="$(nvram get enable_samba)"
 			if ! Validate_Number "" "$ENABLED_SAMBA" silent; then ENABLED_SAMBA=0; fi
 			if ! Validate_Number "" "$ENABLED_WINS" silent; then ENABLED_WINS=0; fi
-			
+
 			ENABLED_NTPD=0
 			if [ -f /jffs/scripts/nat-start ]; then
 				if [ "$(grep -c '# ntpMerlin' /jffs/scripts/nat-start)" -gt 0 ]; then ENABLED_NTPD=1; fi
 			fi
-			
+
 			if [ "$ENABLED_WINS" -eq 1 ] && [ "$ENABLED_SAMBA" -eq 1 ]; then
 				CONFADDSTRING="$CONFADDSTRING||||dhcp-option=$2,44,$(nvram get lan_ipaddr)"
 			fi
-			
+
 			if [ "$ENABLED_NTPD" -eq 1 ]; then
 				CONFADDSTRING="$CONFADDSTRING||||dhcp-option=$2,42,$(nvram get lan_ipaddr)"
 			fi
@@ -2161,19 +2178,19 @@ DHCP_Conf(){
 					sed -i -e '/'"$BEGIN"'/,/'"$END"'/c\' "$TMPCONF"
 				fi
 			done
-			
+
 			DHCP_Conf save 2>/dev/null
 		;;
 		save)
 			sed -i -e 's/||||/\n/g' "$TMPCONF"
-			
+
 			if ! diff -q "$DNSCONF" "$TMPCONF" >/dev/null 2>&1; then
 				cp "$TMPCONF" "$DNSCONF"
 				service restart_dnsmasq >/dev/null 2>&1
 				Print_Output true "DHCP configuration updated"
 				sleep 2
 			fi
-			
+
 			rm -f "$TMPCONF"
 		;;
 	esac
@@ -2183,65 +2200,65 @@ Config_Networks(){
 	Print_Output true "$SCRIPT_NAME $SCRIPT_VERSION starting up"
 	WIRELESSRESTART="false"
 	GUESTLANENABLED="false"
-	
+
 	Create_Dirs
 	Create_Symlinks
-	
+
 	Auto_Startup create 2>/dev/null
 	Auto_Cron create 2>/dev/null
 	Auto_DNSMASQ create 2>/dev/null
 	Auto_ServiceEvent create 2>/dev/null
 	Auto_ServiceStart create 2>/dev/null
 	Auto_OpenVPNEvent create 2>/dev/null
-	
+
 	if ! Conf_Exists; then
 		Conf_Download "$SCRIPT_CONF"
 		Clear_Lock
 		return 1
 	fi
-	
+
 	if ! Conf_Validate; then
 		Clear_Lock
 		return 1
 	fi
-	
+
 	. $SCRIPT_CONF
-	
+
 	DHCP_Conf initialise 2>/dev/null
-	
+
 	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
 		Routing_NVRAM initialise 2>/dev/null
 	else
 		Routing_VPNDirector initialise 2>/dev/null
 	fi
-	
+
 	Firewall_Chains create 2>/dev/null
 	iptables -F "$DNSFLTR_DOT" 2>/dev/null
-	
+
 	for IFACE in $IFACELIST; do
 		VPNCLIENTNO=$(eval echo '$'"$(Get_Iface_Var "$IFACE")_VPNCLIENTNUMBER")
-		
+
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ]; then
 			Iface_Manage create "$IFACE" 2>/dev/null
-			
+
 			Firewall_Rules create "$IFACE" 2>/dev/null
-			
+
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ALLOWINTERNET")" = "true" ]; then
 				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_REDIRECTALLTOVPN")" = "true" ]; then
 					Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - VPN redirection enabled, sending all interface internet traffic over VPN Client $VPNCLIENTNO"
-					
+
 					if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
 						Routing_NVRAM create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
 					else
 						Routing_VPNDirector create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
 					fi
-					
+
 					Firewall_NAT create "$IFACE" "$VPNCLIENTNO" 2>/dev/null
 				else
 					Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - sending all interface internet traffic over WAN interface"
-					
+
 					Firewall_NAT delete "$IFACE" 2>/dev/null
-					
+
 					if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
 						Routing_NVRAM delete "$IFACE" 2>/dev/null
 					else
@@ -2250,23 +2267,23 @@ Config_Networks(){
 				fi
 			else
 				Firewall_NAT delete "$IFACE" 2>/dev/null
-				
+
 				if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
 					Routing_NVRAM delete "$IFACE" 2>/dev/null
 				else
 					Routing_VPNDirector delete "$IFACE" 2>/dev/null
 				fi
 			fi
-			
+
 			Firewall_DNS create "$IFACE" 2>/dev/null
-			
+
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ALLOWINTERNET")" = "false" ]; then
 				Print_Output true "$IFACE (SSID: $(nvram get "${IFACE}_ssid")) - allow internet disabled, blocking all interface internet traffic"
 				Firewall_BlockInternet create "$IFACE" 2>/dev/null
 			else
 				Firewall_BlockInternet delete "$IFACE" 2>/dev/null
 			fi
-			
+
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_CLIENTISOLATION")" = "true" ]; then
 				ISOBEFORE="$(nvram get "${IFACE}_ap_isolate")"
 				if ! Validate_Number "" "$ISOBEFORE" silent; then ISOBEFORE=0; fi
@@ -2286,30 +2303,30 @@ Config_Networks(){
 					WIRELESSRESTART="true"
 				fi
 			fi
-			
+
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")" = "true" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")" = "true" ]; then
 				GUESTLANENABLED="true"
 			fi
-			
+
 			#Set guest interface LAN access to allowed in f/w, prevent creating VLAN
 			if [ "$(nvram get "${IFACE}_lanaccess")" != "on" ]; then
 				nvram set "$IFACE"_lanaccess=on
 				WIRELESSRESTART="true"
 			fi
-			
+
 			Routing_RPDB create "$IFACE" 2>/dev/null
-			
+
 			DHCP_Conf create "$IFACE" 2>/dev/null
-			
+
 			sleep 1
 		else
 			#Remove firewall rules for guest interface
 			Firewall_Rules delete "$IFACE" 2>/dev/null
-			
+
 			Firewall_DNS delete "$IFACE" 2>/dev/null
-			
+
 			Firewall_BlockInternet delete "$IFACE" 2>/dev/null
-			
+
 			#Reset guest interface ISOLATION
 			ISOBEFORE="$(nvram get "${IFACE}_ap_isolate")"
 			if ! Validate_Number "" "$ISOBEFORE" silent; then ISOBEFORE=0; fi
@@ -2319,37 +2336,37 @@ Config_Networks(){
 			if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
 				WIRELESSRESTART="true"
 			fi
-			
+
 			Iface_Manage delete "$IFACE" 2>/dev/null
-			
+
 			DHCP_Conf delete "$IFACE" 2>/dev/null
-			
+
 			if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
 				Routing_NVRAM delete "$IFACE" 2>/dev/null
 			else
 				Routing_VPNDirector delete "$IFACE" 2>/dev/null
 			fi
-			
+
 			Routing_RPDB delete "$IFACE" 2>/dev/null
-			
+
 			Firewall_NAT delete "$IFACE" 2>/dev/null
 		fi
 	done
-	
+
 	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
 		Routing_NVRAM save 2>/dev/null
 	else
 		Routing_VPNDirector save 2>/dev/null
 	fi
-	
+
 	DHCP_Conf save 2>/dev/null
-		
+
 	if [ "$GUESTLANENABLED" = "true" ]; then
 		Avahi_Conf create
 	else
 		Avahi_Conf delete
 	fi
-	
+
 	if [ "$WIRELESSRESTART" = "true" ]; then
 		nvram commit
 		Clear_Lock
@@ -2358,7 +2375,7 @@ Config_Networks(){
 		Execute_UserScripts
 		Iface_BounceClients
 	fi
-	
+
 	Print_Output true "$SCRIPT_NAME $SCRIPT_VERSION completed successfully" "$PASS"
 	Clear_Lock
 }
@@ -2378,7 +2395,7 @@ Generate_QRCode(){
 	QRGUEST_WL="$1"
 	QRSSID="S:$(nvram get "$QRGUEST_WL"_ssid | sed 's/[\\":;,]/\\$&/g');"
 	QRAUTHMODE=$(nvram get "$QRGUEST_WL"_auth_mode_x)
-	
+
 	if [ "$QRAUTHMODE" = 'psk' ] || [ "$QRAUTHMODE" = 'psk2' ] || [ "$QRAUTHMODE" = 'sae' ] || [ "$QRAUTHMODE" = 'pskpsk2' ] || [ "$QRAUTHMODE" = 'psk2sae' ]; then
 		QRTYPE="T:WPA;"
 		QRPASS="P:$(nvram get "$QRGUEST_WL"_wpa_psk | sed 's/[\\":;,]/\\$&/g');"
@@ -2392,11 +2409,11 @@ Generate_QRCode(){
 	else
 		QRSSID="" # Unsupported
 	fi
-	
+
 	if [ "$(nvram get "$QRGUEST_WL"_closed)" -eq 1 ]; then
 		QRHIDE="H:true;"
 	fi
-	
+
 	if [ "$QRSSID" != "" ]; then
 		qrencode -t ANSI -o - "WIFI:${QRTYPE}${QRSSID}${QRPASS}${QRHIDE};"
 	else
@@ -2477,7 +2494,7 @@ MainMenu(){
 	printf "\\n"
 	printf "${BOLD}#############################################${CLEARFORMAT}\\n"
 	printf "\\n"
-	
+
 	while true; do
 		printf "Choose an option:  "
 		read -r menu
@@ -2575,30 +2592,30 @@ MainMenu(){
 			;;
 		esac
 	done
-	
+
 	ScriptHeader
 	MainMenu
 }
 
 Check_Requirements(){
 	CHECKSFAILED="false"
-	
+
 	if [ "$(nvram get sw_mode)" -ne 1 ]; then
 		Print_Output false "Device is not running in router mode - non-router modes are not supported" "$ERR"
 		CHECKSFAILED="true"
 	fi
-	
+
 	if [ "$(nvram get jffs2_scripts)" -ne 1 ]; then
 		nvram set jffs2_scripts=1
 		nvram commit
 		Print_Output true "Custom JFFS Scripts enabled" "$WARN"
 	fi
-	
+
 	if [ "$(nvram get wl0_radio)" -eq 0 ] && [ "$(nvram get wl1_radio)" -eq 0 ] && [ "$(nvram get wl_radio)" -eq 0 ]; then
 		Print_Output false "No wireless radios are enabled!" "$ERR"
 		CHECKSFAILED="true"
 	fi
-	
+
 	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 384.5)" ] && [ "$(Firmware_Version_Check "$(nvram get buildno)")" -ne "$(Firmware_Version_Check 374.43)" ]; then
 		Print_Output true "Older Merlin firmware detected - service-event requires 384.5 or later" "$WARN"
 		Print_Output true "Please update to benefit from $SCRIPT_NAME detecting wireless restarts" "$WARN"
@@ -2606,7 +2623,7 @@ Check_Requirements(){
 		Print_Output true "John's fork detected - service-event requires 374.43_32D6j9527 or later" "$WARN"
 		Print_Output true "Please update to benefit from $SCRIPT_NAME detecting wireless restarts" "$WARN"
 	fi
-	
+
 	if [ "$CHECKSFAILED" = "false" ]; then
 		return 0
 	else
@@ -2618,9 +2635,9 @@ Menu_Install(){
 	ScriptHeader
 	Print_Output true "Welcome to $SCRIPT_NAME $SCRIPT_VERSION, a script by JackYaz"
 	sleep 1
-	
+
 	Print_Output true "Checking your router meets the requirements for $SCRIPT_NAME"
-	
+
 	if ! Check_Requirements; then
 		Print_Output true "Requirements for $SCRIPT_NAME not met, please see above for the reason(s)" "$CRIT"
 		PressEnter
@@ -2628,26 +2645,26 @@ Menu_Install(){
 		rm -f "/jffs/scripts/$SCRIPT_NAME" 2>/dev/null
 		exit 1
 	fi
-	
+
 	Create_Dirs
 	Create_Symlinks
-	
+
 	if Firmware_Version_WebUI ; then
 		Update_File shared-jy.tar.gz
 		Update_File YazFi_www.asp
 	else
 		Print_Output false "WebUI is only support on firmware versions with addon support" "$WARN"
 	fi
-	
+
 	if ! Conf_Exists; then
 		Conf_Download "$SCRIPT_CONF"
 	else
 		Print_Output false "Existing $SCRIPT_CONF found. This will be kept by $SCRIPT_NAME"
 		Conf_Download "$SCRIPT_CONF.example"
 	fi
-	
+
 	Update_File README.md
-	
+
 	Shortcut_Script create
 	Set_Version_Custom_Settings local "$SCRIPT_VERSION"
 	Set_Version_Custom_Settings server "$SCRIPT_VERSION"
@@ -2657,7 +2674,7 @@ Menu_Install(){
 	Auto_ServiceEvent create 2>/dev/null
 	Auto_ServiceStart create 2>/dev/null
 	Auto_OpenVPNEvent create 2>/dev/null
-	
+
 	Print_Output false "You can access $SCRIPT_NAME's configuration via the Guest Networks section of the WebUI" "$PASS"
 	Print_Output false "Alternatively, use $SCRIPT_NAME's menu via amtm (if installed), with /jffs/scripts/$SCRIPT_NAME or simply $SCRIPT_NAME"
 	Clear_Lock
@@ -2677,7 +2694,7 @@ Menu_Edit(){
 	printf "1.    nano (recommended for beginners)\\n"
 	printf "2.    vi\\n"
 	printf "\\ne.    Exit to main menu\\n"
-	
+
 	while true; do
 		printf "\\n${BOLD}Choose an option:${CLEARFORMAT}  "
 		read -r editor
@@ -2699,7 +2716,7 @@ Menu_Edit(){
 			;;
 		esac
 	done
-	
+
 	if [ "$exitmenu" != "true" ]; then
 		$texteditor "$SCRIPT_CONF"
 	fi
@@ -2710,9 +2727,9 @@ Menu_GuestConfig(){
 	exitmenu="false"
 	selectediface=""
 	changesmade="false"
-	
+
 	ScriptHeader
-	
+
 	printf "\\n${BOLD}Please select a Guest Network:${CLEARFORMAT}\\n\\n"
 	COUNTER=1
 	for IFACE_MENU in $IFACELIST; do
@@ -2724,14 +2741,14 @@ Menu_GuestConfig(){
 		fi
 		COUNTER=$((COUNTER + 1))
 	done
-	
+
 	printf "\\ne.    Go back\\n"
-	
+
 	while true; do
 		selectediface=""
 		printf "\\n${BOLD}Choose an option:${CLEARFORMAT}  "
 		read -r selectedguest
-		
+
 		case "$selectedguest" in
 			1|2|3|4|5|6|7|8|9)
 				selectediface="$(echo "$IFACELIST" | awk '{print $'"$selectedguest"'}')"
@@ -2744,7 +2761,7 @@ Menu_GuestConfig(){
 				printf "\\nPlease choose a valid option\\n\\n"
 			;;
 		esac
-			
+
 		if [ -n "$selectediface" ]; then
 			if ! Validate_Exists_IFACE "$selectediface" silent; then
 				printf "\\nSelected guest (%s) not supported on your router, please choose a different option\\n" "$selectediface"
@@ -2759,7 +2776,7 @@ Menu_GuestConfig(){
 			fi
 		fi
 	done
-		
+
 	if [ "$exitmenu" != "true" ]; then
 		while true; do
 			ScriptHeader
@@ -2809,7 +2826,7 @@ Menu_GuestConfig(){
 										printf "\\nPlease choose a valid number\\n\\n"
 									fi
 								done
-								
+
 								if [ -n "$validpasslength" ]; then
 									newpassphrase="$(Generate_Random_String "$validpasslength")"
 									newpassphraseclean="$(echo "$newpassphrase" | sed 's/[^a-zA-Z0-9]//g')"
@@ -2825,7 +2842,7 @@ Menu_GuestConfig(){
 								if ! Validate_String "$newpassphrase"; then
 									newpassphraseclean="$(echo "$newpassphrase" | sed 's/[^a-zA-Z0-9]//g')"
 								fi
-								
+
 								Set_WiFi_Passphrase "$selectediface" "$newpassphraseclean"
 								changesmade="true"
 								break
@@ -2864,7 +2881,7 @@ Menu_GuestConfig(){
 				;;
 			esac
 		done
-		
+
 		Menu_GuestConfig
 	fi
 	Clear_Lock
@@ -2873,9 +2890,9 @@ Menu_GuestConfig(){
 Menu_QRCode(){
 	exitmenu="false"
 	selectediface=""
-	
+
 	ScriptHeader
-	
+
 	printf "\\n${BOLD}Please select a Guest Network:${CLEARFORMAT}\\n\\n"
 	COUNTER=1
 	for IFACE_MENU in $IFACELIST; do
@@ -2887,14 +2904,14 @@ Menu_QRCode(){
 		fi
 		COUNTER=$((COUNTER + 1))
 	done
-	
+
 	printf "\\ne.    Go back\\n"
-	
+
 	while true; do
 		selectediface=""
 		printf "\\n${BOLD}Choose an option:${CLEARFORMAT}  "
 		read -r selectedguest
-		
+
 		case "$selectedguest" in
 			1|2|3|4|5|6|7|8|9)
 				selectediface="$(echo "$IFACELIST" | awk '{print $'"$selectedguest"'}')"
@@ -2907,7 +2924,7 @@ Menu_QRCode(){
 				printf "\\nPlease choose a valid option\\n\\n"
 			;;
 		esac
-			
+
 		if [ -n "$selectediface" ]; then
 			if ! Validate_Exists_IFACE "$selectediface" silent; then
 				printf "\\nSelected guest (%s) not supported on your router, please choose a different option\\n" "$selectediface"
@@ -2922,7 +2939,7 @@ Menu_QRCode(){
 			fi
 		fi
 	done
-		
+
 	if [ "$exitmenu" != "true" ]; then
 		if [ -f /opt/bin/qrencode ]; then
 			printf "\\n"
@@ -2933,6 +2950,9 @@ Menu_QRCode(){
 	fi
 }
 
+##----------------------------------------##
+## Modified by Martinski W. [2023-Nov-18] ##
+##----------------------------------------##
 Menu_Status(){
 	renice 15 $$
 	### This function suggested by @HuskyHerder, code inspired by @ColinTaylor's wireless monitor script ###
@@ -2940,37 +2960,42 @@ Menu_Status(){
 	rm -f "$STATUSOUTPUTFILE"
 	TMPSTATUSOUTPUTFILE="/tmp/.connectedclients"
 	. "$SCRIPT_CONF"
-	
+
 	if [ ! -f /opt/bin/dig ] && [ -f /opt/bin/opkg ]; then
 		opkg update
 		opkg install bind-dig
 	fi
-	
-	[ -z "$1" ] && ScriptHeader
-	[ -z "$1" ] && printf "${BOLD}$PASS%sQuerying router for connected WiFi clients...${CLEARFORMAT}\\n\\n" ""
+
+	local NoARGs=false
+	if [ $# -eq 0 ] || [ -z "$1" ] ; then NoARGs=true ; fi
+
+	"$NoARGs" && ScriptHeader
+	"$NoARGs" && printf "${BOLD}$PASS%sQuerying router for connected WiFi clients...${CLEARFORMAT}\\n\\n" ""
+
 	printf "INTERFACE,HOSTNAME,IP,MAC,CONNECTED,RX,TX,RSSI,PHY\\n" >> "$TMPSTATUSOUTPUTFILE"
 
 	##----------------------------------------##
-	## Modified by Martinski W. [2022-Mar-26] ##
+	## Modified by Martinski W. [2023-Sep-11] ##
 	##----------------------------------------##
 	ARP_CACHE="$(cat /proc/net/arp)"
-	NOT_LANIP="grep -v \"$(nvram get lan_ipaddr | cut -d'.' -f1-3)\""
+	NOT_LANIP="grep -vF \"$(nvram get lan_ipaddr | cut -d'.' -f1-3).\""
 
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ] && Validate_Exists_IFACE "$IFACE" silent && Validate_Enabled_IFACE "$IFACE" silent; then
-			[ -z "$1" ] && printf "%75s\\n\\n" "" | tr " " "-"
-			[ -z "$1" ] && printf "${BOLD}INTERFACE: %-5s${CLEARFORMAT}\\n" "$IFACE"
-			[ -z "$1" ] && printf "${BOLD}SSID: %-20s${CLEARFORMAT}\\n\\n" "$(nvram get "${IFACE}_ssid")"
-			
+
+			"$NoARGs" && printf "%75s\\n\\n" "" | tr " " "-"
+			"$NoARGs" && printf "${BOLD}INTERFACE: %-5s${CLEARFORMAT}\\n" "$IFACE"
+			"$NoARGs" && printf "${BOLD}SSID: %-20s${CLEARFORMAT}\\n\\n" "$(nvram get "${IFACE}_ssid")"
+
 			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
 			if [ "$IFACE_MACS" != "" ]; then
-				[ -z "$1" ] && printf "${BOLD}%-30s%-20s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\\n" "HOSTNAME" "IP" "MAC" "CONNECTED" "RX/TX" "RSSI" "PHY"
+				"$NoARGs" && printf "${BOLD}%-30s%-20s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\\n" "HOSTNAME" "IP" "MAC" "CONNECTED" "RX/TX" "RSSI" "PHY"
 				IFS=$'\n'
 				for GUEST_MAC in $IFACE_MACS; do
 					GUEST_MACADDR="$(echo "$GUEST_MAC" | awk '{print $2}')"
 
 					##----------------------------------------##
-					## Modified by Martinski W. [2022-Mar-26] ##
+					## Modified by Martinski W. [2023-Sep-11] ##
 					##----------------------------------------##
 					GUEST_ARPCOUNT="$(echo "$ARP_CACHE" | grep -ic "$GUEST_MACADDR")"
 					if [ $GUEST_ARPCOUNT -lt 2 ]
@@ -2989,46 +3014,58 @@ Menu_Status(){
 					if [ "$GUEST_ARPFLAG" = "0x0" ] ; then continue ; fi
 
 					GUEST_HOST=""
+					FOUND_IPADDR="$GUEST_IPADDR"
 
-					if [ -z "$GUEST_IPADDR" ]; then
+					if [ -z "$GUEST_IPADDR" ]
+					then
+						FOUND_IPADDR="$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $3}')"
 						GUEST_IPADDR="$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | eval "$NOT_LANIP" | awk '{print $3}')"
 					fi
 
-					if [ -n "$GUEST_IPADDR" ]; then
+					if [ -n "$GUEST_IPADDR" ]
+					then
 						GUEST_HOST="$(arp "$GUEST_IPADDR" | grep "$IFACE" | awk '{print $1}' | cut -f1 -d ".")"
-						if [ "$GUEST_HOST" = "?" ]; then
+						if [ -z "$GUEST_HOST" ] || [ "$GUEST_HOST" = "?" ]
+						then
 							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
 						fi
-						
+
 						if [ "$GUEST_HOST" = "?" ] || [ "$(printf "%s" "$GUEST_HOST" | wc -m)" -le 1 ]; then
 							GUEST_HOST="$(nvram get custom_clientlist | grep -ioE "<.*>$GUEST_MACADDR" | awk -F ">" '{print $(NF-1)}' | tr -d '<')" #thanks Adamm00
 						fi
-						
+
 						if [ -f /opt/bin/dig ]; then
 							if [ -z "$GUEST_HOST" ]; then
 								GUEST_HOST="$(/opt/bin/dig +short +answer -x "$GUEST_IPADDR" '@'"$(nvram get lan_ipaddr)" | cut -f1 -d'.')"
 							fi
 						fi
+					elif [ -n "$FOUND_IPADDR" ]
+					then
+						GUEST_IPADDR="Not in Guest Net"
+						GUEST_HOST="$(arp "$FOUND_IPADDR" | grep "$IFACE" | awk '{print $1}' | cut -f1 -d ".")"
+						if [ -z "$GUEST_HOST" ] || [ "$GUEST_HOST" = "?" ]
+						then
+							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
+						fi
 					else
 						GUEST_IPADDR="Unknown"
 					fi
-					
-					if [ -z "$GUEST_HOST" ]; then
-						GUEST_HOST="Unknown"
-					fi
-					
+
+					if [ -z "$GUEST_HOST" ] || [ "$GUEST_HOST" = "*" ]
+					then GUEST_HOST="Unknown" ; fi
+
 					GUEST_HOST=$(echo "$GUEST_HOST" | tr -d '\n')
 					GUEST_IPADDR=$(echo "$GUEST_IPADDR" | tr -d '\n')
 					GUEST_MACADDR=$(echo "$GUEST_MACADDR" | tr -d '\n')
 					GUEST_RSSI=$(wl -i "$IFACE" rssi "$GUEST_MACADDR" | tr -d '\n')
-					
+
 					GUEST_STAINFO=$(wl -i "$IFACE" sta_info "$GUEST_MACADDR")
 					GUEST_TIMECONNECTED=$(echo "$GUEST_STAINFO" | grep "in network" | awk '{print $3}' | tr -d '\n')
 					GUEST_TIMECONNECTED_PRINT=$(printf '%dh:%dm:%ds\n' $((GUEST_TIMECONNECTED/3600)) $((GUEST_TIMECONNECTED%3600/60)) $((GUEST_TIMECONNECTED%60)))
-					
+
 					GUEST_TX=$(echo "$GUEST_STAINFO" | grep "rate of last tx pkt" | awk '{print $6}' | tr -d '\n' | awk '{printf("%.0f", $1/1000);}')
 					GUEST_RX=$(echo "$GUEST_STAINFO" | grep "rate of last rx pkt" | awk '{print $6}' | tr -d '\n' | awk '{printf("%.0f", $1/1000);}')
-					
+
 					GUEST_PHY=""
 					if echo "$GUEST_STAINFO" | grep -q "HT caps"; then
 						GUEST_PHY="n"
@@ -3037,21 +3074,22 @@ Menu_Status(){
 					else
 						GUEST_PHY="Unknown"
 					fi
-					
-					[ -z "$1" ] && printf "%-30s%-20s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED_PRINT" "$GUEST_RX/$GUEST_TX Mbps" "$GUEST_RSSI dBm" "$GUEST_PHY"
+
+					"$NoARGs" && printf "%-30s%-20s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED_PRINT" "$GUEST_RX/$GUEST_TX Mbps" "$GUEST_RSSI dBm" "$GUEST_PHY"
+
 					printf "%s,%s,%s,%s,%s,%s,%s,%s,%s\\n" "$IFACE" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED" "$GUEST_RX" "$GUEST_TX" "$GUEST_RSSI" "$GUEST_PHY" >> "$TMPSTATUSOUTPUTFILE"
 				done
 				unset IFS
 			else
-				[ -z "$1" ] && printf "${BOLD}${WARN}No clients connected${CLEARFORMAT}\\n\\n"
+				"$NoARGs" && printf "${BOLD}${WARN}No clients connected${CLEARFORMAT}\\n\\n"
 				printf "%s,,NOCLIENTS,,,,,,\\n" "$IFACE" >> "$TMPSTATUSOUTPUTFILE"
 			fi
 		fi
 	done
-	
+
 	mv "$TMPSTATUSOUTPUTFILE" "$STATUSOUTPUTFILE" 2>/dev/null
-	[ -z "$1" ] && printf "%75s\\n\\n" "" | tr " " "-"
-	[ -z "$1" ] && printf "${BOLD}$PASS%sQuery complete, please see above for results${CLEARFORMAT}\\n\\n" ""
+	"$NoARGs" && printf "%75s\\n\\n" "" | tr " " "-"
+	"$NoARGs" && printf "${BOLD}$PASS%sQuery complete, please see above for results${CLEARFORMAT}\\n\\n" ""
 	#######################################################################################################
 	renice 0 $$
 }
@@ -3080,40 +3118,40 @@ Menu_Diagnostics(){
 			;;
 		esac
 	done
-	
+
 	printf "\\n\\n${BOLD}Generating %s diagnostics...${CLEARFORMAT}\\n\\n" "$SCRIPT_NAME"
-	
+
 	DIAGPATH="/tmp/${SCRIPT_NAME}Diag"
 	mkdir -p "$DIAGPATH"
-	
+
 	iptables-save > "$DIAGPATH/iptables.txt"
-		
+
 	ebtables -L > "$DIAGPATH/ebtables.txt"
 	echo "" >> "$DIAGPATH/ebtables.txt"
 	ebtables -t broute -L >> "$DIAGPATH/ebtables.txt"
-	
+
 	ip rule show > "$DIAGPATH/iprule.txt"
 	ip route show > "$DIAGPATH/iproute.txt"
 	ip route show table all | grep "table" | sed 's/.*\(table.*\)/\1/g' | awk '{print $2}' | sort | uniq | grep ovpn > "$DIAGPATH/routetablelist.txt"
-	
+
 	while IFS='' read -r line || [ -n "$line" ]; do
 		ip route show table "$line" > "$DIAGPATH/iproute_$line.txt"
 	done < "$DIAGPATH/routetablelist.txt"
-	
+
 	ifconfig -a > "$DIAGPATH/ifconfig.txt"
-	
+
 	cp "$SCRIPT_CONF" "$DIAGPATH/$SCRIPT_NAME.conf"
 	cp "$DNSCONF" "$DIAGPATH/$SCRIPT_NAME.dnsmasq"
 	cp /jffs/scripts/dnsmasq.postconf "$DIAGPATH/dnsmasq.postconf"
 	cp /jffs/scripts/firewall-start "$DIAGPATH/firewall-start"
 	cp /jffs/scripts/service-event "$DIAGPATH/service-event"
-	
+
 	SEC="$(Generate_Random_String 32)"
 	tar -czf "/tmp/$SCRIPT_NAME.tar.gz" -C "$DIAGPATH" .
 	/usr/sbin/openssl enc -aes-256-cbc -k "$SEC" -e -in "/tmp/$SCRIPT_NAME.tar.gz" -out "/tmp/$SCRIPT_NAME.tar.gz.enc"
-	
+
 	Print_Output true "Diagnostics saved to /tmp/$SCRIPT_NAME.tar.gz.enc with passphrase $SEC" "$PASS"
-	
+
 	rm -f "/tmp/$SCRIPT_NAME.tar.gz" 2>/dev/null
 	rm -rf "$DIAGPATH" 2>/dev/null
 	SEC=""
@@ -3266,15 +3304,15 @@ case "$1" in
 			Clear_Lock
 			exit 0
 		fi
-		
+
 		if ! Conf_Exists; then
 			exit 1
 		fi
-		
+
 		if ! Conf_Validate; then
 			exit 1
 		fi
-		
+
 		. $SCRIPT_CONF
 		WIRELESSRESTART="false"
 		for IFACE in $IFACELIST; do
@@ -3285,12 +3323,12 @@ case "$1" in
 				fi
 			fi
 		done
-		
+
 		if [ "$WIRELESSRESTART" = "true" ]; then
 			nvram commit
 			service restart_wireless >/dev/null 2>&1
 		fi
-		
+
 		exit 0
 	;;
 	startup)
@@ -3338,17 +3376,17 @@ case "$1" in
 		if echo "$2" | grep -q tun1 && [ "$3" = "route-up" ]; then
 			Print_Output true "VPN tunnel route just came up, running YazFi to fix RPDB routing" "$PASS"
 			sleep 5
-			
+
 			if ! Conf_Exists; then
 				return 1
 			fi
-			
+
 			if ! Conf_Validate; then
 				return 1
 			fi
-			
+
 			. $SCRIPT_CONF
-			
+
 			for IFACE in $IFACELIST; do
 				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ]; then
 					Routing_RPDB create "$IFACE" 2>/dev/null
