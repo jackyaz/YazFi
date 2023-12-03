@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: 2023-Nov-18
+# Last Modified: 2023-Dec-02
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -39,9 +39,9 @@
 ### Start of script variables ###
 readonly SCRIPT_NAME="YazFi"
 readonly SCRIPT_CONF="/jffs/addons/$SCRIPT_NAME.d/config"
-readonly YAZFI_VERSION="v4.4.4"
-readonly SCRIPT_VERSION="v4.4.4"
-SCRIPT_BRANCH="master"
+readonly YAZFI_VERSION="v4.4.5"
+readonly SCRIPT_VERSION="v4.4.5"
+SCRIPT_BRANCH="develop"
 SCRIPT_REPO="https://jackyaz.io/$SCRIPT_NAME/$SCRIPT_BRANCH"
 readonly SCRIPT_DIR="/jffs/addons/$SCRIPT_NAME.d"
 readonly USER_SCRIPT_DIR="$SCRIPT_DIR/userscripts.d"
@@ -3030,7 +3030,9 @@ Menu_Status(){
 							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
 						fi
 
-						if [ "$GUEST_HOST" = "?" ] || [ "$(printf "%s" "$GUEST_HOST" | wc -m)" -le 1 ]; then
+						if [ "$GUEST_HOST" = "*" ] || [ "$GUEST_HOST" = "?" ] || \
+						   [ "$(printf "%s" "$GUEST_HOST" | wc -m)" -le 1 ]
+						then
 							GUEST_HOST="$(nvram get custom_clientlist | grep -ioE "<.*>$GUEST_MACADDR" | awk -F ">" '{print $(NF-1)}' | tr -d '<')" #thanks Adamm00
 						fi
 
@@ -3046,6 +3048,12 @@ Menu_Status(){
 						if [ -z "$GUEST_HOST" ] || [ "$GUEST_HOST" = "?" ]
 						then
 							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
+						fi
+
+						if [ "$GUEST_HOST" = "*" ] || [ "$GUEST_HOST" = "?" ] || \
+						   [ "$(printf "%s" "$GUEST_HOST" | wc -m)" -le 1 ]
+						then
+							GUEST_HOST="$(nvram get custom_clientlist | grep -ioE "<.*>$GUEST_MACADDR" | awk -F ">" '{print $(NF-1)}' | tr -d '<')" #thanks Adamm00
 						fi
 					else
 						GUEST_IPADDR="Unknown"
