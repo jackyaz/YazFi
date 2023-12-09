@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: 2023-Dec-02
+# Last Modified: 2023-Dec-06
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -271,20 +271,24 @@ Iface_Manage(){
 	esac
 }
 
+##----------------------------------------##
+## Modified by Martinski W. [2023-Dec-06] ##
+##----------------------------------------##
 Iface_BounceClients(){
 	Print_Output true "Forcing $SCRIPT_NAME Guest WiFi clients to reauthenticate" "$PASS"
+	Print_Output false "Please wait..." "$PASS"
 
 	for IFACE in $IFACELIST; do
 		wl -i "$IFACE" radio off >/dev/null 2>&1
 	done
-
 	sleep 10
 
 	for IFACE in $IFACELIST; do
 		wl -i "$IFACE" radio on >/dev/null 2>&1
 	done
+	sleep 2
 
-	ARPDUMP="$(arp -an)"
+	ARP_CACHE="/proc/net/arp"
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ]; then
 			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
@@ -292,9 +296,12 @@ Iface_BounceClients(){
 				IFS=$'\n'
 				for GUEST_MAC in $IFACE_MACS; do
 					GUEST_MACADDR="${GUEST_MAC#* }"
-					GUEST_ARPINFO="$(arp -an | grep -i "$GUEST_MACADDR")"
+					GUEST_ARPCOUNT="$(grep -ic "$GUEST_MACADDR" "$ARP_CACHE")"
+					[ "$GUEST_ARPCOUNT" -eq 0 ] && continue
+
+					GUEST_ARPINFO="$(grep -i "$GUEST_MACADDR" "$ARP_CACHE")"
 					for ARP_ENTRY in $GUEST_ARPINFO; do
-						GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $2}' | sed -e 's/(//g;s/)//g')"
+						GUEST_IPADDR="$(echo "$ARP_ENTRY" | awk -F ' ' '{print $1}')"
 						arp -d "$GUEST_IPADDR"
 					done
 				done
@@ -2951,7 +2958,7 @@ Menu_QRCode(){
 }
 
 ##----------------------------------------##
-## Modified by Martinski W. [2023-Nov-18] ##
+## Modified by Martinski W. [2023-Dec-06] ##
 ##----------------------------------------##
 Menu_Status(){
 	renice 15 $$
@@ -2975,10 +2982,11 @@ Menu_Status(){
 	printf "INTERFACE,HOSTNAME,IP,MAC,CONNECTED,RX,TX,RSSI,PHY\\n" >> "$TMPSTATUSOUTPUTFILE"
 
 	##----------------------------------------##
-	## Modified by Martinski W. [2023-Sep-11] ##
+	## Modified by Martinski W. [2023-Dec-06] ##
 	##----------------------------------------##
-	ARP_CACHE="$(cat /proc/net/arp)"
+	ARP_CACHE="/proc/net/arp"
 	NOT_LANIP="grep -vF \"$(nvram get lan_ipaddr | cut -d'.' -f1-3).\""
+	DNSMASQ_LEASES="/var/lib/misc/dnsmasq.leases"
 
 	for IFACE in $IFACELIST; do
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ] && Validate_Exists_IFACE "$IFACE" silent && Validate_Enabled_IFACE "$IFACE" silent; then
@@ -2995,31 +3003,32 @@ Menu_Status(){
 					GUEST_MACADDR="$(echo "$GUEST_MAC" | awk '{print $2}')"
 
 					##----------------------------------------##
-					## Modified by Martinski W. [2023-Sep-11] ##
+					## Modified by Martinski W. [2023-Dec-06] ##
 					##----------------------------------------##
-					GUEST_ARPCOUNT="$(echo "$ARP_CACHE" | grep -ic "$GUEST_MACADDR")"
-					if [ $GUEST_ARPCOUNT -lt 2 ]
-					then
-						GUEST_ARPENTRY="$(echo "$ARP_CACHE" | grep -i "$GUEST_MACADDR")"
-						GUEST_ARPINFO="$(echo "$GUEST_ARPENTRY" | grep "$IFACE" | eval "$NOT_LANIP")"
-					else
-						GUEST_ARPENTRY="$(echo "$ARP_CACHE" | grep -i "$GUEST_MACADDR" | grep "$IFACE")"
-						GUEST_ARPINFO="$(echo "$GUEST_ARPENTRY" | eval "$NOT_LANIP")"
-					fi
+					GUEST_ARPCOUNT="$(grep -ic "$GUEST_MACADDR" "$ARP_CACHE")"
+					[ "$GUEST_ARPCOUNT" -eq 0 ] && continue
 
-					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk '{print $1}')"
-					GUEST_ARPFLAG="$(echo "$GUEST_ARPENTRY" | awk '{print $3}')"
+					GUEST_ARPINFO="$(cat "$ARP_CACHE" | grep -i "$GUEST_MACADDR" | grep "$IFACE" | eval "$NOT_LANIP")"
+					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk -F ' ' '{print $1}')"
+					GUEST_ARPFLAG="$(echo "$GUEST_ARPINFO" | awk -F ' ' '{print $3}')"
 
-					# Skip guest client when ARP entry is marked as "incomplete" #
-					if [ "$GUEST_ARPFLAG" = "0x0" ] ; then continue ; fi
+					#------------------------------------------------------------------#
+					# Modified by Martinski W. [2023-Dec-06].
+					# The Guest Network client has an ARP entry marked as "incomplete"
+					# so one option is to just skip the client here as we used to do.
+					# However, it seems that the ARP Cache may not always up to date,
+					# so we decide to continue after this point to find out if we can
+					# get the required IP address & Hostname info from other sources.
+					#------------------------------------------------------------------#
+					[ "$GUEST_ARPFLAG" = "0x0" ] && GUEST_IPADDR=""
 
 					GUEST_HOST=""
 					FOUND_IPADDR="$GUEST_IPADDR"
 
 					if [ -z "$GUEST_IPADDR" ]
 					then
-						FOUND_IPADDR="$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $3}')"
-						GUEST_IPADDR="$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | eval "$NOT_LANIP" | awk '{print $3}')"
+						FOUND_IPADDR="$(grep -i "$GUEST_MACADDR" "$DNSMASQ_LEASES" | awk '{print $3}')"
+						GUEST_IPADDR="$(grep -i "$GUEST_MACADDR" "$DNSMASQ_LEASES" | eval "$NOT_LANIP" | awk '{print $3}')"
 					fi
 
 					if [ -n "$GUEST_IPADDR" ]
@@ -3027,7 +3036,7 @@ Menu_Status(){
 						GUEST_HOST="$(arp "$GUEST_IPADDR" | grep "$IFACE" | awk '{print $1}' | cut -f1 -d ".")"
 						if [ -z "$GUEST_HOST" ] || [ "$GUEST_HOST" = "?" ]
 						then
-							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
+							GUEST_HOST="$(grep -i "$GUEST_MACADDR" "$DNSMASQ_LEASES" | eval "$NOT_LANIP" | awk '{print $4}')"
 						fi
 
 						if [ "$GUEST_HOST" = "*" ] || [ "$GUEST_HOST" = "?" ] || \
@@ -3036,10 +3045,8 @@ Menu_Status(){
 							GUEST_HOST="$(nvram get custom_clientlist | grep -ioE "<.*>$GUEST_MACADDR" | awk -F ">" '{print $(NF-1)}' | tr -d '<')" #thanks Adamm00
 						fi
 
-						if [ -f /opt/bin/dig ]; then
-							if [ -z "$GUEST_HOST" ]; then
-								GUEST_HOST="$(/opt/bin/dig +short +answer -x "$GUEST_IPADDR" '@'"$(nvram get lan_ipaddr)" | cut -f1 -d'.')"
-							fi
+						if [ -x /opt/bin/dig ] && [ -z "$GUEST_HOST" ]; then
+							GUEST_HOST="$(/opt/bin/dig +short +answer -x "$GUEST_IPADDR" '@'"$(nvram get lan_ipaddr)" | cut -f1 -d'.')"
 						fi
 					elif [ -n "$FOUND_IPADDR" ]
 					then
@@ -3047,7 +3054,7 @@ Menu_Status(){
 						GUEST_HOST="$(arp "$FOUND_IPADDR" | grep "$IFACE" | awk '{print $1}' | cut -f1 -d ".")"
 						if [ -z "$GUEST_HOST" ] || [ "$GUEST_HOST" = "?" ]
 						then
-							GUEST_HOST=$(grep -i "$GUEST_MACADDR" /var/lib/misc/dnsmasq.leases | awk '{print $4}')
+							GUEST_HOST="$(grep -i "$GUEST_MACADDR" "$DNSMASQ_LEASES" | awk '{print $4}')"
 						fi
 
 						if [ "$GUEST_HOST" = "*" ] || [ "$GUEST_HOST" = "?" ] || \
