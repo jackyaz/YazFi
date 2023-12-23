@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: 2023-Dec-20
+# Last Modified: 2023-Dec-22
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -1042,7 +1042,11 @@ Validate_String(){
 		fi
 }
 
-Conf_FromSettings(){
+##----------------------------------------##
+## Modified by Martinski W. [2023-Dec-22] ##
+##----------------------------------------##
+Conf_FromSettings()
+{
 	SETTINGSFILE="/jffs/addons/custom_settings.txt"
 	TMPFILE="/tmp/yazfi_settings.txt"
 	if [ -f "$SETTINGSFILE" ]; then
@@ -1054,6 +1058,7 @@ Conf_FromSettings(){
 			while IFS='' read -r line || [ -n "$line" ]; do
 				SETTINGNAME="$(echo "$line" | cut -f1 -d'=' | awk 'BEGIN{FS="_"}{ print $1 "_" toupper($2) }')"
 				SETTINGVALUE="$(echo "$line" | cut -f2 -d'=')"
+				echo "$SETTINGVALUE" | grep -qE "^(true|false|I|[0-9][0-9.]*[smhdw]?)$" && \
 				sed -i "s/$SETTINGNAME=.*/$SETTINGNAME=$SETTINGVALUE/" "$SCRIPT_CONF"
 			done < "$TMPFILE"
 			grep 'yazfi_version' "$SETTINGSFILE" > "$TMPFILE"
@@ -1626,14 +1631,53 @@ _GetNetworkIPaddrCIDR_()
    echo "$netIPaddr" ; return 0
 }
 
+##-------------------------------------##
+## Added by Martinski W. [2023-Dec-22] ##
+##-------------------------------------##
+Firewall_Rules_ONEorTWO_WAY()
+{
+	ACTIONS=""
+	IFACE="$2"
+
+	GuestNetBandID="$(Get_Guest_Name "$IFACE")"
+	doClientIsolation="$(eval echo '$'"$(Get_Iface_Var "$IFACE")_CLIENTISOLATION")"
+	doTWO_WAYtoGUEST="$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")"
+	doONE_WAYtoGUEST="$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")"
+
+	case $1 in
+		delete) ACTIONS="-D" ;;
+		create) ACTIONS="-D -I" ;;
+	esac
+
+	for ACTION in $ACTIONS
+	do
+		if [ "$doTWO_WAYtoGUEST" = "true" ]
+		then
+			iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$LAN_IFname" -m comment --comment "$GuestNetBandID to LAN" -j ACCEPT
+		fi
+		if [ "$doONE_WAYtoGUEST" = "true" ]
+		then
+			iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$LAN_IFname" -m state --state RELATED,ESTABLISHED -j ACCEPT
+		fi
+		if [ "$doONE_WAYtoGUEST" = "true" ] || [ "$doTWO_WAYtoGUEST" = "true" ]
+		then
+			iptables "$ACTION" "$FWRD" -i "$LAN_IFname" -o "$IFACE" -m comment --comment "LAN to $GuestNetBandID" -j ACCEPT
+			if [ "$doClientIsolation" = "true" ]
+			then   ##-TEST-DEBUG-##
+			    iptables "$ACTION" "$FWRD" -i wl+ -o "$IFACE" -j "$LGRJT"
+			    iptables "$ACTION" "$FWRD" -i "$IFACE" -o wl+ -j "$LGRJT"
+			fi
+		fi
+	done
+}
+
 ##----------------------------------------##
-## Modified by Martinski W. [2023-Dec-20] ##
+## Modified by Martinski W. [2023-Dec-22] ##
 ##----------------------------------------##
 Firewall_Rules()
 {
 	ACTIONS=""
 	IFACE="$2"
-	IFACE_WAN=""
 
 	LAN_IPcidr="$(_GetNetworkIPaddrCIDR_ "$LAN_IFname")"
 	[ -z "$LAN_IPcidr" ] && LAN_IPcidr="${LAN_IPaddr%.*}.0/24"
@@ -1641,26 +1685,16 @@ Firewall_Rules()
 	GuestNetBandID="$(Get_Guest_Name "$IFACE")"
 	GuestNetIPaddr="$(eval echo '$'"$(Get_Iface_Var "$IFACE")_IPADDR" | cut -f1-3 -d".")"
 	GuestNetIPcidr="${GuestNetIPaddr}.0/24"
-
-	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
-		IFACE_WAN="ppp0"
-	else
-		IFACE_WAN="$(nvram get wan0_ifname)"
-	fi
+	doTWO_WAYtoGUEST="$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")"
+	doONE_WAYtoGUEST="$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")"
 
 	case $1 in
-		create)
-			ACTIONS="-D -I"
-		;;
-		delete)
-			ACTIONS="-D"
-		;;
+		delete) ACTIONS="-D" ;;
+		create) ACTIONS="-D -I" ;;
 	esac
 
-	modprobe xt_comment
-
-	for ACTION in $ACTIONS; do
-
+	for ACTION in $ACTIONS
+	do
 		ebtables -t broute "$ACTION" BROUTING -p ipv4 -i "$IFACE" -j DROP
 		ebtables -t broute "$ACTION" BROUTING -p ipv6 -i "$IFACE" -j DROP
 		ebtables -t broute "$ACTION" BROUTING -p arp -i "$IFACE" -j DROP
@@ -1672,40 +1706,44 @@ Firewall_Rules()
 		iptables "$ACTION" "$FWRD" -i "$IFACE" -j ACCEPT
 
 		##----------------------------------------##
-		## Modified by Martinski W. [2023-Dec-20] ##
+		## Modified by Martinski W. [2023-Dec-22] ##
 		##----------------------------------------##
-		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")" = "false" ] || \
-		   [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")" = "false" ]
+		if [ "$doTWO_WAYtoGUEST" = "false" ] || [ "$doONE_WAYtoGUEST" = "false" ]
 		then
-			iptables -D "$FWRD" -i wl+ -o "$IFACE" -j "$LGRJT" 2>/dev/null
-			iptables -D "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -m comment --comment "LAN to $GuestNetBandID" -j ACCEPT 2>/dev/null
-			iptables -D "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -m state --state RELATED,ESTABLISHED -j ACCEPT 2>/dev/null
+			iptables -D "$FWRD" -i wl+ -o "$IFACE" -j "$LGRJT"
+			iptables -D "$FWRD" -i "$IFACE" -o wl+ -j "$LGRJT"
+			iptables -D "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -m comment --comment "LAN to $GuestNetBandID" -j ACCEPT
+			iptables -D "$FWRD" -i "$LAN_IFname" -o "$IFACE" -m comment --comment "LAN to $GuestNetBandID" -j ACCEPT
+			iptables -D "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -m comment --comment "$GuestNetBandID to LAN" -j ACCEPT
+			iptables -D "$FWRD" -i "$IFACE" -o "$LAN_IFname" -m comment --comment "$GuestNetBandID to LAN" -j ACCEPT
+			iptables -D "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -m state --state RELATED,ESTABLISHED -j ACCEPT
+			iptables -D "$FWRD" -i "$IFACE" -o "$LAN_IFname" -m state --state RELATED,ESTABLISHED -j ACCEPT
 
-			iptables -t nat -D POSTROUTING -s "$LAN_IPcidr" -d "$GuestNetIPcidr" -o "$IFACE" -m comment --comment "LAN to $GuestNetBandID" -j MASQUERADE 2>/dev/null
-			iptables -t nat -D POSTROUTING -s "$GuestNetIPcidr" -d "$LAN_IPcidr" -o "$LAN_IFname" -m comment --comment "$GuestNetBandID to LAN" -j MASQUERADE 2>/dev/null
+			iptables -t nat -D POSTROUTING -s "$LAN_IPcidr" -d "$GuestNetIPcidr" -o "$IFACE" -m comment --comment "LAN to $GuestNetBandID" -j MASQUERADE
+			iptables -t nat -D POSTROUTING -s "$GuestNetIPcidr" -d "$LAN_IPcidr" -o "$LAN_IFname" -m comment --comment "$GuestNetBandID to LAN" -j MASQUERADE
 
-			iptables "$ACTION" "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT"
 			iptables "$ACTION" "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -j "$LGRJT"
+			iptables "$ACTION" "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT"
 		fi
 
-		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")" = "true" ] || \
-		   [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")" = "true" ]
+		if [ "$doTWO_WAYtoGUEST" = "true" ] || [ "$doONE_WAYtoGUEST" = "true" ]
 		then
-			iptables -D "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT" 2>/dev/null
+			iptables -D "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -j "$LGRJT"
 			iptables -t nat "$ACTION" POSTROUTING -s "$LAN_IPcidr" -d "$GuestNetIPcidr" -o "$IFACE" -m comment --comment "LAN to $GuestNetBandID" -j MASQUERADE
 		fi
 
-		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")" = "true" ]
+		if [ "$doTWO_WAYtoGUEST" = "true" ]
 		then
-			iptables -D "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -j "$LGRJT" 2>/dev/null
+			iptables -D "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -j "$LGRJT"
+			iptables "$ACTION" "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -m comment --comment "LAN to $GuestNetBandID" -j ACCEPT
+			iptables "$ACTION" "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -m comment --comment "$GuestNetBandID to LAN" -j ACCEPT
 			iptables -t nat "$ACTION" POSTROUTING -s "$GuestNetIPcidr" -d "$LAN_IPcidr" -o "$LAN_IFname" -m comment --comment "$GuestNetBandID to LAN" -j MASQUERADE
 		fi
 
-		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")" = "true" ]
+		if [ "$doONE_WAYtoGUEST" = "true" ]
 		then
-			iptables "$ACTION" "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -m comment --comment "LAN to $GuestNetBandID" -j ACCEPT
-			iptables "$ACTION" "$FWRD" -i wl+ -o "$IFACE" -j "$LGRJT"
 			iptables "$ACTION" "$FWRD" -i "$IFACE" ! -o "$IFACE_WAN" -m state --state RELATED,ESTABLISHED -j ACCEPT
+			iptables "$ACTION" "$FWRD" ! -i "$IFACE_WAN" -o "$IFACE" -m comment --comment "LAN to $GuestNetBandID" -j ACCEPT
 		fi
 
 		iptables "$ACTION" "$INPT" -i "$IFACE" -j "$LGRJT"
@@ -1724,14 +1762,13 @@ Firewall_Rules()
 		fi
 
 		##----------------------------------------##
-		## Modified by Martinski W. [2023-Dec-20] ##
+		## Modified by Martinski W. [2023-Dec-22] ##
 		##----------------------------------------##
-		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")" = "true" ] || \
-		   [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")" = "true" ]
+		if [ "$doTWO_WAYtoGUEST" = "true" ] || [ "$doONE_WAYtoGUEST" = "true" ]
 		then
 			iptables "$ACTION" "$INPT" -i "$IFACE" -d 224.0.0.0/4 -j ACCEPT
 		else
-			iptables -D "$INPT" -i "$IFACE" -d 224.0.0.0/4 -j ACCEPT 2>/dev/null
+			iptables -D "$INPT" -i "$IFACE" -d 224.0.0.0/4 -j ACCEPT
 		fi
 
 		iptables -t nat -D POSTROUTING -s "$GuestNetIPcidr" -d "$GuestNetIPcidr" -o "$IFACE" -m comment --comment "$(Get_Guest_Name_Old "$IFACE")" -j MASQUERADE
@@ -1760,26 +1797,19 @@ Firewall_Rules()
 	done
 }
 
-Firewall_BlockInternet(){
+##----------------------------------------##
+## Modified by Martinski W. [2023-Dec-22] ##
+##----------------------------------------##
+Firewall_BlockInternet()
+{
 	ACTIONS=""
 	IFACE="$2"
 
-	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
-		IFACE_WAN="ppp0"
-	else
-		IFACE_WAN="$(nvram get wan0_ifname)"
-	fi
-
 	case $1 in
-		create)
-			ACTIONS="-D -I"
-		;;
-		delete)
-			ACTIONS="-D"
-		;;
+		delete) ACTIONS="-D" ;;
+		create) ACTIONS="-D -I" ;;
 	esac
 
-	modprobe xt_comment
 	for ACTION in $ACTIONS; do
 		iptables "$ACTION" "$FWRD" -i "$IFACE" -o "$IFACE_WAN" -m comment --comment "$(Get_Guest_Name "$IFACE") block internet" -j "$LGRJT"
 		iptables "$ACTION" "$FWRD" -i "$IFACE" -o tun1+ -m comment --comment "$(Get_Guest_Name "$IFACE") block internet" -j "$LGRJT"
@@ -1906,19 +1936,14 @@ Firewall_NVRAM(){
 	esac
 }
 
-Firewall_NAT(){
-	IFACE_WAN=""
-
-	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
-		IFACE_WAN="ppp0"
-	else
-		IFACE_WAN="$(nvram get wan0_ifname)"
-	fi
-
+##----------------------------------------##
+## Modified by Martinski W. [2023-Dec-22] ##
+##----------------------------------------##
+Firewall_NAT()
+{
 	case $1 in
 		create)
 			for ACTION in -D -I; do
-				modprobe xt_comment
 				iptables -t nat -D POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 -o tun1"$3" -m comment --comment "$(Get_Guest_Name_Old "$2") VPN" -j MASQUERADE
 				iptables -t nat "$ACTION" POSTROUTING -s "$(eval echo '$'"$(Get_Iface_Var "$2")_IPADDR" | cut -f1-3 -d".")".0/24 -o tun1"$3" -m comment --comment "$(Get_Guest_Name "$2") VPN" -j MASQUERADE
 				iptables "$ACTION" "$FWRD" -i "$2" -o "$IFACE_WAN" -j "$LGRJT"
@@ -2255,7 +2280,11 @@ DHCP_Conf(){
 	esac
 }
 
-Config_Networks(){
+##----------------------------------------##
+## Modified by Martinski W. [2023-Dec-22] ##
+##----------------------------------------##
+Config_Networks()
+{
 	Print_Output true "$SCRIPT_NAME $SCRIPT_VERSION starting up"
 	WIRELESSRESTART="false"
 	GUESTLANENABLED="false"
@@ -2284,6 +2313,13 @@ Config_Networks(){
 	. $SCRIPT_CONF
 
 	DHCP_Conf initialise 2>/dev/null
+
+	IFACE_WAN=""
+	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
+		IFACE_WAN="ppp0"
+	else
+		IFACE_WAN="$(nvram get wan0_ifname)"
+	fi
 
 	if [ "$(Firmware_Version_Check "$(nvram get buildno)")" -lt "$(Firmware_Version_Check 386.3)" ]; then
 		Routing_NVRAM initialise 2>/dev/null
@@ -2343,6 +2379,11 @@ Config_Networks(){
 				Firewall_BlockInternet delete "$IFACE" 2>/dev/null
 			fi
 
+			##-------------------------------------##
+			## Added by Martinski W. [2023-Dec-22] ##
+			##-------------------------------------##
+			Firewall_Rules_ONEorTWO_WAY create "$IFACE" 2>/dev/null
+
 			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_CLIENTISOLATION")" = "true" ]; then
 				ISOBEFORE="$(nvram get "${IFACE}_ap_isolate")"
 				if ! Validate_Number "" "$ISOBEFORE" silent; then ISOBEFORE=0; fi
@@ -2381,6 +2422,11 @@ Config_Networks(){
 		else
 			#Remove firewall rules for guest interface
 			Firewall_Rules delete "$IFACE" 2>/dev/null
+
+			##-------------------------------------##
+			## Added by Martinski W. [2023-Dec-22] ##
+			##-------------------------------------##
+			Firewall_Rules_ONEorTWO_WAY delete "$IFACE" 2>/dev/null
 
 			Firewall_DNS delete "$IFACE" 2>/dev/null
 
@@ -3224,7 +3270,19 @@ Menu_Diagnostics(){
 	SEC=""
 }
 
-Menu_Uninstall(){
+##----------------------------------------##
+## Modified by Martinski W. [2023-Dec-22] ##
+##----------------------------------------##
+Menu_Uninstall()
+{
+	IFACE_WAN=""
+
+	if [ "$(nvram get wan0_proto)" = "pppoe" ] || [ "$(nvram get wan0_proto)" = "pptp" ] || [ "$(nvram get wan0_proto)" = "l2tp" ]; then
+		IFACE_WAN="ppp0"
+	else
+		IFACE_WAN="$(nvram get wan0_ifname)"
+	fi
+
 	Print_Output true "Removing $SCRIPT_NAME..." "$PASS"
 	Auto_Startup delete 2>/dev/null
 	Auto_Cron delete 2>/dev/null
@@ -3328,6 +3386,12 @@ if [ ! -f /opt/bin/qrencode ] && [ -f /opt/bin/opkg ]; then
 	opkg update
 	opkg install qrencode
 fi
+
+##----------------------------------------##
+## Modified by Martinski W. [2023-Dec-22] ##
+##----------------------------------------##
+# Make the one call needed to load module #
+modprobe xt_comment
 
 if [ $# -eq 0 ] || [ -z "$1" ]; then
 	Create_Dirs
