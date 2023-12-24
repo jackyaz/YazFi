@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: 2023-Dec-22
+# Last Modified: 2023-Dec-23
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -1619,13 +1619,13 @@ Firewall_Chains(){
 }
 
 ##-------------------------------------##
-## Added by Martinski W. [2023-Dec-20] ##
+## Added by Martinski W. [2023-Dec-23] ##
 ##-------------------------------------##
 _GetNetworkIPaddrCIDR_()
 {
    if [ $# -eq 0 ] || [ -z "$1" ] ; then return 1 ; fi
    local netIPinfo  netIPaddr
-   netIPinfo="$(ip route | grep -E "dev $1 proto kernel")"
+   netIPinfo="$(ip route show | grep "dev $1 proto kernel")"
    [ -z "$netIPinfo" ] && echo "" && return 1
    netIPaddr="$(echo "$netIPinfo" | awk -F ' ' '{print $1}')"
    echo "$netIPaddr" ; return 0
