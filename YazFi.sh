@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: 2023-Dec-23
+# Last Modified: 2023-Dec-28
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -295,7 +295,8 @@ Iface_BounceClients(){
 
 	ARP_CACHE="/proc/net/arp"
 	for IFACE in $IFACELIST; do
-		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ]; then
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ]
+		then
 			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
 			if [ "$IFACE_MACS" != "" ]; then
 				IFS=$'\n'
@@ -566,7 +567,7 @@ Avahi_Conf(){
 
 				if [ "$STARTUPLINECOUNT" -eq 0 ]; then
 					{
-					echo 'echo "" >> "$1"'
+					echo 'echo "" >> "$1" # '"$SCRIPT_NAME"
 					echo 'echo "[reflector]" >> "$1" # '"$SCRIPT_NAME"
 					echo 'echo "enable-reflector=yes" >> "$1" # '"$SCRIPT_NAME"
 					echo "sed -i '/^\[Server\]/a cache-entries-max=0' "'"$1" # '"$SCRIPT_NAME"
@@ -576,7 +577,7 @@ Avahi_Conf(){
 			else
 				{
 				echo '#!/bin/sh'
-				echo 'echo "" >> "$1"'
+				echo 'echo "" >> "$1" # '"$SCRIPT_NAME"
 				echo 'echo "[reflector]" >> "$1" # '"$SCRIPT_NAME"
 				echo 'echo "enable-reflector=yes" >> "$1" # '"$SCRIPT_NAME"
 				echo "sed -i '/^\[Server\]/a cache-entries-max=0' "'"$1" # '"$SCRIPT_NAME"
@@ -875,7 +876,7 @@ Validate_Enabled_IFACE(){
 	IFACE_TEST="$(nvram get "${1}_bss_enabled")"
 	if ! Validate_Number "" "$IFACE_TEST" silent; then IFACE_TEST=0; fi
 	if [ "$IFACE_TEST" -eq 0 ]; then
-		if [ -z "$2" ]; then
+		if [ $# -lt 2 ] || [ -z "$2" ]; then
 			Print_Output false "$1 - Interface not enabled/configured in Web GUI (Guest Network menu)" "$ERR"
 		fi
 		return 1
@@ -895,7 +896,7 @@ Validate_Exists_IFACE(){
 	if [ "$validiface" = "true" ]; then
 		return 0
 	else
-		if [ -z "$2" ]; then
+		if [ $# -lt 2 ] || [ -z "$2" ]; then
 			Print_Output false "$1 - Interface not supported on this router" "$ERR"
 		fi
 		return 1
@@ -1203,8 +1204,8 @@ Conf_FixBlanks(){
 	then . "$SCRIPT_CONF" ; fi
 }
 
-Conf_Validate(){
-	CONF_VALIDATED="true"
+Conf_Validate()
+{
 	NETWORKS_ENABLED="false"
 
 	Conf_FixBlanks
@@ -1238,7 +1239,8 @@ Conf_Validate(){
 					IFACE_PASS="false"
 				fi
 
-				if [ "$(eval echo '$'"${IFACETMP}_ENABLED")" = "true" ]; then
+				if [ "$(eval echo '$'"${IFACETMP}_ENABLED")" = "true" ]
+				then
 					if ! Validate_IP "${IFACETMP}_IPADDR" "$(eval echo '$'"${IFACETMP}_IPADDR")"; then
 						IFACE_PASS="false"
 					else
@@ -1619,13 +1621,13 @@ Firewall_Chains(){
 }
 
 ##-------------------------------------##
-## Added by Martinski W. [2023-Dec-23] ##
+## Added by Martinski W. [2023-Dec-28] ##
 ##-------------------------------------##
 _GetNetworkIPaddrCIDR_()
 {
    if [ $# -eq 0 ] || [ -z "$1" ] ; then return 1 ; fi
    local netIPinfo  netIPaddr
-   netIPinfo="$(ip route show | grep "dev $1 proto kernel")"
+   netIPinfo="$(ip route show | grep "dev[[:blank:]]* ${1}[[:blank:]]* proto kernel")"
    [ -z "$netIPinfo" ] && echo "" && return 1
    netIPaddr="$(echo "$netIPinfo" | awk -F ' ' '{print $1}')"
    echo "$netIPaddr" ; return 0
@@ -1663,7 +1665,7 @@ Firewall_Rules_ONEorTWO_WAY()
 		then
 			iptables "$ACTION" "$FWRD" -i "$LAN_IFname" -o "$IFACE" -m comment --comment "LAN to $GuestNetBandID" -j ACCEPT
 			if [ "$doClientIsolation" = "true" ]
-			then   ##-TEST-DEBUG-##
+			then
 			    iptables "$ACTION" "$FWRD" -i wl+ -o "$IFACE" -j "$LGRJT"
 			    iptables "$ACTION" "$FWRD" -i "$IFACE" -o wl+ -j "$LGRJT"
 			fi
@@ -1920,17 +1922,21 @@ Firewall_DNS(){
 	done
 }
 
-Firewall_NVRAM(){
+##----------------------------------------##
+## Modified by Martinski W. [2023-Dec-28] ##
+##----------------------------------------##
+Firewall_NVRAM()
+{
 	case $1 in
-		create)
-			nvram set "${2}_ap_isolate"="1"
+		enable)
+			nvram set "${2}"_ap_isolate=1
 		;;
-		delete)
-			nvram set "${2}_ap_isolate"="0"
+		disable)
+			nvram set "${2}"_ap_isolate=0
 		;;
-		deleteall)
+		disableall)
 			for IFACE in $IFACELIST; do
-				Firewall_NVRAM delete "$IFACE" 2>/dev/null
+				Firewall_NVRAM disable "$IFACE" 2>/dev/null
 			done
 		;;
 	esac
@@ -2281,7 +2287,7 @@ DHCP_Conf(){
 }
 
 ##----------------------------------------##
-## Modified by Martinski W. [2023-Dec-22] ##
+## Modified by Martinski W. [2023-Dec-28] ##
 ##----------------------------------------##
 Config_Networks()
 {
@@ -2333,7 +2339,9 @@ Config_Networks()
 	for IFACE in $IFACELIST; do
 		VPNCLIENTNO=$(eval echo '$'"$(Get_Iface_Var "$IFACE")_VPNCLIENTNUMBER")
 
-		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ]; then
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ] && \
+		   Validate_Enabled_IFACE "$IFACE" silent
+		then
 			Iface_Manage create "$IFACE" 2>/dev/null
 
 			Firewall_Rules create "$IFACE" 2>/dev/null
@@ -2379,33 +2387,27 @@ Config_Networks()
 				Firewall_BlockInternet delete "$IFACE" 2>/dev/null
 			fi
 
-			##-------------------------------------##
-			## Added by Martinski W. [2023-Dec-22] ##
-			##-------------------------------------##
-			Firewall_Rules_ONEorTWO_WAY create "$IFACE" 2>/dev/null
-
-			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_CLIENTISOLATION")" = "true" ]; then
-				ISOBEFORE="$(nvram get "${IFACE}_ap_isolate")"
-				if ! Validate_Number "" "$ISOBEFORE" silent; then ISOBEFORE=0; fi
-				Firewall_NVRAM create "$IFACE" 2>/dev/null
-				ISOAFTER="$(nvram get "${IFACE}_ap_isolate")"
-				if ! Validate_Number "" "$ISOAFTER" silent; then ISOAFTER=0; fi
-				if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
+			##----------------------------------------##
+			## Modified by Martinski W. [2023-Dec-28] ##
+			##----------------------------------------##
+			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")" = "true" ] || \
+			   [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")" = "true" ]
+			then
+				GUESTLANENABLED=true
+				Firewall_Rules_ONEorTWO_WAY create "$IFACE" 2>/dev/null
+				# Disable Guest Interface ISOLATION #
+				if [ "$(nvram get "${IFACE}_ap_isolate")" != "0" ]; then
+					nvram set "$IFACE"_ap_isolate=0
 					WIRELESSRESTART="true"
 				fi
-			else
-				ISOBEFORE="$(nvram get "${IFACE}_ap_isolate")"
-				if ! Validate_Number "" "$ISOBEFORE" silent; then ISOBEFORE=0; fi
-				Firewall_NVRAM delete "$IFACE" 2>/dev/null
-				ISOAFTER="$(nvram get "${IFACE}_ap_isolate")"
-				if ! Validate_Number "" "$ISOAFTER" silent; then ISOAFTER=0; fi
-				if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
+			elif [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_CLIENTISOLATION")" = "true" ]
+			then
+				GUESTLANENABLED=false
+				# Enable Guest Interface ISOLATION #
+				if [ "$(nvram get "${IFACE}_ap_isolate")" != "1" ]; then
+					nvram set "$IFACE"_ap_isolate=1
 					WIRELESSRESTART="true"
 				fi
-			fi
-
-			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")" = "true" ] || [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")" = "true" ]; then
-				GUESTLANENABLED="true"
 			fi
 
 			#Set guest interface LAN access to allowed in f/w, prevent creating VLAN
@@ -2420,27 +2422,23 @@ Config_Networks()
 
 			sleep 1
 		else
-			#Remove firewall rules for guest interface
+			# Remove firewall rules for Guest Interface #
 			Firewall_Rules delete "$IFACE" 2>/dev/null
 
 			##-------------------------------------##
-			## Added by Martinski W. [2023-Dec-22] ##
+			## Added by Martinski W. [2023-Dec-28] ##
 			##-------------------------------------##
 			Firewall_Rules_ONEorTWO_WAY delete "$IFACE" 2>/dev/null
+
+			# Enable Guest Interface ISOLATION #
+			if [ "$(nvram get "${IFACE}_ap_isolate")" != "1" ]; then
+				nvram set "$IFACE"_ap_isolate=1
+				WIRELESSRESTART="true"
+			fi
 
 			Firewall_DNS delete "$IFACE" 2>/dev/null
 
 			Firewall_BlockInternet delete "$IFACE" 2>/dev/null
-
-			#Reset guest interface ISOLATION
-			ISOBEFORE="$(nvram get "${IFACE}_ap_isolate")"
-			if ! Validate_Number "" "$ISOBEFORE" silent; then ISOBEFORE=0; fi
-			Firewall_NVRAM delete "$IFACE" 2>/dev/null
-			ISOAFTER="$(nvram get "${IFACE}_ap_isolate")"
-			if ! Validate_Number "" "$ISOAFTER" silent; then ISOAFTER=0; fi
-			if [ "$ISOBEFORE" -ne "$ISOAFTER" ]; then
-				WIRELESSRESTART="true"
-			fi
 
 			Iface_Manage delete "$IFACE" 2>/dev/null
 
@@ -2475,6 +2473,7 @@ Config_Networks()
 	if [ "$WIRELESSRESTART" = "true" ]; then
 		nvram commit
 		Clear_Lock
+		Print_Output true "$SCRIPT_NAME is restarting wireless services now." "$WARN"
 		service restart_wireless >/dev/null 2>&1
 	elif [ "$WIRELESSRESTART" = "false" ]; then
 		Execute_UserScripts
@@ -3087,8 +3086,9 @@ Menu_Status(){
 	DNSMASQ_LEASES="/var/lib/misc/dnsmasq.leases"
 
 	for IFACE in $IFACELIST; do
-		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ] && Validate_Exists_IFACE "$IFACE" silent && Validate_Enabled_IFACE "$IFACE" silent; then
-
+		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ] && \
+		   Validate_Exists_IFACE "$IFACE" silent && Validate_Enabled_IFACE "$IFACE" silent
+		then
 			"$NoARGs" && printf "%75s\\n\\n" "" | tr " " "-"
 			"$NoARGs" && printf "${BOLD}INTERFACE: %-5s${CLEARFORMAT}\\n" "$IFACE"
 			"$NoARGs" && printf "${BOLD}SSID: %-20s${CLEARFORMAT}\\n\\n" "$(nvram get "${IFACE}_ssid")"
@@ -3114,7 +3114,7 @@ Menu_Status(){
 					# Modified by Martinski W. [2023-Dec-06].
 					# The Guest Network client has an ARP entry marked as "incomplete"
 					# so one option is to just skip the client here as we used to do.
-					# However, it seems that the ARP Cache may not always up to date,
+					# However, sometimes the ARP Cache may not always be up to date,
 					# so we decide to continue after this point to find out if we can
 					# get the required IP address & Hostname info from other sources.
 					#------------------------------------------------------------------#
@@ -3299,7 +3299,7 @@ Menu_Uninstall()
 	Firewall_NAT deleteall 2>/dev/null
 	Routing_RPDB delete 2>/dev/null
 	Firewall_Chains deleteall 2>/dev/null
-	Firewall_NVRAM deleteall "$IFACE" 2>/dev/null
+	Firewall_NVRAM disableall "$IFACE" 2>/dev/null
 	Iface_Manage deleteall 2>/dev/null
 	DHCP_Conf deleteall 2>/dev/null
 	LOCKFILE=/tmp/addonwebui.lock
@@ -3446,17 +3446,33 @@ case "$1" in
 
 		. $SCRIPT_CONF
 		WIRELESSRESTART="false"
-		for IFACE in $IFACELIST; do
-			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ]; then
+		for IFACE in $IFACELIST
+		do
+			if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ] && \
+			   Validate_Enabled_IFACE "$IFACE" silent
+			then
 				if [ "$(nvram get "${IFACE}_lanaccess")" != "on" ]; then
 					nvram set "$IFACE"_lanaccess=on
 					WIRELESSRESTART="true"
+				fi
+
+				##----------------------------------------##
+				## Modified by Martinski W. [2023-Dec-28] ##
+				##----------------------------------------##
+				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ONEWAYTOGUEST")" = "true" ] || \
+				   [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_TWOWAYTOGUEST")" = "true" ]
+				then  # Disable ISOLATION #
+					if [ "$(nvram get "${IFACE}_ap_isolate")" != "0" ]; then
+						nvram set "$IFACE"_ap_isolate=0
+						WIRELESSRESTART="true"
+					fi
 				fi
 			fi
 		done
 
 		if [ "$WIRELESSRESTART" = "true" ]; then
 			nvram commit
+			Print_Output true "$SCRIPT_NAME is restarting wireless services now." "$WARN"
 			service restart_wireless >/dev/null 2>&1
 		fi
 
@@ -3519,7 +3535,9 @@ case "$1" in
 			. $SCRIPT_CONF
 
 			for IFACE in $IFACELIST; do
-				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ]; then
+				if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ] && \
+				   Validate_Enabled_IFACE "$IFACE" silent
+				then
 					Routing_RPDB create "$IFACE" 2>/dev/null
 				fi
 			done
