@@ -2430,12 +2430,6 @@ Config_Networks()
 			##-------------------------------------##
 			Firewall_Rules_ONEorTWO_WAY delete "$IFACE" 2>/dev/null
 
-			# Enable Guest Interface ISOLATION #
-			if [ "$(nvram get "${IFACE}_ap_isolate")" != "1" ]; then
-				nvram set "$IFACE"_ap_isolate=1
-				WIRELESSRESTART="true"
-			fi
-
 			Firewall_DNS delete "$IFACE" 2>/dev/null
 
 			Firewall_BlockInternet delete "$IFACE" 2>/dev/null
