@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: 2023-Dec-28
+# Last Modified: 2023-Dec-29
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -1204,13 +1204,17 @@ Conf_FixBlanks(){
 	then . "$SCRIPT_CONF" ; fi
 }
 
+##----------------------------------------##
+## Modified by Martinski W. [2023-Dec-29] ##
+##----------------------------------------##
 Conf_Validate()
 {
 	NETWORKS_ENABLED="false"
 
 	Conf_FixBlanks
 
-	for IFACE in $IFACELIST_FULL; do
+	for IFACE in $IFACELIST_FULL
+	do
 		IFACETMP="$(Get_Iface_Var "$IFACE")"
 		IPADDRTMP=""
 		ENABLEDTMP=""
@@ -1232,7 +1236,11 @@ Conf_Validate()
 			IFACE_PASS="false"
 			Print_Output false "$IFACE - Interface not supported on this router" "$ERR"
 		else
-			if [ "$ENABLEDTMP" = "true" ]; then
+			if [ "$ENABLEDTMP" = "false" ]
+			then
+				IFACE_PASS="false"
+				Print_Output false "Interface $IFACE is not enabled on this router" "$WARN"
+			else
 				NETWORKS_ENABLED="true"
 
 				if ! Validate_Enabled_IFACE "$IFACE"; then
