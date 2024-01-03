@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: 2023-Dec-29
+# Last Modified: 2024-Jan-02
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -1205,7 +1205,7 @@ Conf_FixBlanks(){
 }
 
 ##----------------------------------------##
-## Modified by Martinski W. [2023-Dec-29] ##
+## Modified by Martinski W. [2024-Jan-02] ##
 ##----------------------------------------##
 Conf_Validate()
 {
@@ -1217,29 +1217,29 @@ Conf_Validate()
 	do
 		IFACETMP="$(Get_Iface_Var "$IFACE")"
 		IPADDRTMP=""
-		ENABLEDTMP=""
 		REDIRECTTMP=""
 		IFACE_PASS="true"
+		IFACE_ENABLED=""
 
 		if [ -z "$(eval echo '$'"${IFACETMP}_ENABLED")" ]; then
-			ENABLEDTMP="false"
+			IFACE_ENABLED="false"
 			sed -i -e "s/${IFACETMP}_ENABLED=/${IFACETMP}_ENABLED=false/" "$SCRIPT_CONF"
 			Print_Output false "${IFACETMP}_ENABLED is blank, setting to false" "$WARN"
 		elif ! Validate_TrueFalse "${IFACETMP}_ENABLED" "$(eval echo '$'"${IFACETMP}_ENABLED")"; then
-			ENABLEDTMP="false"
+			IFACE_ENABLED="false"
 			IFACE_PASS="false"
 		else
-			ENABLEDTMP="$(eval echo '$'"${IFACETMP}_ENABLED")"
+			IFACE_ENABLED="$(eval echo '$'"${IFACETMP}_ENABLED")"
 		fi
 
-		if ! Validate_Exists_IFACE "$IFACE" silent && [ "$ENABLEDTMP" = "true" ]; then
+		if ! Validate_Exists_IFACE "$IFACE" silent && [ "$IFACE_ENABLED" = "true" ]; then
 			IFACE_PASS="false"
 			Print_Output false "$IFACE - Interface not supported on this router" "$ERR"
 		else
-			if [ "$ENABLEDTMP" = "false" ]
+			if [ "$IFACE_ENABLED" = "false" ]
 			then
 				IFACE_PASS="false"
-				Print_Output false "Interface $IFACE is not enabled on this router" "$WARN"
+				Print_Output false "Interface $IFACE is not enabled in $SCRIPT_NAME configuration" "$WARN"
 			else
 				NETWORKS_ENABLED="true"
 
@@ -1364,8 +1364,11 @@ Conf_Validate()
 			fi
 		fi
 
-		if [ "$IFACE_PASS" = "false" ]; then
+		if [ "$IFACE_PASS" = "false" ]
+		then
 			IFACELIST="$(echo "$IFACELIST" | sed 's/'"$IFACE"'//;s/  / /')"
+			[ "$IFACE_ENABLED" = "false" ] && \
+			Print_Output false "$IFACE is DISABLED, removing from list" "$ERR" || \
 			Print_Output false "$IFACE failed validation, removing from list" "$CRIT"
 		fi
 	done
@@ -2325,6 +2328,7 @@ Config_Networks()
 	fi
 
 	. $SCRIPT_CONF
+	modprobe xt_comment
 
 	DHCP_Conf initialise 2>/dev/null
 
@@ -3430,7 +3434,12 @@ case "$1" in
 				service restart_dnsmasq
 			fi
 		fi
-		if ! iptables -nL | grep -q "YazFi"; then
+
+		##----------------------------------------##
+		## Modified by Martinski W. [2024-Jan-02] ##
+		##----------------------------------------##
+		if ! iptables -t nat -nL | grep -q "YazFi" || ! iptables -t filter -nL | grep -q "YazFi"
+		then
 			Check_Lock
 			Print_Output true "$SCRIPT_NAME firewall rules not detected during persistence check, re-applying rules" "$WARN"
 			Config_Networks
