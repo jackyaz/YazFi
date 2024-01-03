@@ -158,9 +158,10 @@ else Band_6G_1_Support=false
 fi
 
 # $1 = print to syslog, $2 = message to print, $3 = log level
-Print_Output(){
+Print_Output()
+{
 	if [ "$1" = "true" ]; then
-		logger -t "$SCRIPT_NAME" "$2"
+		logger -t "${SCRIPT_NAME}_[$$]" "$2"
 	fi
 	printf "${BOLD}${3}%s${CLEARFORMAT}\\n\\n" "$2"
 }
