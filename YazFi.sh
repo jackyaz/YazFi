@@ -3066,7 +3066,7 @@ Menu_QRCode(){
 }
 
 ##----------------------------------------##
-## Modified by Martinski W. [2023-Dec-06] ##
+## Modified by Martinski W. [2024-Jan-03] ##
 ##----------------------------------------##
 Menu_Status(){
 	renice 15 $$
@@ -3085,9 +3085,9 @@ Menu_Status(){
 	if [ $# -eq 0 ] || [ -z "$1" ] ; then NoARGs=true ; fi
 
 	"$NoARGs" && ScriptHeader
-	"$NoARGs" && printf "${BOLD}$PASS%sQuerying router for connected WiFi clients...${CLEARFORMAT}\\n\\n" ""
+	"$NoARGs" && printf "${BOLD}$PASS%sQuerying router for connected WiFi clients...${CLEARFORMAT}\n\n" ""
 
-	printf "INTERFACE,HOSTNAME,IP,MAC,CONNECTED,RX,TX,RSSI,PHY\\n" >> "$TMPSTATUSOUTPUTFILE"
+	printf "INTERFACE,HOSTNAME,IP,MAC,CONNECTED,RX,TX,RSSI,PHY\n" >> "$TMPSTATUSOUTPUTFILE"
 
 	##----------------------------------------##
 	## Modified by Martinski W. [2023-Dec-06] ##
@@ -3100,13 +3100,20 @@ Menu_Status(){
 		if [ "$(eval echo '$'"$(Get_Iface_Var "$IFACE")_ENABLED")" = "true" ] && \
 		   Validate_Exists_IFACE "$IFACE" silent && Validate_Enabled_IFACE "$IFACE" silent
 		then
-			"$NoARGs" && printf "%75s\\n\\n" "" | tr " " "-"
-			"$NoARGs" && printf "${BOLD}INTERFACE: %-5s${CLEARFORMAT}\\n" "$IFACE"
-			"$NoARGs" && printf "${BOLD}SSID: %-20s${CLEARFORMAT}\\n\\n" "$(nvram get "${IFACE}_ssid")"
-
+			"$NoARGs" && \
+			{
+			  printf "%112s\n\n" "" | tr " " "_"
+			  printf "${BOLD}INTERFACE: %-5s${CLEARFORMAT}\n" "$IFACE"
+			  printf "${BOLD}SSID: %-20s${CLEARFORMAT}\n\n" "$(nvram get "${IFACE}_ssid")"
+			}
 			IFACE_MACS="$(wl -i "$IFACE" assoclist)"
 			if [ "$IFACE_MACS" != "" ]; then
-				"$NoARGs" && printf "${BOLD}%-30s%-20s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\\n" "HOSTNAME" "IP" "MAC" "CONNECTED" "RX/TX" "RSSI" "PHY"
+				"$NoARGs" && \
+				{
+				  printf "${BOLD}%-32s%-18s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\n" "HOSTNAME" "IP" "MAC" "CONNECTED" "RX/TX" "RSSI" "PHY"
+				  printf "${BOLD}%-32s%-18s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\n" \
+				  "------------------------------" "---------------" "-----------------" "-------------" "-------------" "--------" "---"
+				}
 				IFS=$'\n'
 				for GUEST_MAC in $IFACE_MACS; do
 					GUEST_MACADDR="$(echo "$GUEST_MAC" | awk '{print $2}')"
@@ -3199,21 +3206,21 @@ Menu_Status(){
 						GUEST_PHY="Unknown"
 					fi
 
-					"$NoARGs" && printf "%-30s%-20s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED_PRINT" "$GUEST_RX/$GUEST_TX Mbps" "$GUEST_RSSI dBm" "$GUEST_PHY"
+					"$NoARGs" && printf "%-32s%-18s%-20s%-15s%-15s%-10s%-5s${CLEARFORMAT}\n" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED_PRINT" "$GUEST_RX/$GUEST_TX Mbps" "$GUEST_RSSI dBm" "$GUEST_PHY"
 
-					printf "%s,%s,%s,%s,%s,%s,%s,%s,%s\\n" "$IFACE" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED" "$GUEST_RX" "$GUEST_TX" "$GUEST_RSSI" "$GUEST_PHY" >> "$TMPSTATUSOUTPUTFILE"
+					printf "%s,%s,%s,%s,%s,%s,%s,%s,%s\n" "$IFACE" "$GUEST_HOST" "$GUEST_IPADDR" "$GUEST_MACADDR" "$GUEST_TIMECONNECTED" "$GUEST_RX" "$GUEST_TX" "$GUEST_RSSI" "$GUEST_PHY" >> "$TMPSTATUSOUTPUTFILE"
 				done
 				unset IFS
 			else
-				"$NoARGs" && printf "${BOLD}${WARN}No clients connected${CLEARFORMAT}\\n\\n"
-				printf "%s,,NOCLIENTS,,,,,,\\n" "$IFACE" >> "$TMPSTATUSOUTPUTFILE"
+				"$NoARGs" && printf "${BOLD}${WARN}No clients connected${CLEARFORMAT}\n\n"
+				printf "%s,,NOCLIENTS,,,,,,\n" "$IFACE" >> "$TMPSTATUSOUTPUTFILE"
 			fi
 		fi
 	done
 
 	mv "$TMPSTATUSOUTPUTFILE" "$STATUSOUTPUTFILE" 2>/dev/null
-	"$NoARGs" && printf "%75s\\n\\n" "" | tr " " "-"
-	"$NoARGs" && printf "${BOLD}$PASS%sQuery complete, please see above for results${CLEARFORMAT}\\n\\n" ""
+	"$NoARGs" && printf "%112s\n\n" "" | tr " " "_"
+	"$NoARGs" && printf "${BOLD}$PASS%sQuery complete, please see above for results${CLEARFORMAT}\n\n" ""
 	#######################################################################################################
 	renice 0 $$
 }
