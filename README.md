@@ -3,7 +3,7 @@
 ![Shellcheck](https://github.com/jackyaz/YazFi/actions/workflows/shellcheck.yml/badge.svg)
 
 ## v4.4.5
-### Updated on 2023-12-20
+### Updated on 2024-01-03
 ## About
 Feature expansion of guest WiFi networks on AsusWRT-Merlin, including, but not limited to:
 
@@ -117,12 +117,12 @@ Remember to make it executable with
 ```sh
 chmod +x /jffs/addons/YazFi.d/userscripts.d/myscript.sh
 ```
-An example script to allow a guest on 2.4GHz guest 1 to talk to a specific IP address on the LAN:
+An example script to allow any guest client on the 2.4GHz guest network #1 to talk to one specific IP address on the main LAN:
 ```sh
 #!/bin/sh
 iptables -I YazFiFORWARD -i wl0.1 -o br0 -d 192.168.1.50 -j ACCEPT
 ```
-The above will work if "One way" access to the guest enabled. With no access enabled, the script would be:
+The above will work if "One Way" access to guest is enabled. With no access enabled, the script would be:
 ```sh
 #!/bin/sh
 iptables -I YazFiFORWARD -i wl0.1 -o br0 -d 192.168.1.50 -j ACCEPT
