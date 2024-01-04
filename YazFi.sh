@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: 2024-Jan-02
+# Last Modified: 2024-Jan-03
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -278,21 +278,25 @@ Iface_Manage(){
 }
 
 ##----------------------------------------##
-## Modified by Martinski W. [2023-Dec-06] ##
+## Modified by Martinski W. [2024-Jan-03] ##
 ##----------------------------------------##
-Iface_BounceClients(){
+Iface_BounceClients()
+{
+	local callSleep=false
 	Print_Output true "Forcing $SCRIPT_NAME Guest WiFi clients to reauthenticate" "$PASS"
 	Print_Output false "Please wait..." "$PASS"
 
 	for IFACE in $IFACELIST; do
+		callSleep=true
 		wl -i "$IFACE" radio off >/dev/null 2>&1
 	done
-	sleep 10
+	"$callSleep" && sleep 10
 
 	for IFACE in $IFACELIST; do
+		callSleep=true
 		wl -i "$IFACE" radio on >/dev/null 2>&1
 	done
-	sleep 2
+	"$callSleep" && sleep 2
 
 	ARP_CACHE="/proc/net/arp"
 	for IFACE in $IFACELIST; do
@@ -3500,6 +3504,7 @@ case "$1" in
 	;;
 	bounceclients)
 		. "$SCRIPT_CONF"
+		Conf_Validate
 		Iface_BounceClients
 		exit 0;
 	;;
