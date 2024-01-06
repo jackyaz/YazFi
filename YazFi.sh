@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: 2024-Jan-03
+# Last Modified: 2024-Jan-05
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -1372,9 +1372,12 @@ Conf_Validate()
 		if [ "$IFACE_PASS" = "false" ]
 		then
 			IFACELIST="$(echo "$IFACELIST" | sed 's/'"$IFACE"'//;s/  / /')"
-			[ "$IFACE_ENABLED" = "false" ] && \
-			Print_Output false "$IFACE is DISABLED, removing from list" "$ERR" || \
-			Print_Output false "$IFACE failed validation, removing from list" "$CRIT"
+			if [ "$IFACE_ENABLED" = "false" ]
+			then
+			    Print_Output false "$IFACE is DISABLED, removing from list" "$ERR"
+			else
+			    Print_Output false "$IFACE failed validation, removing from list" "$CRIT"
+			fi
 		fi
 	done
 
@@ -3124,7 +3127,7 @@ Menu_Status(){
 					GUEST_ARPCOUNT="$(grep -ic "$GUEST_MACADDR" "$ARP_CACHE")"
 					[ "$GUEST_ARPCOUNT" -eq 0 ] && continue
 
-					GUEST_ARPINFO="$(cat "$ARP_CACHE" | grep -i "$GUEST_MACADDR" | grep "$IFACE" | eval "$NOT_LANIP")"
+					GUEST_ARPINFO="$(grep -i "$GUEST_MACADDR" "$ARP_CACHE" | grep "$IFACE" | eval "$NOT_LANIP")"
 					GUEST_IPADDR="$(echo "$GUEST_ARPINFO" | awk -F ' ' '{print $1}')"
 					GUEST_ARPFLAG="$(echo "$GUEST_ARPINFO" | awk -F ' ' '{print $3}')"
 
