@@ -16,7 +16,7 @@
 ##    guest network DHCP script and for    ##
 ##         AsusWRT-Merlin firmware         ##
 #############################################
-# Last Modified: 2024-Jan-05
+# Last Modified: 2024-Jan-06
 #--------------------------------------------------
 
 ######       Shellcheck directives     ######
@@ -1693,7 +1693,7 @@ Firewall_Rules_ONEorTWO_WAY()
 }
 
 ##----------------------------------------##
-## Modified by Martinski W. [2023-Dec-22] ##
+## Modified by Martinski W. [2024-Jan-06] ##
 ##----------------------------------------##
 Firewall_Rules()
 {
@@ -1724,7 +1724,7 @@ Firewall_Rules()
 		ebtables -t broute -D BROUTING -p IPv4 -i "$IFACE" --ip-dst "$LAN_IPaddr" --ip-proto icmp -j ACCEPT
 		ebtables -t broute -D BROUTING -p IPv4 -i "$IFACE" --ip-dst "$LAN_IPaddr"/24 --ip-proto icmp -j DROP
 
-		iptables "$ACTION" "$FWRD" -i "$IFACE" -j ACCEPT
+		iptables "$ACTION" "$FWRD" -i "$IFACE" -m comment --comment "$GuestNetBandID" -j ACCEPT
 
 		##----------------------------------------##
 		## Modified by Martinski W. [2023-Dec-22] ##
@@ -3451,12 +3451,15 @@ case "$1" in
 		fi
 
 		##----------------------------------------##
-		## Modified by Martinski W. [2024-Jan-02] ##
+		## Modified by Martinski W. [2024-Jan-06] ##
 		##----------------------------------------##
-		if ! iptables -t nat -nL | grep -q "YazFi" || ! iptables -t filter -nL | grep -q "YazFi"
+		if ! iptables -t nat -nL | grep -q "YazFi"  || \
+		   ! iptables -t nat -nL | grep -wq "YazFi"  || \
+		   ! iptables -t filter -nL | grep -q "YazFi" || \
+		   ! iptables -t filter -nL | grep -wq "YazFi"
 		then
 			Check_Lock
-			Print_Output true "$SCRIPT_NAME firewall rules not detected during persistence check, re-applying rules" "$WARN"
+			Print_Output true "$SCRIPT_NAME firewall rules were not detected during persistence check, re-applying rules" "$WARN"
 			Config_Networks
 			Clear_Lock
 			exit 0
