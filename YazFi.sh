@@ -1210,7 +1210,7 @@ Conf_FixBlanks(){
 }
 
 ##----------------------------------------##
-## Modified by Martinski W. [2024-Jan-02] ##
+## Modified by Martinski W. [2024-Jan-06] ##
 ##----------------------------------------##
 Conf_Validate()
 {
@@ -1369,7 +1369,7 @@ Conf_Validate()
 			fi
 		fi
 
-		if [ "$IFACE_PASS" = "false" ]
+		if [ "$IFACE_PASS" = "false" ] && echo "$IFACELIST" | grep -q "$IFACE"
 		then
 			IFACELIST="$(echo "$IFACELIST" | sed 's/'"$IFACE"'//;s/  / /')"
 			if [ "$IFACE_ENABLED" = "false" ]
@@ -3450,27 +3450,29 @@ case "$1" in
 			fi
 		fi
 
-		##----------------------------------------##
-		## Modified by Martinski W. [2024-Jan-06] ##
-		##----------------------------------------##
-		if ! iptables -t nat -nL | grep -q "YazFi"  || \
-		   ! iptables -t nat -nL | grep -wq "YazFi"  || \
-		   ! iptables -t filter -nL | grep -q "YazFi" || \
-		   ! iptables -t filter -nL | grep -wq "YazFi"
-		then
-			Check_Lock
-			Print_Output true "$SCRIPT_NAME firewall rules were not detected during persistence check, re-applying rules" "$WARN"
-			Config_Networks
-			Clear_Lock
-			exit 0
-		fi
-
 		if ! Conf_Exists; then
 			exit 1
 		fi
 
 		if ! Conf_Validate; then
 			exit 1
+		fi
+
+		##----------------------------------------##
+		## Modified by Martinski W. [2024-Jan-06] ##
+		##----------------------------------------##
+		if echo "$IFACELIST" | grep -qE "wl[0-3][.][1-3]" && \
+		   { ! iptables -t nat -nL | grep -q "YazFi"    || \
+		     ! iptables -t nat -nL | grep -wq "YazFi"   || \
+		     ! iptables -t filter -nL | grep -q "YazFi" || \
+		     ! iptables -t filter -nL | grep -wq "YazFi"
+		   }
+		then
+			Check_Lock
+			Print_Output true "$SCRIPT_NAME firewall rules were not detected during persistence check, re-applying rules" "$ERR"
+			Config_Networks
+			Clear_Lock
+			exit 0
 		fi
 
 		. $SCRIPT_CONF
