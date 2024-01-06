@@ -86,10 +86,11 @@ _GetWiFiVirtualInterfaceNames_()
 }
 
 ##----------------------------------------##
-## Modified by Martinski W. [2022-Nov-18] ##
+## Modified by Martinski W. [2024-Jan-06] ##
 ##----------------------------------------##
 readonly IFACELIST_FULL="wl0.1 wl0.2 wl0.3 wl1.1 wl1.2 wl1.3 wl2.1 wl2.2 wl2.3 wl3.1 wl3.2 wl3.3"
-IFACELIST="$(_GetWiFiVirtualInterfaceNames_)"
+readonly IFACELIST_ORIG="$(_GetWiFiVirtualInterfaceNames_)"
+IFACELIST="$IFACELIST_ORIG"
 ### End of router environment variables ###
 
 ### Start of path variables ###
@@ -1214,7 +1215,7 @@ Conf_FixBlanks(){
 ##----------------------------------------##
 Conf_Validate()
 {
-	NETWORKS_ENABLED="false"
+	GUESTNET_ENABLED="false"
 
 	Conf_FixBlanks
 
@@ -1237,20 +1238,22 @@ Conf_Validate()
 			IFACE_ENABLED="$(eval echo '$'"${IFACETMP}_ENABLED")"
 		fi
 
-		if ! Validate_Exists_IFACE "$IFACE" silent && [ "$IFACE_ENABLED" = "true" ]; then
+		if [ "$IFACE_ENABLED" = "false" ]
+		then
 			IFACE_PASS="false"
-			Print_Output false "$IFACE - Interface not supported on this router" "$ERR"
+			Print_Output false "Interface $IFACE is not enabled in $SCRIPT_NAME configuration" "$WARN"
+		#
+		elif ! echo "$IFACELIST_ORIG" | grep -q "$IFACE"
+		then
+			IFACE_PASS="false"
+			Print_Output false "Interface $IFACE is not supported on this router" "$ERR"
+		#
+		elif ! Validate_Enabled_IFACE "$IFACE" || ! Validate_Exists_IFACE "$IFACE"
+		then
+			IFACE_PASS="false"
+			GUESTNET_ENABLED="true"
 		else
-			if [ "$IFACE_ENABLED" = "false" ]
-			then
-				IFACE_PASS="false"
-				Print_Output false "Interface $IFACE is not enabled in $SCRIPT_NAME configuration" "$WARN"
-			else
-				NETWORKS_ENABLED="true"
-
-				if ! Validate_Enabled_IFACE "$IFACE"; then
-					IFACE_PASS="false"
-				fi
+			GUESTNET_ENABLED="true"
 
 				if [ "$(eval echo '$'"${IFACETMP}_ENABLED")" = "true" ]
 				then
@@ -1366,7 +1369,6 @@ Conf_Validate()
 						Print_Output false "$IFACE passed validation" "$PASS"
 					fi
 				fi
-			fi
 		fi
 
 		if [ "$IFACE_PASS" = "false" ] && echo "$IFACELIST" | grep -q "$IFACE"
@@ -1381,8 +1383,8 @@ Conf_Validate()
 		fi
 	done
 
-	if [ "$NETWORKS_ENABLED" = "false" ]; then
-		Print_Output true "No $SCRIPT_NAME guests are enabled in the configuration file!" "$CRIT"
+	if [ "$GUESTNET_ENABLED" = "false" ]; then
+		Print_Output true "No $SCRIPT_NAME guest networks are enabled in the configuration file!" "$CRIT"
 	fi
 
 	return 0
